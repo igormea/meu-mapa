@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Meu Mapa</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root {
+  --accent: #e94560;
+  --accent2: #ff6b6b;
+  --green:  #22c55e;
+  --blue:   #3b82f6;
+  --bg:     #12122a;
+  --bg2:    #1a1a3a;
+  --bg3:    #22224a;
+  --text:   #f0f0f0;
+  --muted:  #8888aa;
+  --panel:  rgba(18,18,42,.96);
+  --radius: 14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;background:#000;color:var(--text)}
+
+/* ───── MAP ───── */
+#map{position:fixed;inset:0;z-index:1}
+.leaflet-control-zoom{display:none!important}
+.leaflet-control-attribution{font-size:9px!important;background:rgba(0,0,0,.5)!important;color:#666!important}
+.leaflet-control-attribution a{color:#555!important}
+
+/* ───── GPS MARKER ───── */
+@keyframes gpsPulse{0%{box-shadow:0 0 0 0 rgba(59,130,246,.7)}100%{box-shadow:0 0 0 18px rgba(59,130,246,0)}}
+.gps-dot{
+  width:16px;height:16px;background:var(--blue);
+  border:3px solid #fff;border-radius:50%;
+  animation:gpsPulse 2s infinite;
+}
+.gps-arrow{
+  width:0;height:0;position:relative;
+  border-left:7px solid transparent;
+  border-right:7px solid transparent;
+  border-bottom:14px solid var(--blue);
+  margin:-5px 0 0 1px;
+  filter:drop-shadow(0 0 3px rgba(59,130,246,.8));
+}
+
+/* ───── NAV TOP ───── */
+#navTop{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:var(--bg);border-bottom:3px solid var(--accent);
+  padding:12px 14px 10px;display:none;align-items:center;gap:12px;
+  box-shadow:0 6px 24px rgba(0,0,0,.7);
+}
+#navTop.on{display:flex}
+#navIconBox{font-size:40px;line-height:1;flex-shrink:0;text-align:center;min-width:46px}
+#navMeta{flex:1;min-width:0}
+#navInst{font-size:17px;font-weight:700;line-height:1.2}
+#navRoad{font-size:12px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#navDistBox{text-align:right;flex-shrink:0}
+#navDistVal{font-size:22px;font-weight:800;color:var(--accent);line-height:1}
+#navDistUnit{font-size:11px;color:var(--muted)}
+
+/* ───── RECALC BAR ───── */
+@keyframes recalcSlide{0%{width:0}100%{width:100%}}
+#recalcBar{
+  position:fixed;top:0;left:0;height:3px;width:0;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  z-index:200;transition:opacity .3s;
+}
+#recalcBar.run{animation:recalcSlide 5s linear forwards}
+
+/* ───── TOAST ───── */
+#toast{
+  position:fixed;top:70px;left:50%;transform:translateX(-50%);
+  background:var(--bg3);color:var(--text);
+  padding:9px 20px;border-radius:20px;
+  font-size:13px;z-index:300;
+  opacity:0;transition:opacity .3s;pointer-events:none;
+  white-space:nowrap;border:1px solid var(--bg3);
+  box-shadow:0 4px 16px rgba(0,0,0,.5);
+}
+#toast.on{opacity:1}
+
+/* ───── FABs ───── */
+#fabs{position:fixed;right:12px;bottom:200px;z-index:50;display:flex;flex-direction:column;gap:9px}
+.fab{
+  width:44px;height:44px;border-radius:50%;border:none;
+  background:var(--panel);color:var(--text);font-size:19px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 12px rgba(0,0,0,.5);backdrop-filter:blur(12px);
+  transition:transform .1s;border:1px solid rgba(255,255,255,.07);
+}
+.fab:active{transform:scale(.88)}
+#myLocBtn.tracking{background:var(--blue);color:#fff}
+
+/* ───── BOTTOM PANELS ───── */
+.bpanel{
+  position:fixed;bottom:0;left:0;right:0;z-index:50;
+  background:var(--panel);border-radius:20px 20px 0 0;
+  box-shadow:0 -6px 30px rgba(0,0,0,.6);
+  backdrop-filter:blur(20px);padding:8px 16px 28px;
+  border-top:1px solid rgba(255,255,255,.06);
+  transition:transform .3s ease;
+}
+.handle{width:36px;height:4px;background:var(--bg3);border-radius:2px;margin:0 auto 14px}
+
+/* ───── SEARCH PANEL ───── */
+#searchPanel{}
+.inp-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;position:relative}
+.dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.dot.o{background:var(--green);box-shadow:0 0 6px rgba(34,197,94,.5)}
+.dot.d{background:var(--accent);box-shadow:0 0 6px rgba(233,69,96,.5)}
+.vline{width:2px;height:11px;background:var(--bg3);margin:-3px 0 -3px 4.5px}
+.acw{flex:1;position:relative}
+input[type=text]{
+  width:100%;padding:11px 14px;
+  background:var(--bg2);border:1.5px solid var(--bg3);
+  border-radius:10px;color:var(--text);font-size:15px;outline:none;
+  transition:border .2s;
+}
+input:focus{border-color:var(--accent)}
+input::placeholder{color:#444}
+.acl{
+  display:none;position:absolute;bottom:calc(100% + 2px);left:0;right:0;
+  background:var(--bg2);border:1.5px solid var(--bg3);border-radius:10px;
+  z-index:400;max-height:170px;overflow-y:auto;
+  box-shadow:0 -6px 20px rgba(0,0,0,.5);
+}
+.aci{padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--bg);transition:background .15s}
+.aci:last-child{border-bottom:none}
+.aci:hover,.aci:active{background:var(--bg3)}
+.aci .am{font-size:14px;font-weight:600;color:var(--text)}
+.aci .as{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn{
+  width:100%;padding:13px;border:none;border-radius:11px;
+  font-size:15px;font-weight:700;cursor:pointer;color:#fff;
+  transition:transform .12s,opacity .12s;
+}
+.btn:active{transform:scale(.97);opacity:.9}
+.btn.prim{background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.btn.prim:disabled{background:var(--bg3);color:var(--muted);cursor:not-allowed;transform:none;opacity:1}
+.btn.sec{background:var(--bg2);color:var(--muted);border:1px solid var(--bg3)}
+.btn.go{background:linear-gradient(135deg,#22c55e,#16a34a)}
+#searchStatus{text-align:center;font-size:13px;color:var(--muted);min-height:16px;margin-top:8px}
+#searchStatus.err{color:var(--accent)}
+#searchStatus.ok{color:var(--green);font-weight:600}
+
+/* ───── ROUTE PANEL ───── */
+#routePanel{display:none}
+#routeHead{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.rh-ico{font-size:30px}
+.rh-big{font-size:28px;font-weight:900;line-height:1}
+.rh-sub{font-size:14px;color:var(--muted);margin-top:3px}
+.rh-eta{font-size:13px;color:var(--green);margin-top:3px}
+#altsRow{display:flex;gap:8px;margin-bottom:14px}
+.altc{
+  flex:1;padding:10px 8px;text-align:center;
+  background:var(--bg2);border:2px solid var(--bg3);
+  border-radius:10px;cursor:pointer;transition:all .15s;
+}
+.altc:active{transform:scale(.96)}
+.altc.sel{border-color:var(--accent);background:rgba(233,69,96,.1)}
+.altc .at{font-size:16px;font-weight:700}
+.altc .ad{font-size:11px;color:var(--muted);margin-top:2px}
+.altc .al{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+#routeBtns{display:flex;gap:10px}
+#routeBtns .btn{margin:0}
+
+/* ───── NAV BOTTOM ───── */
+#navBottom{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:var(--bg);border-top:1px solid var(--bg3);
+  padding:11px 14px 24px;display:none;align-items:center;gap:14px;
+  box-shadow:0 -6px 24px rgba(0,0,0,.6);
+}
+#navBottom.on{display:flex}
+#spdBox{text-align:center;min-width:58px}
+#spdVal{font-size:30px;font-weight:900;line-height:1;color:var(--text)}
+#spdVal.speeding{color:var(--accent)}
+#spdUnit{font-size:10px;color:var(--muted);margin-top:1px}
+#navSt{flex:1}
+#navRem{font-size:17px;font-weight:700}
+#navETA{font-size:13px;color:var(--green);margin-top:3px}
+#navTime{font-size:12px;color:var(--muted);margin-top:2px}
+.stop-fab{
+  width:46px;height:46px;border-radius:50%;border:none;
+  background:var(--accent);color:#fff;font-size:20px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;box-shadow:0 2px 12px rgba(233,69,96,.4);
+}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<!-- NAV TOP BAR -->
+<div id="navTop">
+  <div id="navIconBox">⬆️</div>
+  <div id="navMeta">
+    <div id="navInst">Aguardando GPS…</div>
+    <div id="navRoad"></div>
+  </div>
+  <div id="navDistBox">
+    <div id="navDistVal">–</div>
+    <div id="navDistUnit"></div>
+  </div>
+</div>
+
+<div id="recalcBar"></div>
+<div id="toast"></div>
+
+<!-- FABs -->
+<div id="fabs">
+  <button class="fab" id="myLocBtn" onclick="centerOnMe()" title="Minha localização">◉</button>
+  <button class="fab" onclick="map.zoomIn()">+</button>
+  <button class="fab" onclick="map.zoomOut()">−</button>
+</div>
+
+<!-- SEARCH PANEL -->
+<div id="searchPanel" class="bpanel">
+  <div class="handle"></div>
+  <div class="inp-row">
+    <div class="dot o"></div>
+    <div class="acw">
+      <input type="text" id="inpO" placeholder="De onde você vai sair?" autocomplete="off">
+      <div id="ac-o" class="acl"></div>
+    </div>
+  </div>
+  <div style="padding-left:5px"><div class="vline"></div></div>
+  <div class="inp-row" style="margin-bottom:12px">
+    <div class="dot d"></div>
+    <div class="acw">
+      <input type="text" id="inpD" placeholder="Para onde?" autocomplete="off">
+      <div id="ac-d" class="acl"></div>
+    </div>
+  </div>
+  <button class="btn prim" id="routeBtn" onclick="calcRota()">Traçar Rota</button>
+  <div id="searchStatus"></div>
+</div>
+
+<!-- ROUTE PANEL -->
+<div id="routePanel" class="bpanel">
+  <div class="handle"></div>
+  <div id="routeHead">
+    <div class="rh-ico">🚗</div>
+    <div>
+      <div class="rh-big" id="rhDist">–</div>
+      <div class="rh-sub"  id="rhTime">–</div>
+      <div class="rh-eta"  id="rhETA">Chegada: –</div>
+    </div>
+  </div>
+  <div id="altsRow"></div>
+  <div id="routeBtns">
+    <button class="btn sec" style="flex:1"  onclick="voltarBusca()">← Voltar</button>
+    <button class="btn go"  style="flex:2"  onclick="iniciarNav()">▶ Iniciar</button>
+  </div>
+</div>
+
+<!-- NAV BOTTOM -->
+<div id="navBottom">
+  <div id="spdBox">
+    <div id="spdVal">0</div>
+    <div id="spdUnit">km/h</div>
+  </div>
+  <div id="navSt">
+    <div id="navRem">–</div>
+    <div id="navETA">–</div>
+    <div id="navTime">–</div>
+  </div>
+  <button class="stop-fab" onclick="pararNav()">✕</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+'use strict';
+/* ═══════════════════════════════════════════════════════
+   MEU MAPA — v3
+   Tiles    : CartoDB Dark Matter
+   Geocoding: Nominatim
+   Routing  : OSRM
+   GPS      : Browser Geolocation API
+═══════════════════════════════════════════════════════ */
+
+// ── MAP INIT ──────────────────────────────────────────
+const map = L.map('map', { zoomControl:false, attributionControl:true })
+              .setView([-3.7172, -38.5433], 13);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution:'© <a href="https://openstreetmap.org">OpenStreetMap</a> © <a href="https://carto.com">CARTO</a>',
+  subdomains:'abcd', maxZoom:20
+}).addTo(map);
+
+// ── STATE ─────────────────────────────────────────────
+const sel  = { O:null, D:null };   // coords selecionadas no autocomplete
+let routes = [], selIdx = 0;       // rotas OSRM
+let oCoord, dCoord;                // coords geocodificadas
+let routeLayers = [], pinLayers = [];
+let gpsMarker = null, accCircle = null;
+let navWatch = null, navSteps = [], navStep = 0;
+let recalcTmr = null, isNav = false;
+let lastHeading = null;
+
+const ADVANCE_M = 25;    // avança step em <Xm do manobra
+const OFFROUTE_M = 90;   // considera fora da rota
+const RECALC_S  = 7;     // segundos antes de recalcular
+
+// ── UTILS ─────────────────────────────────────────────
+function hav(la1,lo1,la2,lo2){
+  const R=6371000,r=Math.PI/180;
+  const a=Math.sin((la2-la1)*r/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin((lo2-lo1)*r/2)**2;
+  return 2*R*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function fmtD(m){
+  if(m<1000) return Math.round(m/10)*10+'m';
+  return (m/1000).toFixed(m<10000?1:0)+'km';
+}
+function fmtT(s){
+  const m=Math.round(s/60);
+  if(m<60) return m+'min';
+  return Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'min';
+}
+function etaHM(s){
+  const d=new Date(Date.now()+s*1000);
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+// ── TOAST ─────────────────────────────────────────────
+let _tt;
+function toast(msg,ms=2600){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('on');
+  clearTimeout(_tt); _tt=setTimeout(()=>el.classList.remove('on'),ms);
+}
+
+// ── MANEUVER ICONS / TEXT ────────────────────────────
+function manobra(type,mod){
+  if(type==='depart')                         return['⬆️','Siga em frente'];
+  if(type==='arrive')                         return['📍','Chegou ao destino!'];
+  if(type==='roundabout'||type==='rotary')    return['🔄','Entre na rotatória'];
+  if(type==='on ramp')                        return['↗️','Entre na pista'];
+  if(type==='off ramp')                       return['↘️','Saia da pista'];
+  if(type==='fork'){
+    if(mod&&mod.includes('right'))            return['↱','Fique pela direita'];
+    return['↰','Fique pela esquerda'];
+  }
+  if(type==='end of road'){
+    if(mod==='right')                         return['➡️','Vire à direita'];
+    return['⬅️','Vire à esquerda'];
+  }
+  if(!mod||mod==='straight')                  return['⬆️','Continue em frente'];
+  if(mod==='slight left')                     return['↖️','Mantenha à esquerda'];
+  if(mod==='slight right')                    return['↗️','Mantenha à direita'];
+  if(mod==='left')                            return['⬅️','Vire à esquerda'];
+  if(mod==='right')                           return['➡️','Vire à direita'];
+  if(mod==='sharp left')                      return['↩️','Vire bastante à esq.'];
+  if(mod==='sharp right')                     return['↪️','Vire bastante à dir.'];
+  if(mod==='uturn')                           return['🔃','Faça o retorno'];
+  return['⬆️','Continue'];
+}
+
+// ── AUTOCOMPLETE ──────────────────────────────────────
+const _acT={};
+function setupAC(inpId,listId,key){
+  const inp=document.getElementById(inpId);
+  const lst=document.getElementById(listId);
+  inp.addEventListener('input',()=>{
+    sel[key]=null;
+    clearTimeout(_acT[key]);
+    const q=inp.value.trim();
+    if(q.length<3){lst.style.display='none';return}
+    _acT[key]=setTimeout(async()=>{
+      try{
+        const r=await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=6&accept-language=pt-BR`,
+          {headers:{'Accept-Language':'pt-BR'}}
+        );
+        const d=await r.json();
+        if(!d.length){lst.style.display='none';return}
+        lst.innerHTML=d.map(x=>{
+          const pts=x.display_name.split(', ');
+          const main=pts.slice(0,2).join(', ');
+          const sub=pts.slice(2,5).join(', ');
+          return`<div class="aci" data-lat="${x.lat}" data-lon="${x.lon}">
+            <div class="am">${main}</div>
+            ${sub?`<div class="as">${sub}</div>`:''}
+          </div>`;
+        }).join('');
+        lst.querySelectorAll('.aci').forEach(el=>{
+          const pick=()=>{
+            inp.value=el.querySelector('.am').textContent;
+            sel[key]={lat:+el.dataset.lat,lon:+el.dataset.lon};
+            lst.style.display='none';
+          };
+          el.addEventListener('mousedown',e=>{e.preventDefault();pick()});
+          el.addEventListener('touchend', e=>{e.preventDefault();pick()});
+        });
+        lst.style.display='block';
+      }catch{lst.style.display='none'}
+    },320);
+  });
+  inp.addEventListener('blur',()=>setTimeout(()=>lst.style.display='none',200));
+}
+setupAC('inpO','ac-o','O');
+setupAC('inpD','ac-d','D');
+
+// ── GEOCODE ───────────────────────────────────────────
+async function geocode(text,key){
+  if(sel[key]) return sel[key];
+  const r=await fetch(
+    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(text)}&limit=1&accept-language=pt-BR`
+  );
+  const d=await r.json();
+  if(!d.length) throw new Error(`"${text}" não encontrado`);
+  return{lat:+d[0].lat,lon:+d[0].lon};
+}
+
+// ── MY LOCATION ───────────────────────────────────────
+function centerOnMe(){
+  if(!navigator.geolocation){toast('GPS não disponível');return}
+  navigator.geolocation.getCurrentPosition(
+    p=>{map.setView([p.coords.latitude,p.coords.longitude],16);},
+    ()=>toast('Não consegui obter sua localização')
+  );
+}
+
+// ── CLEAR MAP ─────────────────────────────────────────
+function clearMapLayers(){
+  routeLayers.forEach(l=>map.removeLayer(l)); routeLayers=[];
+  pinLayers.forEach(l=>map.removeLayer(l));   pinLayers=[];
+}
+
+// ── ROUTE LINES ───────────────────────────────────────
+function drawRoutes(routeList,active){
+  routeLayers.forEach(l=>map.removeLayer(l)); routeLayers=[];
+  routeList.forEach((r,i)=>{
+    const coords=r.geometry.coordinates.map(c=>[c[1],c[0]]);
+    const L2=L.polyline(coords,{
+      color:i===active?'#e94560':'#444466',
+      weight:i===active?7:5,
+      opacity:i===active?.95:.55,
+      lineJoin:'round',lineCap:'round'
+    }).addTo(map);
+    if(i===active) L2.bringToFront();
+    routeLayers.push(L2);
+  });
+  if(routeLayers[active]) map.fitBounds(routeLayers[active].getBounds(),{padding:[56,56]});
+}
+
+// ── CALCULATE ROUTE ───────────────────────────────────
+async function calcRota(silent=false){
+  const oTxt=document.getElementById('inpO').value.trim();
+  const dTxt=document.getElementById('inpD').value.trim();
+  const btn=document.getElementById('routeBtn');
+  const st=document.getElementById('searchStatus');
+
+  if(!silent&&(!oTxt||!dTxt)){
+    st.className='err';st.textContent='⚠️ Preencha os dois campos.';return;
+  }
+  if(!silent){btn.disabled=true;btn.textContent='Calculando…';st.className='';st.textContent='Buscando endereços…'}
+  try{
+    oCoord=silent?oCoord:await geocode(oTxt,'O');
+    dCoord=await geocode(dTxt,'D');
+    if(!silent) st.textContent='Calculando rotas…';
+
+    const url=`https://router.project-osrm.org/route/v1/driving/`+
+      `${oCoord.lon},${oCoord.lat};${dCoord.lon},${dCoord.lat}`+
+      `?overview=full&geometries=geojson&steps=true&alternatives=true`;
+    const data=await(await fetch(url)).json();
+    if(data.code!=='Ok') throw new Error('Rota não encontrada.');
+    routes=data.routes; selIdx=0;
+
+    clearMapLayers();
+
+    // Origin & dest pins
+    const pinO=L.circleMarker([oCoord.lat,oCoord.lon],
+      {radius:9,fillColor:'#22c55e',color:'#fff',weight:2.5,fillOpacity:1}).addTo(map);
+    const pinD=L.circleMarker([dCoord.lat,dCoord.lon],
+      {radius:9,fillColor:'#e94560',color:'#fff',weight:2.5,fillOpacity:1}).addTo(map);
+    pinLayers.push(pinO,pinD);
+
+    drawRoutes(routes,0);
+
+    if(!silent){
+      showRoutePanel();
+    } else {
+      // Silent recalc during nav
+      setNavSteps(routes[0].legs.flatMap(l=>l.steps));
+      toast('✅ Rota recalculada');
+      const rb=document.getElementById('recalcBar');
+      rb.classList.remove('run'); void rb.offsetWidth; rb.style.width='100%';
+      setTimeout(()=>{rb.style.width='0';},400);
+    }
+  }catch(e){
+    if(!silent){st.className='err';st.textContent='❌ '+e.message;}
+    else toast('Recalculo falhou: '+e.message);
+  }finally{
+    if(!silent){btn.disabled=false;btn.textContent='Traçar Rota'}
+  }
+}
+
+// ── ROUTE PANEL ───────────────────────────────────────
+function showRoutePanel(){
+  const r=routes[selIdx];
+  document.getElementById('rhDist').textContent=fmtD(r.distance);
+  document.getElementById('rhTime').textContent=fmtT(r.duration);
+  document.getElementById('rhETA').textContent='Chegada: '+etaHM(r.duration);
+
+  const ar=document.getElementById('altsRow');
+  if(routes.length>1){
+    ar.innerHTML=routes.map((x,i)=>`
+      <div class="altc ${i===selIdx?'sel':''}" data-i="${i}">
+        <div class="at">${fmtT(x.duration)}</div>
+        <div class="ad">${fmtD(x.distance)}</div>
+        <div class="al">Rota ${i+1}</div>
+      </div>`).join('');
+    ar.querySelectorAll('.altc').forEach(c=>{
+      c.addEventListener('click',()=>{
+        selIdx=+c.dataset.i;
+        const r2=routes[selIdx];
+        document.getElementById('rhDist').textContent=fmtD(r2.distance);
+        document.getElementById('rhTime').textContent=fmtT(r2.duration);
+        document.getElementById('rhETA').textContent='Chegada: '+etaHM(r2.duration);
+        drawRoutes(routes,selIdx);
+        ar.querySelectorAll('.altc').forEach(x=>x.classList.toggle('sel',x===c));
+      });
+    });
+  } else {ar.innerHTML=''}
+
+  showPanel('route');
+}
+
+function voltarBusca(){
+  clearMapLayers();
+  document.getElementById('inpO').value='';
+  document.getElementById('inpD').value='';
+  sel.O=sel.D=null; routes=[];
+  showPanel('search');
+}
+
+// ── PANEL SWITCHER ────────────────────────────────────
+function showPanel(which){
+  document.getElementById('searchPanel').style.display=which==='search'?'':'none';
+  document.getElementById('routePanel').style.display =which==='route' ?'':'none';
+  // 'nav' hides both
+}
+
+// ── NAV STEPS ─────────────────────────────────────────
+function setNavSteps(steps){
+  navSteps=steps;
+  // Start from first non-depart step
+  navStep=steps.findIndex(s=>s.maneuver.type!=='depart');
+  if(navStep<0) navStep=0;
+}
+
+// ── START NAV ─────────────────────────────────────────
+function iniciarNav(){
+  if(!navigator.geolocation){
+    toast('GPS não disponível — abra via HTTPS');return;
+  }
+  setNavSteps(routes[selIdx].legs.flatMap(l=>l.steps));
+  isNav=true;
+
+  showPanel('nav');
+  document.getElementById('navTop').classList.add('on');
+  document.getElementById('navBottom').classList.add('on');
+  document.getElementById('fabs').style.bottom='90px';
+
+  drawRoutes([routes[selIdx]],0);
+
+  navWatch=navigator.geolocation.watchPosition(
+    onGPS,
+    e=>toast('GPS: '+(e.code===1?'Permissão negada — ative nas configs':'Erro GPS'),4000),
+    {enableHighAccuracy:true,maximumAge:800,timeout:12000}
+  );
+}
+
+// ── GPS UPDATE ────────────────────────────────────────
+function onGPS(pos){
+  const{latitude:la,longitude:lo,speed,accuracy,heading}=pos.coords;
+
+  // GPS marker (blue dot or arrow with heading)
+  const hasHead=heading!=null&&!isNaN(heading)&&speed!=null&&speed>0.5;
+  const icon=L.divIcon({
+    className:'',
+    html: hasHead
+      ? `<div style="transform:rotate(${heading}deg);transform-origin:50% 70%">
+           <div class="gps-arrow"></div></div>`
+      : `<div class="gps-dot"></div>`,
+    iconSize:[16,16],iconAnchor:[8,8]
+  });
+
+  if(!gpsMarker){
+    gpsMarker=L.marker([la,lo],{icon,zIndexOffset:1000}).addTo(map);
+  } else {
+    gpsMarker.setLatLng([la,lo]).setIcon(icon);
+  }
+
+  if(!accCircle){
+    accCircle=L.circle([la,lo],{
+      radius:accuracy||20,
+      color:  'rgba(59,130,246,.15)',
+      fillColor:'rgba(59,130,246,.08)',
+      fillOpacity:1,weight:1
+    }).addTo(map);
+  } else {
+    accCircle.setLatLng([la,lo]).setRadius(accuracy||20);
+  }
+
+  map.setView([la,lo],Math.max(map.getZoom(),16));
+
+  // Speed km/h
+  const kmh=speed!=null&&speed>0?Math.round(speed*3.6):0;
+  const sv=document.getElementById('spdVal');
+  sv.textContent=kmh;
+  sv.className=kmh>80?'speeding':'';
+
+  if(navSteps.length) updateNav(la,lo);
+  if(isNav) checkOffRoute(la,lo);
+}
+
+// ── NAV UI UPDATE ─────────────────────────────────────
+function updateNav(la,lo){
+  // Advance steps
+  while(navStep<navSteps.length-1){
+    const loc=navSteps[navStep].maneuver.location;
+    if(hav(la,lo,loc[1],loc[0])<ADVANCE_M) navStep++;
+    else break;
+  }
+  const st=navSteps[navStep];
+  if(!st) return;
+  const loc=st.maneuver.location;
+  const dn=hav(la,lo,loc[1],loc[0]);
+
+  const[icon,inst]=manobra(st.maneuver.type,st.maneuver.modifier);
+  const prevName=navStep>0?navSteps[navStep-1].name:'';
+
+  document.getElementById('navIconBox').textContent=icon;
+  document.getElementById('navInst').textContent=inst;
+  document.getElementById('navRoad').textContent=st.name||prevName||'';
+
+  // Distance to next maneuver
+  const dv=document.getElementById('navDistVal');
+  const du=document.getElementById('navDistUnit');
+  if(dn<950){dv.textContent=Math.round(dn/10)*10;du.textContent='m'}
+  else{dv.textContent=(dn/1000).toFixed(1);du.textContent='km'}
+
+  // Remaining
+  const remD=navSteps.slice(navStep).reduce((s,x)=>s+x.distance,0);
+  const remT=navSteps.slice(navStep).reduce((s,x)=>s+x.duration,0);
+  document.getElementById('navRem').textContent=fmtD(remD);
+  document.getElementById('navETA').textContent='Chegada: '+etaHM(remT);
+  document.getElementById('navTime').textContent=fmtT(remT)+' restantes';
+
+  if(st.maneuver.type==='arrive'){
+    toast('🏁 Você chegou ao destino!',6000);
+    setTimeout(pararNav,7000);
+  }
+}
+
+// ── OFF-ROUTE ─────────────────────────────────────────
+function checkOffRoute(la,lo){
+  if(!navSteps.length||navSteps[navStep]?.maneuver.type==='arrive') return;
+
+  // Distance to nearest upcoming step maneuver
+  let minD=Infinity;
+  for(let i=navStep;i<Math.min(navStep+5,navSteps.length);i++){
+    const loc=navSteps[i].maneuver.location;
+    minD=Math.min(minD,hav(la,lo,loc[1],loc[0]));
+  }
+  if(minD>OFFROUTE_M){
+    if(!recalcTmr){
+      const rb=document.getElementById('recalcBar');
+      rb.classList.add('run');
+      toast('Fora da rota — recalculando…',8000);
+      recalcTmr=setTimeout(()=>{
+        recalcTmr=null;
+        // Update origin to current pos and recalculate silently
+        oCoord={lat:la,lon:lo};
+        sel.O={lat:la,lon:lo};
+        document.getElementById('inpO').value=`${la.toFixed(5)}, ${lo.toFixed(5)}`;
+        calcRota(true);
+      },RECALC_S*1000);
+    }
+  } else {
+    if(recalcTmr){
+      clearTimeout(recalcTmr);recalcTmr=null;
+      const rb=document.getElementById('recalcBar');
+      rb.classList.remove('run');rb.style.width='0';
+    }
+  }
+}
+
+// ── STOP NAV ──────────────────────────────────────────
+function pararNav(){
+  isNav=false;
+  if(navWatch){navigator.geolocation.clearWatch(navWatch);navWatch=null}
+  if(gpsMarker){map.removeLayer(gpsMarker);gpsMarker=null}
+  if(accCircle){map.removeLayer(accCircle);accCircle=null}
+  if(recalcTmr){clearTimeout(recalcTmr);recalcTmr=null}
+  document.getElementById('navTop').classList.remove('on');
+  document.getElementById('navBottom').classList.remove('on');
+  document.getElementById('fabs').style.bottom='';
+  if(routes.length) showRoutePanel();
+  else showPanel('search');
+}
+
+// ── KEYBOARD ──────────────────────────────────────────
+document.getElementById('inpO').addEventListener('keydown',e=>e.key==='Enter'&&document.getElementById('inpD').focus());
+document.getElementById('inpD').addEventListener('keydown',e=>e.key==='Enter'&&calcRota());
+
+// ── INIT ──────────────────────────────────────────────
+showPanel('search');
+</script>
+</body>
+</html>
