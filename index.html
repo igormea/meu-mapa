@@ -188,6 +188,7 @@ body.nav #feed{top:calc(104px + env(safe-area-inset-top))}
 #fabs{position:fixed;right:12px;bottom:220px;z-index:55;display:flex;flex-direction:column;gap:9px}
 body.preview #fabs{bottom:330px}
 body.nav #fabs{bottom:150px}
+body.arrive #fabs{display:none}
 .fab{width:46px;height:46px;border-radius:50%;background:linear-gradient(180deg,var(--wood2),var(--wood));border:2px solid var(--edge);color:var(--gold2);font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.5)}
 #recenterBtn{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:160px;z-index:110;padding:10px 18px;border-radius:22px;font:700 14px var(--px);background:linear-gradient(180deg,#f3cf6e,#c8912f);color:var(--ink);border:2px solid #7a5420;box-shadow:0 4px 14px rgba(0,0,0,.5)}
 #simBadge{display:none;position:fixed;left:10px;bottom:150px;z-index:110;font:700 11px var(--px);padding:6px 10px;border-radius:9px;background:#4c1d95;color:#fff;border:1.5px solid #c4b5fd;cursor:pointer}
@@ -866,7 +867,7 @@ function cancelRoute(){
 function panel(w){
   ['searchPanel','routePanel','arrivePanel'].forEach(id=>$(id).style.display='none');
   if(w!=='none')$(w+'Panel').style.display='block';
-  document.body.classList.toggle('preview',w==='route');
+  document.body.classList.toggle('preview',w==='route');document.body.classList.toggle('arrive',w==='arrive');
 }
 
 /* ── NAVEGAÇÃO ───────────────────────────────────────── */
