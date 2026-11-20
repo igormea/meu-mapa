@@ -836,7 +836,10 @@ async function osrm(o,d,alt){
   const b=o.hdg!=null?`&bearings=${Math.round(o.hdg)%360},60;&radiuses=${Math.round(Math.min(60,Math.max(25,o.acc||25)))};unlimited`:'';
   const url=`https://router.project-osrm.org/route/v1/driving/${o.lon},${o.lat};${d.lon},${d.lat}?overview=full&geometries=geojson&steps=true&alternatives=${alt}${b}`;
   const j=await(await fetch(url)).json();
-  if(j.code!=='Ok'||!j.routes?.length)throw new Error('Não encontrei caminho até lá');
+  if(j.code!=='Ok'||!j.routes?.length){
+    if(b)return osrm({lat:o.lat,lon:o.lon},d,alt);   // sem via no sentido informado → tenta sem direção
+    throw new Error('Não encontrei caminho até lá');
+  }
   return j.routes;
 }
 function buildRoute(r){
