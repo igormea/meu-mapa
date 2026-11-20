@@ -677,7 +677,7 @@ function onFix(f){
     if(brg!=null){const rel=((brg-map.getBearing())%360+360)%360;spr.classList.toggle('flip',rel>180)}
   }
   if(isNav)follow(lat,lon,brg,f.spd,dur);
-  else if(followIdle){if(first)map.jumpTo({center:[lon,lat],zoom:16});else map.easeTo({center:[lon,lat],duration:dur,easing:t=>t})}
+  else if(followIdle&&Date.now()>camBusyUntil){if(first)map.jumpTo({center:[lon,lat],zoom:16});else map.easeTo({center:[lon,lat],duration:dur,easing:t=>t})}
   prevDraw=[lat,lon];
   hud();if(!isNav)save();
 }
@@ -702,7 +702,7 @@ function enterNavCamera(lat,lon,brg){
     offset:[0,map.getContainer().clientHeight*.2],duration:2300,curve:1.2});
 }
 function exitNavCamera(lat,lon){
-  camBrg=null;camBusyUntil=0;
+  camBrg=null;camBusyUntil=Date.now()+1400;
   map.easeTo({center:lat!=null?[lon,lat]:map.getCenter(),zoom:16,pitch:0,bearing:0,offset:[0,0],duration:1200});
 }
 function userMoved(e){
