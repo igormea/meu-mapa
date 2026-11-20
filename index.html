@@ -2,714 +2,1094 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Meu Mapa</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#2a1c12">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Meu Mapa RPG</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  --accent: #e94560;
-  --accent2: #ff6b6b;
-  --green:  #22c55e;
-  --blue:   #3b82f6;
-  --bg:     #12122a;
-  --bg2:    #1a1a3a;
-  --bg3:    #22224a;
-  --text:   #f0f0f0;
-  --muted:  #8888aa;
-  --panel:  rgba(18,18,42,.96);
-  --radius: 14px;
+:root{
+  --wood:#2a1c12;--wood2:#3a281a;--edge:#6b4e2e;
+  --gold:#e0b04c;--gold2:#f6d77e;--parch:#f2e2bf;--ink:#2b1d10;
+  --text:#f3e6c8;--muted:#b59f7b;--green:#7fd35a;
+  --px:'Pixelify Sans',system-ui,sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;background:#000;color:var(--text)}
+html,body{height:100%;overflow:hidden;background:#1a120b;color:var(--text);font-family:'Segoe UI',system-ui,sans-serif}
+button{font-family:inherit}
 
-/* ───── MAP ───── */
-#map{position:fixed;inset:0;z-index:1}
+/* ───── MAPA ───── */
+#map{position:fixed;inset:0;z-index:1;background:#d9c8a0}
+body.night #map{background:#1b1a22}
+body.day .leaflet-tile-pane{filter:sepia(.55) saturate(1.3) hue-rotate(-10deg) brightness(.96) contrast(1.04)}
+body.night .leaflet-tile-pane{filter:invert(.9) hue-rotate(180deg) sepia(.35) saturate(1.3) brightness(.9) contrast(1.1)}
 .leaflet-control-zoom{display:none!important}
-.leaflet-control-attribution{font-size:9px!important;background:rgba(0,0,0,.5)!important;color:#666!important}
-.leaflet-control-attribution a{color:#555!important}
+.leaflet-control-attribution{font-size:9px!important;background:rgba(42,28,18,.6)!important;color:#b59f7b!important}
+.leaflet-control-attribution a{color:#d8c39a!important}
+#vignette{position:fixed;inset:0;z-index:2;pointer-events:none;box-shadow:inset 0 0 90px 20px rgba(40,22,8,.5)}
+body.night #vignette{box-shadow:inset 0 0 110px 30px rgba(0,0,0,.7)}
 
-/* ───── GPS MARKER ───── */
-@keyframes gpsPulse{0%{box-shadow:0 0 0 0 rgba(59,130,246,.7)}100%{box-shadow:0 0 0 18px rgba(59,130,246,0)}}
-.gps-dot{
-  width:16px;height:16px;background:var(--blue);
-  border:3px solid #fff;border-radius:50%;
-  animation:gpsPulse 2s infinite;
-}
-.gps-arrow{
-  width:0;height:0;position:relative;
-  border-left:7px solid transparent;
-  border-right:7px solid transparent;
-  border-bottom:14px solid var(--blue);
-  margin:-5px 0 0 1px;
-  filter:drop-shadow(0 0 3px rgba(59,130,246,.8));
-}
+/* ───── SPRITES ───── */
+.sp svg{width:100%;height:100%;display:block;image-rendering:pixelated;shape-rendering:crispEdges}
+.sp .fb{opacity:0}
+.sp.walk .fa{animation:fA .44s steps(1) infinite}
+.sp.walk .fb{animation:fB .44s steps(1) infinite}
+.sp.walk svg{animation:bob .44s steps(2) infinite}
+@keyframes fA{0%{opacity:1}50%{opacity:0}}
+@keyframes fB{0%{opacity:0}50%{opacity:1}}
+@keyframes bob{0%{transform:translateY(0)}50%{transform:translateY(-2px)}}
 
-/* ───── NAV TOP ───── */
-#navTop{
-  position:fixed;top:0;left:0;right:0;z-index:100;
-  background:var(--bg);border-bottom:3px solid var(--accent);
-  padding:12px 14px 10px;display:none;align-items:center;gap:12px;
-  box-shadow:0 6px 24px rgba(0,0,0,.7);
-}
+/* ───── HERÓI NO MAPA ───── */
+.leaflet-marker-icon.smooth{transition:transform 1s linear}
+.pl{position:relative;width:44px;height:60px}
+.pl-ring{position:absolute;left:50%;bottom:2px;width:32px;height:11px;margin-left:-16px;border-radius:50%;background:rgba(0,0,0,.38)}
+.pl-ring::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--gold);animation:ringP 1.8s infinite}
+@keyframes ringP{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.7);opacity:0}}
+.spr{position:absolute;left:1px;bottom:6px;width:42px;height:49px;filter:drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000)}
+.spr.flip{transform:scaleX(-1)}
+.pl-lv{position:absolute;top:-15px;left:50%;transform:translateX(-50%);font:600 10px var(--px);background:var(--wood);color:var(--gold2);border:1px solid var(--gold);border-radius:6px;padding:0 5px;white-space:nowrap}
+.float{position:absolute;left:50%;top:0;font:700 14px var(--px);color:var(--gold2);text-shadow:0 0 3px #000,0 0 3px #000;white-space:nowrap;animation:floatUp 1.6s ease-out forwards;pointer-events:none}
+.float.xp{color:#c3bbff}.float.hp{color:#ff7a70}
+@keyframes floatUp{0%{transform:translate(-50%,0);opacity:0}15%{opacity:1}100%{transform:translate(-50%,-50px);opacity:0}}
+
+/* ───── MONSTROS ───── */
+.mon{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 50% 40%,#5a3b22,#2a1c12);border:2px solid #8a6a3e;display:flex;align-items:center;justify-content:center;font-size:21px;box-shadow:0 2px 6px rgba(0,0,0,.6);animation:mBob 1.6s ease-in-out infinite}
+.mon.elite{border-color:var(--gold);box-shadow:0 0 10px var(--gold)}
+.mon.dragon{border-color:#ff5a3c;box-shadow:0 0 16px #ff5a3c;font-size:25px}
+.mon.dead{animation:poof .6s forwards}
+@keyframes mBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes poof{0%{transform:scale(1);opacity:1}40%{transform:scale(1.5);opacity:.8;filter:brightness(3)}100%{transform:scale(.2);opacity:0}}
+.castle{font-size:32px;filter:drop-shadow(0 0 6px var(--gold2)) drop-shadow(0 2px 2px #000);animation:mBob 2s infinite}
+
+/* ───── HUD ───── */
+.wood{background:linear-gradient(180deg,var(--wood2),var(--wood));border:2px solid var(--edge);box-shadow:0 4px 18px rgba(0,0,0,.6)}
+#hud{position:fixed;top:calc(10px + env(safe-area-inset-top));left:10px;z-index:60;display:flex;align-items:center;gap:9px;padding:7px 12px 7px 7px;border-radius:14px;cursor:pointer}
+#hudAva{width:40px;height:46px;flex-shrink:0;background:radial-gradient(circle,#4d3624,#2a1c12);border:2px solid var(--gold);border-radius:10px;padding:2px 4px}
+#hudName{font:700 14px var(--px);color:var(--gold2);white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis}
+#hudSub{font:400 11px var(--px);color:var(--muted);margin-top:1px}
+.bar{height:6px;background:#1a110a;border:1px solid #000;border-radius:3px;overflow:hidden;margin-top:3px;width:120px}
+.bar i{display:block;height:100%;width:0;transition:width .6s}
+.bar.hp i{background:linear-gradient(90deg,#a3221d,#e5534b)}
+.bar.xp i{background:linear-gradient(90deg,#5b4bd6,#a89bff)}
+#hudGold{font:700 13px var(--px);color:var(--gold2);align-self:flex-start;white-space:nowrap}
+
+/* ───── PAINÉIS ───── */
+.bpanel{position:fixed;bottom:0;left:0;right:0;z-index:50;border-radius:18px 18px 0 0;padding:8px 14px calc(18px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#3d2a1b,#24180f);border-top:3px solid var(--gold);box-shadow:0 -6px 30px rgba(0,0,0,.6)}
+.handle{width:38px;height:4px;background:var(--edge);border-radius:2px;margin:0 auto 10px}
+.ttl{font:700 17px var(--px);color:var(--gold2);margin-bottom:9px}
+input[type=text]{width:100%;padding:12px 14px;background:#1c130b;border:2px solid var(--edge);border-radius:11px;color:var(--parch);font-size:16px;outline:none}
+input:focus{border-color:var(--gold)}
+input::placeholder{color:#7a6446}
+.acw{position:relative}
+.acl{display:none;position:absolute;bottom:calc(100% + 4px);left:0;right:0;background:#1f150d;border:2px solid var(--edge);border-radius:11px;z-index:400;max-height:240px;overflow-y:auto;box-shadow:0 -6px 20px rgba(0,0,0,.5)}
+.aci{padding:10px 14px;cursor:pointer;border-bottom:1px solid #33241a}
+.aci:last-child{border-bottom:none}
+.aci:active,.aci:hover{background:#3a281a}
+.am{font-size:14px;font-weight:600;color:var(--parch)}
+.as{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#originRow{font-size:12px;color:var(--muted);margin:9px 2px 0}
+#originRow b{color:var(--parch);font-weight:600}
+#originRow a{color:var(--gold);text-decoration:underline;cursor:pointer}
+#originBox{display:none;margin-top:8px}
+#recents{display:flex;gap:7px;overflow-x:auto;margin-top:10px;scrollbar-width:none}
+#recents::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;padding:7px 11px;border-radius:20px;background:#1c130b;border:1.5px solid var(--edge);font-size:12px;color:var(--parch);cursor:pointer;max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip:active{background:#3a281a}
+#searchStatus{text-align:center;font-size:12.5px;color:var(--muted);min-height:15px;margin-top:8px}
+#searchStatus.err{color:#ff8a7a}
+.btn{width:100%;padding:13px;border:none;border-radius:12px;font:700 16px var(--px);cursor:pointer;transition:transform .1s}
+.btn:active{transform:scale(.97)}
+.btn.prim{background:linear-gradient(180deg,#f3cf6e,#c8912f);color:var(--ink);border:2px solid #7a5420}
+.btn.go{background:linear-gradient(180deg,#e0573f,#a52a1c);color:#fff3dc;border:2px solid #5e170f;position:relative;overflow:hidden}
+.btn.go .cd{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(255,255,255,.2)}
+.btn.sec{background:#1c130b;color:var(--muted);border:2px solid var(--edge)}
+
+#routePanel,#arrivePanel{display:none}
+#questName{font:700 15px var(--px);color:var(--gold2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#routeHead{display:flex;align-items:baseline;gap:10px;margin:6px 0 4px;flex-wrap:wrap}
+.rh-big{font:700 28px var(--px);color:var(--parch)}
+.rh-sub{font-size:14px;color:var(--muted)}
+#rewards{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+#rewards b{color:var(--gold2)}
+#altsRow{display:flex;gap:8px;margin-bottom:12px}
+.altc{flex:1;padding:8px;text-align:center;background:#1c130b;border:2px solid var(--edge);border-radius:10px;cursor:pointer}
+.altc.sel{border-color:var(--gold);background:#3a2a16}
+.altc .at{font:700 15px var(--px);color:var(--parch)}
+.altc .ad{font-size:11px;color:var(--muted)}
+#routeBtns{display:flex;gap:9px}
+#simLink{display:block;text-align:center;font-size:12px;color:var(--muted);margin-top:11px;text-decoration:underline;cursor:pointer}
+
+#arrivePanel{text-align:center}
+.ar-t{font:700 24px var(--px);color:var(--gold2);text-shadow:0 2px 0 #000}
+.ar-d{font-size:13px;color:var(--muted);margin:3px 0 12px}
+.ar-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.ar-c{background:#1c130b;border:2px solid var(--edge);border-radius:10px;padding:8px 4px}
+.ar-c .v{font:700 17px var(--px);color:var(--parch)}
+.ar-c .k{font-size:10.5px;color:var(--muted);margin-top:2px}
+#arLoot{font-size:13px;margin-bottom:12px}
+
+/* ───── NAVEGAÇÃO ───── */
+#navTop{position:fixed;top:0;left:0;right:0;z-index:100;display:none;align-items:center;gap:12px;padding:calc(12px + env(safe-area-inset-top)) 14px 12px;background:linear-gradient(180deg,#f4e4bf,#e2cc98);color:var(--ink);border-bottom:4px solid #8a6230;box-shadow:0 6px 22px rgba(0,0,0,.55)}
 #navTop.on{display:flex}
-#navIconBox{font-size:40px;line-height:1;flex-shrink:0;text-align:center;min-width:46px}
+#navIconBox{font-size:38px;min-width:46px;text-align:center}
 #navMeta{flex:1;min-width:0}
-#navInst{font-size:17px;font-weight:700;line-height:1.2}
-#navRoad{font-size:12px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#navDistBox{text-align:right;flex-shrink:0}
-#navDistVal{font-size:22px;font-weight:800;color:var(--accent);line-height:1}
-#navDistUnit{font-size:11px;color:var(--muted)}
+#navInst{font:700 19px var(--px);line-height:1.15}
+#navRoad{font-size:13px;color:#6b4e2e;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+#navDistBox{text-align:right}
+#navDistVal{font:700 26px var(--px);color:#8a2a1a;line-height:1}
+#navDistUnit{font-size:11px;color:#6b4e2e}
+#navBottom{position:fixed;bottom:0;left:0;right:0;z-index:100;display:none;flex-direction:column;padding:10px 14px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#3d2a1b,#24180f);border-top:3px solid var(--gold);box-shadow:0 -6px 24px rgba(0,0,0,.6)}
+#navBottom.on{display:flex}
+.nb-row{display:flex;align-items:center;gap:11px}
+#spdBox{text-align:center;min-width:62px;background:#1c130b;border:2px solid var(--edge);border-radius:12px;padding:5px 4px}
+#spdVal{font:700 26px var(--px);line-height:1;color:var(--parch)}
+#spdVal.fast{color:#ff7a62}
+#spdUnit{font-size:9.5px;color:var(--muted)}
+#navSt{flex:1;min-width:0}
+#navRem{font:700 17px var(--px);color:var(--parch);white-space:nowrap}
+#navETA{font-size:13px;color:var(--green);margin-top:2px}
+#navMount{font-size:11.5px;color:var(--muted);margin-top:2px}
+.rbtn{width:46px;height:46px;border-radius:50%;border:2px solid var(--edge);background:#1c130b;color:var(--parch);font-size:19px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.rbtn.stop{background:#a52a1c;border-color:#5e170f;color:#fff}
+#nbXp{display:flex;align-items:center;gap:8px;margin-top:9px;font:600 11px var(--px);color:var(--muted)}
+#nbXp .bar{flex:1;width:auto;margin:0}
+#nbKills{color:var(--gold2)}
 
-/* ───── RECALC BAR ───── */
-@keyframes recalcSlide{0%{width:0}100%{width:100%}}
-#recalcBar{
-  position:fixed;top:0;left:0;height:3px;width:0;
-  background:linear-gradient(90deg,var(--accent),var(--accent2));
-  z-index:200;transition:opacity .3s;
-}
-#recalcBar.run{animation:recalcSlide 5s linear forwards}
-
-/* ───── TOAST ───── */
-#toast{
-  position:fixed;top:70px;left:50%;transform:translateX(-50%);
-  background:var(--bg3);color:var(--text);
-  padding:9px 20px;border-radius:20px;
-  font-size:13px;z-index:300;
-  opacity:0;transition:opacity .3s;pointer-events:none;
-  white-space:nowrap;border:1px solid var(--bg3);
-  box-shadow:0 4px 16px rgba(0,0,0,.5);
-}
+/* ───── FEED / AVISOS ───── */
+#feed{position:fixed;left:50%;transform:translateX(-50%);top:calc(84px + env(safe-area-inset-top));z-index:120;display:flex;flex-direction:column;gap:6px;width:min(92vw,380px);pointer-events:none}
+body.nav #feed{top:calc(104px + env(safe-area-inset-top))}
+.card{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;background:rgba(36,24,15,.95);border:2px solid var(--edge);box-shadow:0 4px 14px rgba(0,0,0,.6);animation:cardIn .3s ease-out}
+.card.out{animation:cardOut .4s forwards}
+.card .ce{font-size:28px;line-height:1}
+.card .ct{font:700 13.5px var(--px);color:var(--parch)}
+.card .cs{font-size:12px;color:var(--muted);margin-top:2px}
+.card .cs b{color:var(--gold2)}
+.card.lose{border-color:#a52a1c}.card.gold{border-color:var(--gold)}
+.card.epic{border-color:#c084fc;box-shadow:0 0 14px rgba(192,132,252,.5)}
+@keyframes cardIn{from{transform:translateY(-14px) scale(.95);opacity:0}to{transform:none;opacity:1}}
+@keyframes cardOut{to{transform:translateY(-10px);opacity:0}}
+#lvlUp{position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;background:radial-gradient(circle,rgba(246,215,126,.35),transparent 60%)}
+#lvlUp.on{display:flex;animation:lvlFade 2.8s forwards}
+#lvlUp .l1{font:700 20px var(--px);color:#fff3cf;text-shadow:0 0 8px #000,0 2px 0 #7a5420;letter-spacing:4px}
+#lvlUp .l2{font:700 68px var(--px);color:var(--gold2);text-shadow:0 0 18px rgba(246,215,126,.9),0 4px 0 #7a5420,0 0 4px #000}
+#lvlUp .l3{font:600 14px var(--px);color:#fff3cf;text-shadow:0 0 6px #000;margin-top:4px}
+@keyframes lvlFade{0%{opacity:0;transform:scale(.6)}12%{opacity:1;transform:scale(1.08)}20%{transform:scale(1)}80%{opacity:1}100%{opacity:0}}
+#toast{position:fixed;bottom:50%;left:50%;transform:translateX(-50%);background:rgba(28,19,11,.95);color:var(--parch);padding:9px 18px;border-radius:20px;font-size:13px;z-index:700;opacity:0;transition:opacity .3s;pointer-events:none;border:1.5px solid var(--edge);white-space:nowrap}
 #toast.on{opacity:1}
 
-/* ───── FABs ───── */
-#fabs{position:fixed;right:12px;bottom:200px;z-index:50;display:flex;flex-direction:column;gap:9px}
-.fab{
-  width:44px;height:44px;border-radius:50%;border:none;
-  background:var(--panel);color:var(--text);font-size:19px;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  box-shadow:0 2px 12px rgba(0,0,0,.5);backdrop-filter:blur(12px);
-  transition:transform .1s;border:1px solid rgba(255,255,255,.07);
-}
-.fab:active{transform:scale(.88)}
-#myLocBtn.tracking{background:var(--blue);color:#fff}
+/* ───── BOTÕES FLUTUANTES ───── */
+#fabs{position:fixed;right:12px;bottom:220px;z-index:55;display:flex;flex-direction:column;gap:9px}
+body.preview #fabs{bottom:330px}
+body.nav #fabs{bottom:150px}
+.fab{width:46px;height:46px;border-radius:50%;background:linear-gradient(180deg,var(--wood2),var(--wood));border:2px solid var(--edge);color:var(--gold2);font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+#recenterBtn{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:160px;z-index:110;padding:10px 18px;border-radius:22px;font:700 14px var(--px);background:linear-gradient(180deg,#f3cf6e,#c8912f);color:var(--ink);border:2px solid #7a5420;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+#simBadge{display:none;position:fixed;left:10px;bottom:150px;z-index:110;font:700 11px var(--px);padding:6px 10px;border-radius:9px;background:#4c1d95;color:#fff;border:1.5px solid #c4b5fd;cursor:pointer}
 
-/* ───── BOTTOM PANELS ───── */
-.bpanel{
-  position:fixed;bottom:0;left:0;right:0;z-index:50;
-  background:var(--panel);border-radius:20px 20px 0 0;
-  box-shadow:0 -6px 30px rgba(0,0,0,.6);
-  backdrop-filter:blur(20px);padding:8px 16px 28px;
-  border-top:1px solid rgba(255,255,255,.06);
-  transition:transform .3s ease;
-}
-.handle{width:36px;height:4px;background:var(--bg3);border-radius:2px;margin:0 auto 14px}
+/* ───── FICHA DO HERÓI ───── */
+#sheet{position:fixed;inset:0;z-index:300;display:none;background:rgba(0,0,0,.55)}
+#sheet.on{display:block}
+#sheetBox{position:absolute;left:0;right:0;bottom:0;max-height:88vh;display:flex;flex-direction:column;border-radius:18px 18px 0 0;background:linear-gradient(180deg,#3d2a1b,#1f150d);border-top:3px solid var(--gold);padding:10px 14px calc(16px + env(safe-area-inset-bottom))}
+#tabs{display:flex;gap:6px;margin:2px 0 12px;overflow-x:auto;scrollbar-width:none}
+.tab{flex-shrink:0;padding:7px 12px;border-radius:9px;font:600 13px var(--px);background:#1c130b;border:2px solid var(--edge);color:var(--muted);cursor:pointer}
+.tab.on{border-color:var(--gold);color:var(--gold2);background:#3a2a16}
+#sheetBody{overflow-y:auto;flex:1;padding-bottom:6px}
+.hero{display:flex;gap:14px;align-items:center;margin-bottom:12px}
+.hero .big{width:84px;height:98px;flex-shrink:0;background:radial-gradient(circle,#4d3624,#1c130b);border:2px solid var(--gold);border-radius:14px;padding:6px 9px}
+.hn{font:700 20px var(--px);color:var(--gold2)}
+.hc{font-size:13px;color:var(--muted);margin-top:2px}
+.htitle{font:600 12px var(--px);color:#c4b5fd;margin-top:4px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.st{background:#1c130b;border:1.5px solid var(--edge);border-radius:9px;padding:7px 10px;display:flex;justify-content:space-between;gap:6px;font-size:13px}
+.st b{font-family:var(--px);color:var(--parch)}
+.row{background:#1c130b;border:1.5px solid var(--edge);border-radius:10px;padding:9px 11px;margin-bottom:7px;font-size:13px}
+.row .r1{display:flex;justify-content:space-between;gap:8px}
+.row .r2{font-size:11.5px;color:var(--muted);margin-top:3px}
+.row.lock{opacity:.45}
+.qbar{height:7px;background:#0e0905;border-radius:4px;overflow:hidden;margin-top:6px}
+.qbar i{display:block;height:100%;background:linear-gradient(90deg,#c8912f,#f6d77e)}
+.sect{font:700 12px var(--px);color:var(--gold);margin:13px 0 7px;text-transform:uppercase;letter-spacing:1px}
+.r-0{color:#d6d0c4}.r-1{color:#6ee36e}.r-2{color:#6eb4ff}.r-3{color:#d39bff}.r-4{color:#ffcf4a}
+.opt{display:flex;gap:6px;margin-top:6px}
+.opt button{flex:1;padding:8px;border-radius:8px;border:2px solid var(--edge);background:#1c130b;color:var(--muted);font:600 12px var(--px);cursor:pointer}
+.opt button.on{border-color:var(--gold);color:var(--gold2)}
 
-/* ───── SEARCH PANEL ───── */
-#searchPanel{}
-.inp-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;position:relative}
-.dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
-.dot.o{background:var(--green);box-shadow:0 0 6px rgba(34,197,94,.5)}
-.dot.d{background:var(--accent);box-shadow:0 0 6px rgba(233,69,96,.5)}
-.vline{width:2px;height:11px;background:var(--bg3);margin:-3px 0 -3px 4.5px}
-.acw{flex:1;position:relative}
-input[type=text]{
-  width:100%;padding:11px 14px;
-  background:var(--bg2);border:1.5px solid var(--bg3);
-  border-radius:10px;color:var(--text);font-size:15px;outline:none;
-  transition:border .2s;
-}
-input:focus{border-color:var(--accent)}
-input::placeholder{color:#444}
-.acl{
-  display:none;position:absolute;bottom:calc(100% + 2px);left:0;right:0;
-  background:var(--bg2);border:1.5px solid var(--bg3);border-radius:10px;
-  z-index:400;max-height:170px;overflow-y:auto;
-  box-shadow:0 -6px 20px rgba(0,0,0,.5);
-}
-.aci{padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--bg);transition:background .15s}
-.aci:last-child{border-bottom:none}
-.aci:hover,.aci:active{background:var(--bg3)}
-.aci .am{font-size:14px;font-weight:600;color:var(--text)}
-.aci .as{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.btn{
-  width:100%;padding:13px;border:none;border-radius:11px;
-  font-size:15px;font-weight:700;cursor:pointer;color:#fff;
-  transition:transform .12s,opacity .12s;
-}
-.btn:active{transform:scale(.97);opacity:.9}
-.btn.prim{background:linear-gradient(135deg,var(--accent),var(--accent2))}
-.btn.prim:disabled{background:var(--bg3);color:var(--muted);cursor:not-allowed;transform:none;opacity:1}
-.btn.sec{background:var(--bg2);color:var(--muted);border:1px solid var(--bg3)}
-.btn.go{background:linear-gradient(135deg,#22c55e,#16a34a)}
-#searchStatus{text-align:center;font-size:13px;color:var(--muted);min-height:16px;margin-top:8px}
-#searchStatus.err{color:var(--accent)}
-#searchStatus.ok{color:var(--green);font-weight:600}
-
-/* ───── ROUTE PANEL ───── */
-#routePanel{display:none}
-#routeHead{display:flex;align-items:center;gap:14px;margin-bottom:14px}
-.rh-ico{font-size:30px}
-.rh-big{font-size:28px;font-weight:900;line-height:1}
-.rh-sub{font-size:14px;color:var(--muted);margin-top:3px}
-.rh-eta{font-size:13px;color:var(--green);margin-top:3px}
-#altsRow{display:flex;gap:8px;margin-bottom:14px}
-.altc{
-  flex:1;padding:10px 8px;text-align:center;
-  background:var(--bg2);border:2px solid var(--bg3);
-  border-radius:10px;cursor:pointer;transition:all .15s;
-}
-.altc:active{transform:scale(.96)}
-.altc.sel{border-color:var(--accent);background:rgba(233,69,96,.1)}
-.altc .at{font-size:16px;font-weight:700}
-.altc .ad{font-size:11px;color:var(--muted);margin-top:2px}
-.altc .al{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
-#routeBtns{display:flex;gap:10px}
-#routeBtns .btn{margin:0}
-
-/* ───── NAV BOTTOM ───── */
-#navBottom{
-  position:fixed;bottom:0;left:0;right:0;z-index:100;
-  background:var(--bg);border-top:1px solid var(--bg3);
-  padding:11px 14px 24px;display:none;align-items:center;gap:14px;
-  box-shadow:0 -6px 24px rgba(0,0,0,.6);
-}
-#navBottom.on{display:flex}
-#spdBox{text-align:center;min-width:58px}
-#spdVal{font-size:30px;font-weight:900;line-height:1;color:var(--text)}
-#spdVal.speeding{color:var(--accent)}
-#spdUnit{font-size:10px;color:var(--muted);margin-top:1px}
-#navSt{flex:1}
-#navRem{font-size:17px;font-weight:700}
-#navETA{font-size:13px;color:var(--green);margin-top:3px}
-#navTime{font-size:12px;color:var(--muted);margin-top:2px}
-.stop-fab{
-  width:46px;height:46px;border-radius:50%;border:none;
-  background:var(--accent);color:#fff;font-size:20px;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;box-shadow:0 2px 12px rgba(233,69,96,.4);
-}
+/* ───── ESCOLHA DE CLASSE ───── */
+#classSel{position:fixed;inset:0;z-index:600;display:none;overflow-y:auto;background:radial-gradient(circle at 50% 0,#4d3624,#140d07 70%);padding:calc(24px + env(safe-area-inset-top)) 16px 30px}
+#classSel.on{display:block}
+.cs-t{font:700 26px var(--px);color:var(--gold2);text-align:center;text-shadow:0 3px 0 #000}
+.cs-s{text-align:center;color:var(--muted);font-size:13px;margin:6px 0 18px}
+#clsGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.cc{background:linear-gradient(180deg,#3a281a,#24180f);border:2px solid var(--edge);border-radius:14px;padding:10px;text-align:center;cursor:pointer}
+.cc.sel{border-color:var(--gold);box-shadow:0 0 14px rgba(246,215,126,.4)}
+.cc .cv{width:54px;height:63px;margin:0 auto 4px}
+.cc .cn{font:700 15px var(--px);color:var(--gold2)}
+.cc .cdx{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.3}
 </style>
 </head>
-<body>
+<body class="day">
 <div id="map"></div>
+<div id="vignette"></div>
 
-<!-- NAV TOP BAR -->
+<!-- HUD -->
+<div id="hud" class="wood" onclick="openSheet()">
+  <div id="hudAva" class="sp"></div>
+  <div>
+    <div id="hudName">Aventureiro</div>
+    <div id="hudSub">Nv 1</div>
+    <div class="bar hp"><i id="hudHp"></i></div>
+    <div class="bar xp"><i id="hudXp"></i></div>
+  </div>
+  <div id="hudGold">🪙 0</div>
+</div>
+
+<!-- NAV TOPO -->
 <div id="navTop">
   <div id="navIconBox">⬆️</div>
-  <div id="navMeta">
-    <div id="navInst">Aguardando GPS…</div>
-    <div id="navRoad"></div>
-  </div>
-  <div id="navDistBox">
-    <div id="navDistVal">–</div>
-    <div id="navDistUnit"></div>
-  </div>
+  <div id="navMeta"><div id="navInst">Aguardando GPS…</div><div id="navRoad"></div></div>
+  <div id="navDistBox"><div id="navDistVal">–</div><div id="navDistUnit"></div></div>
 </div>
 
-<div id="recalcBar"></div>
+<div id="feed"></div>
+<div id="lvlUp"><div class="l1">NÍVEL</div><div class="l2" id="lvNum">2</div><div class="l3">Vida restaurada · atributos aumentados</div></div>
 <div id="toast"></div>
 
-<!-- FABs -->
 <div id="fabs">
-  <button class="fab" id="myLocBtn" onclick="centerOnMe()" title="Minha localização">◉</button>
-  <button class="fab" onclick="map.zoomIn()">+</button>
-  <button class="fab" onclick="map.zoomOut()">−</button>
+  <button class="fab" onclick="locateMe()" title="Minha posição">◎</button>
+  <button class="fab" id="muteBtn" onclick="toggleMute()" title="Voz">🔊</button>
 </div>
+<button id="recenterBtn" onclick="resumeFollow()">🎯 Recentralizar</button>
+<div id="simBadge" onclick="simSpeed()"></div>
 
-<!-- SEARCH PANEL -->
+<!-- BUSCA -->
 <div id="searchPanel" class="bpanel">
   <div class="handle"></div>
-  <div class="inp-row">
-    <div class="dot o"></div>
-    <div class="acw">
-      <input type="text" id="inpO" placeholder="De onde você vai sair?" autocomplete="off">
-      <div id="ac-o" class="acl"></div>
-    </div>
+  <div class="ttl">🗺️ Para onde, aventureiro?</div>
+  <div class="acw">
+    <input type="text" id="inpD" placeholder="Buscar destino…" autocomplete="off" enterkeyhint="go">
+    <div id="ac-d" class="acl"></div>
   </div>
-  <div style="padding-left:5px"><div class="vline"></div></div>
-  <div class="inp-row" style="margin-bottom:12px">
-    <div class="dot d"></div>
-    <div class="acw">
-      <input type="text" id="inpD" placeholder="Para onde?" autocomplete="off">
-      <div id="ac-d" class="acl"></div>
-    </div>
+  <div id="originRow">📍 Partida: <b id="originLbl">sua localização</b> · <a onclick="showOriginInput()">alterar</a></div>
+  <div id="originBox" class="acw">
+    <input type="text" id="inpO" placeholder="Endereço de partida…" autocomplete="off">
+    <div id="ac-o" class="acl"></div>
   </div>
-  <button class="btn prim" id="routeBtn" onclick="calcRota()">Traçar Rota</button>
+  <div id="recents"></div>
   <div id="searchStatus"></div>
 </div>
 
-<!-- ROUTE PANEL -->
+<!-- PRÉVIA DA ROTA -->
 <div id="routePanel" class="bpanel">
   <div class="handle"></div>
-  <div id="routeHead">
-    <div class="rh-ico">🚗</div>
-    <div>
-      <div class="rh-big" id="rhDist">–</div>
-      <div class="rh-sub"  id="rhTime">–</div>
-      <div class="rh-eta"  id="rhETA">Chegada: –</div>
-    </div>
-  </div>
+  <div id="questName">📜 Missão</div>
+  <div id="routeHead"><div class="rh-big" id="rhTime">–</div><div class="rh-sub" id="rhDist">–</div><div class="rh-sub" id="rhETA"></div></div>
+  <div id="rewards"></div>
   <div id="altsRow"></div>
   <div id="routeBtns">
-    <button class="btn sec" style="flex:1"  onclick="voltarBusca()">← Voltar</button>
-    <button class="btn go"  style="flex:2"  onclick="iniciarNav()">▶ Iniciar</button>
+    <button class="btn sec" style="flex:1" onclick="cancelRoute()">Voltar</button>
+    <button class="btn go" style="flex:2" onclick="startNav(false)"><span class="cd" id="cdBar"></span><span style="position:relative">⚔️ Partir</span></button>
   </div>
+  <a id="simLink" onclick="startNav(true)">🧪 Testar em modo treino (simula a viagem, não salva progresso)</a>
 </div>
 
-<!-- NAV BOTTOM -->
+<!-- CHEGADA -->
+<div id="arrivePanel" class="bpanel">
+  <div class="handle"></div>
+  <div class="ar-t">🏆 Missão concluída!</div>
+  <div class="ar-d" id="arDest"></div>
+  <div class="ar-grid" id="arGrid"></div>
+  <div id="arLoot"></div>
+  <button class="btn prim" onclick="closeArrive()">Continuar aventura</button>
+</div>
+
+<!-- NAV BASE -->
 <div id="navBottom">
-  <div id="spdBox">
-    <div id="spdVal">0</div>
-    <div id="spdUnit">km/h</div>
+  <div class="nb-row">
+    <div id="spdBox"><div id="spdVal">0</div><div id="spdUnit">km/h</div></div>
+    <div id="navSt"><div id="navRem">–</div><div id="navETA">–</div><div id="navMount">–</div></div>
+    <button class="rbtn" onclick="openSheet()">🎒</button>
+    <button class="rbtn stop" onclick="stopTap()">✕</button>
   </div>
-  <div id="navSt">
-    <div id="navRem">–</div>
-    <div id="navETA">–</div>
-    <div id="navTime">–</div>
-  </div>
-  <button class="stop-fab" onclick="pararNav()">✕</button>
+  <div id="nbXp"><span id="nbLv">Nv 1</span><div class="bar xp"><i id="nbXpBar"></i></div><div class="bar hp" style="max-width:70px"><i id="nbHpBar"></i></div><span id="nbKills">⚔️ 0</span></div>
+</div>
+
+<!-- FICHA -->
+<div id="sheet" onclick="if(event.target===this)closeSheet()">
+  <div id="sheetBox"><div class="handle"></div><div id="tabs"></div><div id="sheetBody"></div></div>
+</div>
+
+<!-- CLASSE -->
+<div id="classSel">
+  <div class="cs-t">⚔️ Escolha sua classe</div>
+  <div class="cs-s">Seu herói viaja com você e evolui sozinho. É só colocar o destino.</div>
+  <div id="clsGrid"></div>
+  <input type="text" id="heroName" placeholder="Nome do herói" maxlength="18" style="margin-bottom:12px">
+  <button class="btn prim" onclick="confirmClass()">Começar a jornada</button>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 'use strict';
 /* ═══════════════════════════════════════════════════════
-   MEU MAPA — v3
-   Tiles    : CartoDB Dark Matter
-   Geocoding: Nominatim
-   Routing  : OSRM
-   GPS      : Browser Geolocation API
+   MEU MAPA RPG — v4
+   Tiles OSM (estilizados) · Nominatim · OSRM · GPS
 ═══════════════════════════════════════════════════════ */
+const $=id=>document.getElementById(id);
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const ri=(a,b)=>Math.floor(rnd(a,b+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtN=n=>Math.round(n).toLocaleString('pt-BR');
 
-// ── MAP INIT ──────────────────────────────────────────
-const map = L.map('map', { zoomControl:false, attributionControl:true })
-              .setView([-3.7172, -38.5433], 13);
+/* ── SPRITES (pixel art 12×14) ───────────────────────── */
+const PAL_BASE={s:'#f1c27d',e:'#1a1a1a',h:'#f1c27d',F:'#3b2a1a'};
+const TORSO=["..ABBBBBBA..",".AABBbbBBAA.",".hABBbbBBAh.","..ABBBBBBA..","...bbbbbb...","...BBBBBB..."];
+const LEGS_A=["...LL..LL...","...LL..LL...","...LL..LL...","..FFF..FFF.."];
+const LEGS_B=["...LL..LL...","..LL....LL..",".LL......LL.",".FF......FF."];
+const line=(x,y1,y2,k)=>{const a=[];for(let y=y1;y<=y2;y++)a.push([x,y,k]);return a};
 
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-  attribution:'© <a href="https://openstreetmap.org">OpenStreetMap</a> © <a href="https://esri.com">Esri</a>',
-  maxZoom:16
-}).addTo(map);
+const CLASSES={
+  cavaleiro:{nome:'Cavaleiro',desc:'Armadura pesada. +30% de vida e defesa.',hp:1.3,atk:1,def:1.3,xp:1,gold:1,crit:.08,loot:1,reach:45,
+    arma:'Espada',armadura:'Armadura de Placas',
+    head:["....HHHH....","...HHHHHH...","...HeHHeH...","....HHHH...."],
+    pal:{H:'#c9d0da',e:'#111',B:'#8f9bab',b:'#5d6b80',A:'#b8242b',L:'#4b5563',W:'#eef2f7',g:'#a16207',S:'#1e4fd8',Y:'#facc15'},
+    ov:[...line(11,0,6,'W'),[10,7,'g'],[11,7,'g'],[11,8,'g'],...line(0,5,8,'S'),...line(1,5,8,'S'),[1,6,'Y'],[5,0,'A'],[6,0,'A']]},
+  ladino:{nome:'Ladino',desc:'Mãos leves. +40% de ouro e mais golpes críticos.',hp:1,atk:1.1,def:.9,xp:1,gold:1.4,crit:.25,loot:1,reach:45,
+    arma:'Adaga',armadura:'Manto Sombrio',
+    head:["....CCCC....","...CCCCCC...","...CsesesC..","....CmmC...."],
+    pal:{C:'#2d2a3e',m:'#0d0d12',B:'#3f3b52',b:'#6b4f2a',A:'#3b2f5c',L:'#2a2738',W:'#dfe3e8',g:'#6b4f2a'},
+    ov:[[11,5,'W'],[11,6,'W'],[11,7,'g'],[0,5,'W'],[0,6,'W'],[0,7,'g']]},
+  arqueiro:{nome:'Arqueiro',desc:'Olho de águia. Ataca de longe e acha +25% de tesouros.',hp:1,atk:1.1,def:1,xp:1,gold:1,crit:.15,loot:1.25,reach:90,
+    arma:'Arco',armadura:'Gibão de Couro',
+    head:["....GGGG.f..","...GGGGGGf..","..GGsesesG..","....ssss...."],
+    pal:{G:'#2f7a3a',f:'#e2c044',B:'#4d7c3a',b:'#6b4423',A:'#6b4423',L:'#5b3a1e',W:'#8b5a2b',w:'#ece7df',a:'#d6d3d1'},
+    ov:[[1,2,'W'],...line(0,3,8,'W'),[1,9,'W'],...line(1,3,8,'w'),[10,1,'a'],[10,2,'a'],[11,2,'a'],[10,3,'b']]},
+  mago:{nome:'Mago',desc:'Sabedoria arcana. +25% de XP em tudo.',hp:.9,atk:1.15,def:.85,xp:1.25,gold:1,crit:.12,loot:1,reach:55,
+    arma:'Cajado',armadura:'Túnica Arcana',
+    head:[".....HH.....","....HHHH....","..HHHHHHHH..","...sesses..."],
+    pal:{H:'#4338ca',B:'#4f46e5',b:'#facc15',A:'#312e81',L:'#312e81',W:'#7c4a1e',O:'#67e8f9',F:'#1e1b4b'},
+    ov:[...line(11,2,12,'W'),[10,0,'O'],[11,0,'O'],[10,1,'O'],[11,1,'O'],[6,0,'b']]},
+  barbaro:{nome:'Bárbaro',desc:'Fúria selvagem. +35% de ataque.',hp:1.15,atk:1.35,def:.9,xp:1,gold:1,crit:.12,loot:1,reach:45,
+    arma:'Machado',armadura:'Peles de Fera',
+    head:["...RRRRRR...","..RRRRRRRR..","..RsessesR..","...DDDDDD..."],
+    pal:{R:'#b45309',D:'#92400e',B:'#e0a96d',b:'#7c5a3a',A:'#e0a96d',L:'#6b4423',W:'#cbd5e1',g:'#5b3a1e'},
+    ov:[...line(11,1,9,'g'),[9,1,'W'],[10,1,'W'],[9,2,'W'],[10,2,'W'],[9,3,'W'],[10,3,'W'],[10,0,'W']]},
+};
 
-// ── STATE ─────────────────────────────────────────────
-const sel  = { O:null, D:null };   // coords selecionadas no autocomplete
-let routes = [], selIdx = 0;       // rotas OSRM
-let oCoord, dCoord;                // coords geocodificadas
-let routeLayers = [], pinLayers = [];
-let gpsMarker = null, accCircle = null;
-let navWatch = null, navSteps = [], navStep = 0;
-let recalcTmr = null, isNav = false;
-let lastHeading = null;
-
-const ADVANCE_M = 25;    // avança step em <Xm do manobra
-const OFFROUTE_M = 90;   // considera fora da rota
-const RECALC_S  = 7;     // segundos antes de recalcular
-
-// ── UTILS ─────────────────────────────────────────────
-function hav(la1,lo1,la2,lo2){
-  const R=6371000,r=Math.PI/180;
-  const a=Math.sin((la2-la1)*r/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin((lo2-lo1)*r/2)**2;
-  return 2*R*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-}
-function fmtD(m){
-  if(m<1000) return Math.round(m/10)*10+'m';
-  return (m/1000).toFixed(m<10000?1:0)+'km';
-}
-function fmtT(s){
-  const m=Math.round(s/60);
-  if(m<60) return m+'min';
-  return Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'min';
-}
-function etaHM(s){
-  const d=new Date(Date.now()+s*1000);
-  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-}
-
-// ── TOAST ─────────────────────────────────────────────
-let _tt;
-function toast(msg,ms=2600){
-  const el=document.getElementById('toast');
-  el.textContent=msg; el.classList.add('on');
-  clearTimeout(_tt); _tt=setTimeout(()=>el.classList.remove('on'),ms);
+function spriteSVG(key){
+  const c=CLASSES[key]||CLASSES.cavaleiro;const P={...PAL_BASE,...c.pal};
+  const rect=(x,y,k)=>P[k]?`<rect x="${x}" y="${y}" width="1.04" height="1.04" fill="${P[k]}"/>`:'';
+  const rows=(arr,y0)=>arr.map((r,i)=>[...r].map((ch,x)=>ch==='.'?'':rect(x,y0+i,ch)).join('')).join('');
+  const top=rows(c.head,0)+rows(TORSO,4)+c.ov.map(o=>rect(o[0],o[1],o[2])).join('');
+  return `<svg viewBox="0 0 12 14" xmlns="http://www.w3.org/2000/svg"><g class="fa">${rows(LEGS_A,10)}</g><g class="fb">${rows(LEGS_B,10)}</g>${top}</svg>`;
 }
 
-// ── MANEUVER ICONS / TEXT ────────────────────────────
-function manobra(type,mod){
-  if(type==='depart')                         return['⬆️','Siga em frente'];
-  if(type==='arrive')                         return['📍','Chegou ao destino!'];
-  if(type==='roundabout'||type==='rotary')    return['🔄','Entre na rotatória'];
-  if(type==='on ramp')                        return['↗️','Entre na pista'];
-  if(type==='off ramp')                       return['↘️','Saia da pista'];
-  if(type==='fork'){
-    if(mod&&mod.includes('right'))            return['↱','Fique pela direita'];
-    return['↰','Fique pela esquerda'];
+/* ── MONSTROS / ITENS / CONQUISTAS ───────────────────── */
+const MONS=[
+  {n:'Rato de Esgoto',e:'🐀',t:1},{n:'Morcego Noturno',e:'🦇',t:1,night:1},{n:'Caranguejo da Beira-Mar',e:'🦀',t:1},
+  {n:'Cacto Vivo',e:'🌵',t:2},{n:'Serpente do Mangue',e:'🐍',t:2},{n:'Aranha Gigante',e:'🕷️',t:2},
+  {n:'Lobo Cinzento',e:'🐺',t:3},{n:'Escorpião do Sertão',e:'🦂',t:3},{n:'Javali Furioso',e:'🐗',t:3},
+  {n:'Esqueleto Errante',e:'💀',t:4},{n:'Zumbi da Madrugada',e:'🧟',t:4,night:1},{n:'Fantasma',e:'👻',t:4,night:1},
+  {n:'Ogro da Ponte',e:'👹',t:5},{n:'Troll das Dunas',e:'🧌',t:5},
+  {n:'Dragão Ancião',e:'🐉',t:6},
+];
+const RAR=[{n:'Comum',m:1,w:60},{n:'Incomum',m:1.3,w:25},{n:'Raro',m:1.7,w:10},{n:'Épico',m:2.3,w:4},{n:'Lendário',m:3.2,w:1}];
+const SUF=['do Sertão','da Beira-Mar','de Iracema','do Mucuripe','da Jangada','das Dunas','do Cangaço','da Lua Cheia','do Farol','do Dragão','dos Ventos','da Serra'];
+const SLOT={weapon:'🗡️ Arma',armor:'🛡️ Armadura',amulet:'📿 Amuleto'};
+const DQ=[
+  {id:'km',t:'Percorra 10 km',goal:10,xp:150,gold:40,u:'km'},
+  {id:'kills',t:'Derrote 15 monstros',goal:15,xp:120,gold:50,u:''},
+  {id:'trips',t:'Conclua 2 jornadas',goal:2,xp:100,gold:30,u:''},
+];
+const ACH=[
+  {id:'trip1',n:'Primeiro Passo',d:'Conclua sua primeira jornada',f:()=>S.stats.trips>=1},
+  {id:'km10',n:'Andarilho',d:'Percorra 10 km',f:()=>S.stats.km>=10},
+  {id:'km100',n:'Viajante',d:'Percorra 100 km',f:()=>S.stats.km>=100},
+  {id:'km1000',n:'Lenda das Estradas',d:'Percorra 1.000 km',f:()=>S.stats.km>=1000},
+  {id:'k10',n:'Caçador',d:'Derrote 10 monstros',f:()=>S.stats.kills>=10},
+  {id:'k100',n:'Exterminador',d:'Derrote 100 monstros',f:()=>S.stats.kills>=100},
+  {id:'k1000',n:'Flagelo dos Monstros',d:'Derrote 1.000 monstros',f:()=>S.stats.kills>=1000},
+  {id:'drag',n:'Matador de Dragões',d:'Derrote um Dragão Ancião',f:()=>S.stats.dragons>=1},
+  {id:'l10',n:'Veterano',d:'Alcance o nível 10',f:()=>S.lvl>=10},
+  {id:'l25',n:'Herói do Ceará',d:'Alcance o nível 25',f:()=>S.lvl>=25},
+  {id:'leg',n:'Relíquia Lendária',d:'Encontre um item lendário',f:()=>S.stats.legend>=1},
+  {id:'night',n:'Cavaleiro da Noite',d:'Conclua uma jornada à noite',f:()=>S.stats.nightTrips>=1},
+  {id:'rich',n:'Barão do Ouro',d:'Junte 5.000 de ouro no total',f:()=>S.stats.gold>=5000},
+];
+
+/* ── SAVE ────────────────────────────────────────────── */
+const SAVE_KEY='meumapa_rpg_v1';
+const defSave=()=>({name:'Aventureiro',cls:null,lvl:1,xp:0,hp:null,gold:0,title:'',theme:'auto',mute:false,
+  equip:{weapon:null,armor:null,amulet:null},smith:{w:0,a:0},
+  stats:{km:0,kills:0,trips:0,dragons:0,gold:0,items:0,legend:0,nightTrips:0},
+  daily:{date:'',km:0,kills:0,trips:0,claimed:[]},ach:[],loot:[],recents:[]});
+function load(){
+  const d=defSave();
+  try{const s=JSON.parse(localStorage.getItem(SAVE_KEY));if(s){const o=Object.assign(d,s);
+    o.stats=Object.assign(defSave().stats,s.stats);o.smith=Object.assign({w:0,a:0},s.smith);
+    o.equip=Object.assign(defSave().equip,s.equip);return o}}catch{}
+  return d;
+}
+let S=load(), simSnap=null;
+function save(){if(simSnap)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch{}}
+
+/* ── ATRIBUTOS ───────────────────────────────────────── */
+const cls=()=>CLASSES[S.cls]||CLASSES.cavaleiro;
+const maxHP=()=>Math.round((50+S.lvl*12)*cls().hp+S.smith.a*3);
+const atk=()=>Math.round((6+S.lvl*2.2)*cls().atk+(S.equip.weapon?.pow||0)+S.smith.w*2);
+const def=()=>Math.round((3+S.lvl*1.4)*cls().def+(S.equip.armor?.pow||0)+S.smith.a*2);
+const amu=()=>S.equip.amulet?.pow||0;
+const needXP=l=>Math.round(100*Math.pow(l,1.5));
+function isNight(){const h=new Date().getHours();return h>=18||h<6}
+
+/* ── UTIL ────────────────────────────────────────────── */
+function hav(la1,lo1,la2,lo2){const R=6371000,r=Math.PI/180;const a=Math.sin((la2-la1)*r/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin((lo2-lo1)*r/2)**2;return 2*R*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))}
+function bearing(a,b){const r=Math.PI/180,y=Math.sin((b[1]-a[1])*r)*Math.cos(b[0]*r),x=Math.cos(a[0]*r)*Math.sin(b[0]*r)-Math.sin(a[0]*r)*Math.cos(b[0]*r)*Math.cos((b[1]-a[1])*r);return(Math.atan2(y,x)/r+360)%360}
+function fmtD(m){if(m<1000)return Math.round(m/10)*10+' m';return(m/1000).toFixed(m<10000?1:0).replace('.',',')+' km'}
+function fmtT(s){const m=Math.max(1,Math.round(s/60));if(m<60)return m+' min';return Math.floor(m/60)+'h'+String(m%60).padStart(2,'0')}
+function etaHM(s){const d=new Date(Date.now()+s*1000);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function fmtSpeech(m){return m<1000?`${Math.round(m/50)*50} metros`:`${(m/1000).toFixed(1).replace('.',',')} quilômetros`}
+const short=n=>String(n||'').split(',')[0];
+function today(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+let _tt;function toast(msg,ms=2600){const el=$('toast');el.textContent=msg;el.classList.add('on');clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('on'),ms)}
+function card(e,t,s='',k=''){
+  const f=$('feed');const el=document.createElement('div');el.className='card '+k;
+  el.innerHTML=`<div class="ce">${e}</div><div><div class="ct">${t}</div>${s?`<div class="cs">${s}</div>`:''}</div>`;
+  f.appendChild(el);while(f.children.length>3)f.firstChild.remove();
+  setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),400)},3600);
+}
+function speak(t){
+  if(S.mute||!('speechSynthesis' in window))return;
+  try{const u=new SpeechSynthesisUtterance(t);u.lang='pt-BR';u.rate=1.05;
+    const v=speechSynthesis.getVoices().find(v=>(v.lang||'').toLowerCase().startsWith('pt'));if(v)u.voice=v;
+    speechSynthesis.speak(u)}catch{}
+}
+
+/* ── MAPA ────────────────────────────────────────────── */
+const map=L.map('map',{zoomControl:false,zoomSnap:.5}).setView([-3.7319,-38.5267],14);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);
+function applyTheme(){const m=S.theme||'auto';const n=m==='noite'||(m==='auto'&&isNight());document.body.classList.toggle('night',n);document.body.classList.toggle('day',!n)}
+
+/* ── PROGRESSÃO ──────────────────────────────────────── */
+function rawXP(n){
+  S.xp+=n;if(T)T.xp+=n;let up=false;
+  while(S.xp>=needXP(S.lvl)){S.xp-=needXP(S.lvl);S.lvl++;up=true}
+  if(up){S.hp=maxHP();levelUp()}
+  return n;
+}
+const gainXP=n=>rawXP(Math.max(1,Math.round(n*cls().xp*(1+amu()/100))));
+function gainGold(n){n=Math.max(1,Math.round(n*cls().gold*(1+amu()/100)));S.gold+=n;S.stats.gold+=n;if(T)T.gold+=n;smith();return n}
+const smithCost=()=>Math.round(40*Math.pow(S.smith.w+S.smith.a+1,1.6));
+function smith(){let c;while(S.gold>=(c=smithCost())){S.gold-=c;const w=S.smith.w<=S.smith.a;if(w)S.smith.w++;else S.smith.a++;
+  card('🔨','O ferreiro trabalhou!',w?`Sua arma agora é <b>+${S.smith.w}</b>`:`Sua armadura agora é <b>+${S.smith.a}</b>`,'gold')}}
+function levelUp(){
+  $('lvNum').textContent=S.lvl;const o=$('lvlUp');o.classList.remove('on');void o.offsetWidth;o.classList.add('on');
+  speak(`Subiu para o nível ${S.lvl}!`);
+}
+let lastRegen=Date.now();
+function regen(){const now=Date.now(),dt=(now-lastRegen)/60000;lastRegen=now;const mx=maxHP();if(S.hp==null)S.hp=mx;S.hp=Math.min(mx,S.hp+mx*.06*dt)}
+let xpFrac=0;
+function addDistance(m){
+  S.stats.km+=m/1000;ensureDaily();S.daily.km+=m/1000;if(T)T.m+=m;
+  xpFrac+=m/20*cls().xp*(1+amu()/100);
+  if(xpFrac>=1){const n=Math.floor(xpFrac);xpFrac-=n;rawXP(n)}
+  checkQuests();checkAch();
+}
+function ensureDaily(){const d=today();if(S.daily.date!==d)S.daily={date:d,km:0,kills:0,trips:0,claimed:[]}}
+function checkQuests(){
+  ensureDaily();
+  for(const q of DQ){if(!S.daily.claimed.includes(q.id)&&S.daily[q.id]>=q.goal){
+    S.daily.claimed.push(q.id);const k=1+.15*(S.lvl-1);
+    const x=rawXP(Math.round(q.xp*k)),g=gainGold(q.gold*k);
+    card('📜','Missão diária concluída!',`${q.t} · <b>+${x} XP</b> · <b>+${g} 🪙</b>`,'gold');
+  }}
+}
+function checkAch(){for(const a of ACH)if(!S.ach.includes(a.id)&&a.f()){S.ach.push(a.id);S.title=a.n;card('🏅','Conquista: '+a.n,a.d,'gold')}}
+
+/* ── MONSTROS & COMBATE ──────────────────────────────── */
+function mkMon(b,o={}){
+  const lvl=Math.max(1,S.lvl+ri(-1,1)),t=b.t;
+  const hp=(14+lvl*6)*(1+.25*(t-1)),at=(3+lvl*1.5)*(1+.12*(t-1));
+  const xp=(8+lvl*3)*(1+.3*(t-1)),gold=(2+lvl*1.5)*(1+.2*t);
+  const k=o.dragon?{hp:1.6,at:1.5,r:5}:o.elite?{hp:2,at:1.3,r:2}:{hp:1,at:1,r:1};
+  return{...b,lvl,hp:Math.round(hp*k.hp),atk:at*k.at,xp:Math.round(xp*k.r),gold:Math.round(gold*k.r*rnd(.7,1.3)),elite:!!o.elite,dragon:!!o.dragon};
+}
+function rollMonster(){
+  if(S.lvl>=5&&Math.random()<.015)return mkMon(MONS.find(m=>m.t===6),{dragon:true});
+  const mt=Math.min(5,1+Math.floor((S.lvl-1)/3)),night=isNight();
+  const pool=MONS.filter(m=>m.t<=mt&&(!m.night||night));
+  const w=pool.map(m=>Math.pow(m.t,1.5));let r=Math.random()*w.reduce((a,b)=>a+b,0);
+  let p=pool[0];for(let i=0;i<pool.length;i++){r-=w[i];if(r<=0){p=pool[i];break}}
+  return mkMon(p,{elite:Math.random()<.1});
+}
+function fight(m){
+  let php=S.hp??maxHP(),mhp=m.hp,crit=false,rounds=0,taken=0;const A=atk(),D=def();
+  while(mhp>0&&php>0&&rounds<30){
+    rounds++;let d=A*rnd(.85,1.15);if(Math.random()<cls().crit){d*=2;crit=true}
+    mhp-=d;if(mhp<=0)break;
+    const t=Math.max(1,m.atk*rnd(.85,1.15)-D*.7);php-=t;taken+=t;
   }
-  if(type==='end of road'){
-    if(mod==='right')                         return['➡️','Vire à direita'];
-    return['⬅️','Vire à esquerda'];
+  return{win:mhp<=0,taken:Math.round(taken),crit,php};
+}
+function rollRar(bonus=0){
+  const w=RAR.map((x,i)=>x.w*(1+bonus*i*2));let r=Math.random()*w.reduce((a,b)=>a+b,0);
+  for(let i=0;i<w.length;i++){r-=w[i];if(r<=0)return i}return 0;
+}
+function makeItem(r){
+  const x=Math.random(),slot=x<.45?'weapon':x<.85?'armor':'amulet',c=cls(),R=RAR[r];
+  let pow,base;
+  if(slot==='amulet'){pow=Math.max(1,Math.round((2+S.lvl*.25)*R.m*rnd(.85,1.15)));base=pick(['Amuleto','Anel','Talismã','Colar'])}
+  else{pow=Math.max(1,Math.round((3+S.lvl*1.6)*R.m*rnd(.85,1.15)));base=slot==='weapon'?c.arma:c.armadura}
+  return{slot,r,pow,name:`${base} ${pick(SUF)}`};
+}
+const statTxt=it=>it.slot==='weapon'?`ATK +${it.pow}`:it.slot==='armor'?`DEF +${it.pow}`:`+${it.pow}% XP e ouro`;
+function handleItem(it){
+  const cur=S.equip[it.slot];let act,g=0;
+  if(!cur||it.pow>cur.pow){S.equip[it.slot]=it;act='equipado'}
+  else{g=gainGold(it.pow*2*RAR[it.r].m);act='vendido'}
+  S.stats.items++;if(it.r===4)S.stats.legend++;
+  S.loot.unshift({...it,act,g});S.loot=S.loot.slice(0,15);if(T)T.items.push(it);
+  const sub=`<span class="r-${it.r}">${RAR[it.r].n}</span> · ${statTxt(it)} · ${act==='equipado'?'<b>equipado!</b>':`vendido por ${g} 🪙`}`;
+  card('🎁',`<span class="r-${it.r}">${esc(it.name)}</span>`,sub,it.r>=3?'epic':'gold');
+  if(it.r===4)speak('Item lendário encontrado!');
+  return{it,act,g};
+}
+function battle(s){
+  s.done=true;const m=s.m,res=fight(m);
+  const el=s.mk?.getElement()?.querySelector('.mon');
+  if(el){el.classList.add('dead');const mk=s.mk;setTimeout(()=>map.removeLayer(mk),650);s.mk=null}
+  if(res.win){
+    S.hp=Math.max(1,Math.round(res.php));
+    const x=gainXP(m.xp),g=gainGold(m.gold);
+    S.stats.kills++;ensureDaily();S.daily.kills++;if(T)T.kills++;if(m.dragon){S.stats.dragons++;speak('Você derrotou um Dragão Ancião!')}
+    floatTxt(`+${x} XP`,'xp');
+    card(m.e,`${m.n}${m.elite?' ★':''} <span style="color:#b59f7b">Nv ${m.lvl}</span> derrotado!`,
+      `<b>+${x} XP</b> · <b>+${g} 🪙</b>${res.taken?` · −${res.taken} ❤️`:''}${res.crit?' · <b>CRÍTICO!</b>':''}`,m.dragon?'epic':'');
+    const ch=(m.dragon?1:m.elite?.5:.16)*cls().loot;
+    if(Math.random()<ch)handleItem(makeItem(Math.max(rollRar(),m.dragon?3:m.elite?1:0)));
+  }else{
+    S.hp=Math.round(maxHP()*.35);const lost=Math.floor(S.gold*.08);S.gold-=lost;
+    floatTxt('Recuou!','hp');
+    card('😵',`${m.n} te venceu!`,`Você recuou e se recuperou${lost?` · −${lost} 🪙`:''}`,'lose');
   }
-  if(!mod||mod==='straight')                  return['⬆️','Continue em frente'];
-  if(mod==='slight left')                     return['↖️','Mantenha à esquerda'];
-  if(mod==='slight right')                    return['↗️','Mantenha à direita'];
-  if(mod==='left')                            return['⬅️','Vire à esquerda'];
-  if(mod==='right')                           return['➡️','Vire à direita'];
-  if(mod==='sharp left')                      return['↩️','Vire bastante à esq.'];
-  if(mod==='sharp right')                     return['↪️','Vire bastante à dir.'];
-  if(mod==='uturn')                           return['🔃','Faça o retorno'];
-  return['⬆️','Continue'];
+  checkQuests();checkAch();hud();save();
 }
 
-// ── AUTOCOMPLETE ──────────────────────────────────────
-const _acT={};
-function setupAC(inpId,listId,key){
-  const inp=document.getElementById(inpId);
-  const lst=document.getElementById(listId);
+/* ── HERÓI NO MAPA ───────────────────────────────────── */
+let player=null,prevDraw=null;
+function ensurePlayer(lat,lon){
+  if(player)return;
+  player=L.marker([lat,lon],{interactive:false,zIndexOffset:1000,icon:L.divIcon({className:'',iconSize:[44,60],iconAnchor:[22,56],
+    html:`<div class="pl"><div class="pl-ring"></div><div class="spr sp" id="plSpr">${spriteSVG(S.cls)}</div><div class="pl-lv" id="plLv">Nv ${S.lvl}</div></div>`})}).addTo(map);
+  setTimeout(()=>player?.getElement()?.classList.add('smooth'),100);
+}
+map.on('zoomstart',()=>player?.getElement()?.classList.remove('smooth'));
+map.on('zoomend',()=>setTimeout(()=>player?.getElement()?.classList.add('smooth'),60));
+function floatTxt(t,k){const el=player?.getElement()?.querySelector('.pl');if(!el)return;const f=document.createElement('div');f.className='float '+k;f.textContent=t;el.appendChild(f);setTimeout(()=>f.remove(),1700)}
+
+/* ── HUD ─────────────────────────────────────────────── */
+function hud(){
+  const mx=maxHP();if(S.hp==null)S.hp=mx;
+  const hpP=Math.min(100,S.hp/mx*100)+'%',xpP=Math.min(100,S.xp/needXP(S.lvl)*100)+'%';
+  $('hudName').textContent=S.name;$('hudSub').textContent=`Nv ${S.lvl} · ${cls().nome}`;
+  $('hudHp').style.width=hpP;$('hudXp').style.width=xpP;$('hudGold').textContent='🪙 '+fmtN(S.gold);
+  $('nbXpBar').style.width=xpP;$('nbHpBar').style.width=hpP;$('nbLv').textContent='Nv '+S.lvl;
+  $('nbKills').textContent='⚔️ '+(T?T.kills:0);
+  const lv=$('plLv');if(lv)lv.textContent='Nv '+S.lvl;
+  $('muteBtn').textContent=S.mute?'🔇':'🔊';
+}
+function refreshAll(){
+  hud();$('hudAva').innerHTML=spriteSVG(S.cls);
+  const p=$('plSpr');if(p)p.innerHTML=spriteSVG(S.cls);
+  renderRecents();applyTheme();
+}
+
+/* ── GPS ─────────────────────────────────────────────── */
+let watchId=null,lastFix=null,lastPos=null,followIdle=true,gpsDenied=false;
+function startGPS(){
+  if(watchId!=null||!navigator.geolocation)return;
+  watchId=navigator.geolocation.watchPosition(p=>{
+    gpsDenied=false;
+    if(!sim)onFix({lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy,spd:p.coords.speed,hdg:p.coords.heading,t:Date.now()});
+  },e=>{
+    if(e.code===1){gpsDenied=true;toast('📍 Permita a localização para o herói te acompanhar',4000)}
+  },{enableHighAccuracy:true,maximumAge:1000,timeout:15000});
+}
+function onFix(f){
+  const first=!lastFix;if(!sim)lastFix=f;
+  regen();
+  let moved=false;
+  if(lastPos){
+    const d=hav(lastPos.lat,lastPos.lon,f.lat,f.lon);
+    if(d>=800)lastPos=f;
+    else if(((f.spd!=null&&f.spd>1)||d>Math.max(10,f.acc||20))&&(f.acc||0)<60){addDistance(d);lastPos=f;moved=true}
+  }else lastPos=f;
+
+  let lat=f.lat,lon=f.lon,brg=null;
+  if(isNav&&R){
+    const sn=snap(f.lat,f.lon);
+    if(sn.dist<35){lat=sn.lat;lon=sn.lon;brg=sn.brg}
+    navUpdate(sn,f);
+  }
+  if(brg==null){
+    if(f.hdg!=null&&!isNaN(f.hdg)&&f.spd>1)brg=f.hdg;
+    else if(prevDraw&&hav(prevDraw[0],prevDraw[1],lat,lon)>3)brg=bearing(prevDraw,[lat,lon]);
+  }
+  ensurePlayer(lat,lon);player.setLatLng([lat,lon]);
+  const spr=$('plSpr');
+  if(spr){
+    const walking=f.spd!=null?f.spd>.7:(moved||(prevDraw&&hav(prevDraw[0],prevDraw[1],lat,lon)>2));
+    spr.classList.toggle('walk',!!walking);
+    if(brg!=null)spr.classList.toggle('flip',brg>180);
+  }
+  if(isNav)follow(lat,lon,brg,f.spd);
+  else if(followIdle)map.setView([lat,lon],first?16:map.getZoom(),{animate:!first});
+  prevDraw=[lat,lon];
+  hud();if(!isNav)save();
+}
+
+/* ── CÂMERA ──────────────────────────────────────────── */
+let followPaused=false,resumeTmr=null,lastZoomSet=0;
+function follow(lat,lon,brg,spd){
+  if(followPaused)return;
+  const kmh=(spd||0)*3.6;
+  const tz=kmh>90?15.5:kmh>60?16:kmh>30?16.5:17;
+  let z=map.getZoom();
+  if(Math.abs(tz-z)>=.5&&Date.now()-lastZoomSet>8000){z=tz;lastZoomSet=Date.now()}
+  let c=L.latLng(lat,lon);
+  if(brg!=null){
+    const p=map.project(c,z),off=map.getSize().y*.2,r=brg*Math.PI/180;
+    c=map.unproject(p.add(L.point(Math.sin(r)*off,-Math.cos(r)*off)),z);
+  }
+  map.setView(c,z,{animate:true,pan:{duration:.9,easeLinearity:1}});
+}
+map.on('dragstart',()=>{
+  stopCountdown();
+  if(isNav){followPaused=true;$('recenterBtn').style.display='block';clearTimeout(resumeTmr);resumeTmr=setTimeout(resumeFollow,15000)}
+  else followIdle=false;
+});
+function resumeFollow(){followPaused=false;$('recenterBtn').style.display='none';clearTimeout(resumeTmr);if(prevDraw)follow(prevDraw[0],prevDraw[1],null,0)}
+function locateMe(){
+  if(isNav)return resumeFollow();
+  followIdle=true;
+  if(lastFix)return map.setView([lastFix.lat,lastFix.lon],17);
+  if(!navigator.geolocation)return toast('GPS indisponível');
+  startGPS();toast('📍 Procurando você…');
+}
+function toggleMute(){S.mute=!S.mute;if(S.mute)try{speechSynthesis.cancel()}catch{};hud();save();toast(S.mute?'🔇 Voz desligada':'🔊 Voz ligada')}
+
+/* ── BUSCA ───────────────────────────────────────────── */
+function nomURL(q,limit){
+  const c=lastFix||{lat:map.getCenter().lat,lon:map.getCenter().lng};
+  return `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(q)}&limit=${limit}&accept-language=pt-BR&countrycodes=br`+
+    `&viewbox=${c.lon-.35},${c.lat+.35},${c.lon+.35},${c.lat-.35}`;
+}
+const _ac={};
+function setupAC(inpId,listId,onPick){
+  const inp=$(inpId),lst=$(listId);
   inp.addEventListener('input',()=>{
-    sel[key]=null;
-    clearTimeout(_acT[key]);
-    const q=inp.value.trim();
+    clearTimeout(_ac[inpId]);const q=inp.value.trim();
     if(q.length<3){lst.style.display='none';return}
-    _acT[key]=setTimeout(async()=>{
+    _ac[inpId]=setTimeout(async()=>{
       try{
-        const r=await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=6&accept-language=pt-BR`,
-          {headers:{'Accept-Language':'pt-BR'}}
-        );
-        const d=await r.json();
+        const d=await(await fetch(nomURL(q,6))).json();
         if(!d.length){lst.style.display='none';return}
-        lst.innerHTML=d.map(x=>{
-          const pts=x.display_name.split(', ');
-          const main=pts.slice(0,2).join(', ');
-          const sub=pts.slice(2,5).join(', ');
-          return`<div class="aci" data-lat="${x.lat}" data-lon="${x.lon}">
-            <div class="am">${main}</div>
-            ${sub?`<div class="as">${sub}</div>`:''}
-          </div>`;
-        }).join('');
+        lst.innerHTML=d.map((x,i)=>{const p=x.display_name.split(', ');
+          return `<div class="aci" data-i="${i}"><div class="am">${esc(p.slice(0,2).join(', '))}</div><div class="as">${esc(p.slice(2,5).join(', '))}</div></div>`}).join('');
+        lst._data=d;
         lst.querySelectorAll('.aci').forEach(el=>{
-          const pick=()=>{
-            inp.value=el.querySelector('.am').textContent;
-            sel[key]={lat:+el.dataset.lat,lon:+el.dataset.lon};
-            lst.style.display='none';
-          };
-          el.addEventListener('mousedown',e=>{e.preventDefault();pick()});
-          el.addEventListener('touchend', e=>{e.preventDefault();pick()});
+          const go=e=>{e.preventDefault();const x=d[+el.dataset.i];const p=x.display_name.split(', ');
+            lst.style.display='none';inp.blur();
+            onPick({name:p.slice(0,2).join(', '),sub:p.slice(2,4).join(', '),lat:+x.lat,lon:+x.lon})};
+          el.addEventListener('mousedown',go);el.addEventListener('touchend',go);
         });
         lst.style.display='block';
       }catch{lst.style.display='none'}
     },320);
   });
-  inp.addEventListener('blur',()=>setTimeout(()=>lst.style.display='none',200));
+  inp.addEventListener('blur',()=>setTimeout(()=>lst.style.display='none',220));
 }
-setupAC('inpO','ac-o','O');
-setupAC('inpD','ac-d','D');
-
-// ── GEOCODE ───────────────────────────────────────────
-async function geocode(text,key){
-  if(sel[key]) return sel[key];
-  const r=await fetch(
-    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(text)}&limit=1&accept-language=pt-BR`
-  );
-  const d=await r.json();
-  if(!d.length) throw new Error(`"${text}" não encontrado`);
-  return{lat:+d[0].lat,lon:+d[0].lon};
+setupAC('inpD','ac-d',d=>{$('inpD').value=d.name;goTo(d)});
+setupAC('inpO','ac-o',d=>{originOverride={lat:d.lat,lon:d.lon};$('originLbl').textContent=d.name;$('inpO').value='';$('originBox').style.display='none'});
+$('inpD').addEventListener('keydown',async e=>{
+  if(e.key!=='Enter')return;const q=$('inpD').value.trim();if(q.length<2)return;
+  $('ac-d').style.display='none';$('inpD').blur();setStatus('🔎 Procurando…');
+  try{const d=await(await fetch(nomURL(q,1))).json();if(!d.length)return setStatus('Não encontrei esse lugar','err');
+    const p=d[0].display_name.split(', ');goTo({name:p.slice(0,2).join(', '),sub:p.slice(2,4).join(', '),lat:+d[0].lat,lon:+d[0].lon})}
+  catch{setStatus('Sem conexão com a busca','err')}
+});
+let originOverride=null;
+function showOriginInput(){$('originBox').style.display='block';$('inpO').focus()}
+function setStatus(m,k=''){const s=$('searchStatus');s.textContent=m;s.className=k}
+function addRecent(d){S.recents=[d,...S.recents.filter(x=>x.name!==d.name)].slice(0,6);save();renderRecents()}
+function renderRecents(){
+  const r=$('recents');r.innerHTML=S.recents.map((x,i)=>`<div class="chip" data-i="${i}">🕘 ${esc(short(x.name))}</div>`).join('');
+  r.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{const d=S.recents[+c.dataset.i];$('inpD').value=d.name;goTo(d)});
 }
+map.on('contextmenu',e=>{if(isNav||PR.length)return;goTo({name:'Ponto marcado no mapa',sub:'',lat:e.latlng.lat,lon:e.latlng.lng},true)});
 
-// ── MY LOCATION ───────────────────────────────────────
-function centerOnMe(){
-  if(!navigator.geolocation){toast('GPS não disponível');return}
-  navigator.geolocation.getCurrentPosition(
-    p=>{map.setView([p.coords.latitude,p.coords.longitude],16);},
-    ()=>toast('Não consegui obter sua localização')
-  );
+/* ── ROTAS ───────────────────────────────────────────── */
+let dest=null,PR=[],selIdx=0,R=null,isNav=false,T=null,sim=null;
+let lines=[],actLines=[],castleMk=null,cdTimer=null;
+
+async function osrm(o,d,alt){
+  const url=`https://router.project-osrm.org/route/v1/driving/${o.lon},${o.lat};${d.lon},${d.lat}?overview=full&geometries=geojson&steps=true&alternatives=${alt}`;
+  const j=await(await fetch(url)).json();
+  if(j.code!=='Ok'||!j.routes?.length)throw new Error('Não encontrei caminho até lá');
+  return j.routes;
 }
-
-// ── CLEAR MAP ─────────────────────────────────────────
-function clearMapLayers(){
-  routeLayers.forEach(l=>map.removeLayer(l)); routeLayers=[];
-  pinLayers.forEach(l=>map.removeLayer(l));   pinLayers=[];
-}
-
-// ── ROUTE LINES ───────────────────────────────────────
-function drawRoutes(routeList,active){
-  routeLayers.forEach(l=>map.removeLayer(l)); routeLayers=[];
-  routeList.forEach((r,i)=>{
-    const coords=r.geometry.coordinates.map(c=>[c[1],c[0]]);
-    const L2=L.polyline(coords,{
-      color:i===active?'#e94560':'#444466',
-      weight:i===active?7:5,
-      opacity:i===active?.95:.55,
-      lineJoin:'round',lineCap:'round'
-    }).addTo(map);
-    if(i===active) L2.bringToFront();
-    routeLayers.push(L2);
+function buildRoute(r){
+  const coords=r.geometry.coordinates.map(c=>[c[1],c[0]]);
+  const cum=[0];for(let i=1;i<coords.length;i++)cum.push(cum[i-1]+hav(coords[i-1][0],coords[i-1][1],coords[i][0],coords[i][1]));
+  let j=0;
+  const steps=r.legs.flatMap(l=>l.steps).map(s=>{
+    const[lo,la]=s.maneuver.location;let bi=j,bd=Infinity;
+    for(let i=j;i<coords.length&&i-j<4000;i++){const d=hav(la,lo,coords[i][0],coords[i][1]);if(d<bd){bd=d;bi=i}if(bd<1)break}
+    j=bi;return{type:s.maneuver.type,mod:s.maneuver.modifier,exit:s.maneuver.exit,name:s.name,ref:s.ref,cum:cum[bi]};
   });
-  if(routeLayers[active]) map.fitBounds(routeLayers[active].getBounds(),{padding:[56,56]});
+  return{coords,cum,total:cum[cum.length-1]||1,duration:r.duration,steps,seg:0,spawns:[],ann:{}};
+}
+function pointAt(Rt,d){
+  const c=Rt.coords,cm=Rt.cum;if(d<=0)return c[0];if(d>=Rt.total)return c[c.length-1];
+  let lo=0,hi=cm.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(cm[m]<=d)lo=m;else hi=m}
+  const t=(d-cm[lo])/((cm[hi]-cm[lo])||1);return[c[lo][0]+(c[hi][0]-c[lo][0])*t,c[lo][1]+(c[hi][1]-c[lo][1])*t];
+}
+function projSeg(la,lo,a,b){
+  const k=Math.cos(la*Math.PI/180);
+  const ax=(a[1]-lo)*111320*k,ay=(a[0]-la)*110540,bx=(b[1]-lo)*111320*k,by=(b[0]-la)*110540;
+  const dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy;let t=l2?-(ax*dx+ay*dy)/l2:0;t=Math.max(0,Math.min(1,t));
+  return{t,d:Math.hypot(ax+t*dx,ay+t*dy)};
+}
+function snap(la,lo){
+  const c=R.coords,n=c.length;let best={d:Infinity,i:0,t:0};
+  const scan=(a,b)=>{for(let i=Math.max(0,a);i<Math.min(n-1,b);i++){const p=projSeg(la,lo,c[i],c[i+1]);if(p.d<best.d)best={d:p.d,i,t:p.t}}};
+  scan(R.seg-10,R.seg+250);if(best.d>60)scan(0,n-1);
+  if(n<2)best={d:hav(la,lo,c[0][0],c[0][1]),i:0,t:0};
+  R.seg=best.i;const a=c[best.i],b=c[best.i+1]||a;
+  return{dist:best.d,i:best.i,lat:a[0]+(b[0]-a[0])*best.t,lon:a[1]+(b[1]-a[1])*best.t,
+    prog:R.cum[best.i]+((R.cum[best.i+1]??R.cum[best.i])-R.cum[best.i])*best.t,brg:bearing(a,b)};
+}
+function genSpawns(Rt,from=250){
+  const sp=Math.max(380,Rt.total/60);let d=from+rnd(0,200);
+  while(d<Rt.total-180){const p=pointAt(Rt,d);Rt.spawns.push({cum:d,lat:p[0],lon:p[1],m:rollMonster(),done:false,mk:null});d+=sp+rnd(0,sp*.9)}
+}
+function drawSpawns(Rt){Rt.spawns.forEach(s=>{if(s.done||s.mk)return;
+  s.mk=L.marker([s.lat,s.lon],{interactive:false,icon:L.divIcon({className:'',iconSize:[38,38],iconAnchor:[19,19],
+    html:`<div class="mon ${s.m.dragon?'dragon':s.m.elite?'elite':''}">${s.m.e}</div>`})}).addTo(map)})}
+function clearSpawns(Rt){Rt?.spawns.forEach(s=>{if(s.mk){map.removeLayer(s.mk);s.mk=null}})}
+function drawRoutes(){
+  lines.forEach(l=>map.removeLayer(l));lines=[];
+  PR.forEach((Rt,i)=>{if(i===selIdx)return;
+    const l=L.polyline(Rt.coords,{color:'#7a6446',weight:7,opacity:.7,lineCap:'round',lineJoin:'round'}).addTo(map);
+    l.on('click',()=>selectAlt(i));lines.push(l)});
+  const c=PR[selIdx].coords;
+  actLines=[
+    L.polyline(c,{color:'#3a2410',weight:12,opacity:.9,lineCap:'round',lineJoin:'round',interactive:false}),
+    L.polyline(c,{color:'#e9b949',weight:7,lineCap:'round',lineJoin:'round',interactive:false}),
+    L.polyline(c,{color:'#fff4c9',weight:2.5,opacity:.95,dashArray:'2,12',lineCap:'round',interactive:false}),
+  ].map(l=>l.addTo(map));
+  lines.push(...actLines);
+}
+function drawCastle(){
+  if(castleMk)map.removeLayer(castleMk);
+  castleMk=L.marker([dest.lat,dest.lon],{interactive:false,icon:L.divIcon({className:'',iconSize:[40,40],iconAnchor:[20,34],html:'<div class="castle">🏰</div>'})}).addTo(map);
+}
+function clearRouteLayers(){
+  lines.forEach(l=>map.removeLayer(l));lines=[];actLines=[];
+  PR.forEach(clearSpawns);if(R)clearSpawns(R);
+  if(castleMk){map.removeLayer(castleMk);castleMk=null}
 }
 
-// ── CALCULATE ROUTE ───────────────────────────────────
-async function calcRota(silent=false){
-  const oTxt=document.getElementById('inpO').value.trim();
-  const dTxt=document.getElementById('inpD').value.trim();
-  const btn=document.getElementById('routeBtn');
-  const st=document.getElementById('searchStatus');
-
-  if(!silent&&(!oTxt||!dTxt)){
-    st.className='err';st.textContent='⚠️ Preencha os dois campos.';return;
-  }
-  if(!silent){btn.disabled=true;btn.textContent='Calculando…';st.className='';st.textContent='Buscando endereços…'}
+async function goTo(d,noRecent){
+  dest=d;if(!noRecent)addRecent(d);
+  setStatus('🧭 Procurando sua posição…');
+  let o;
+  try{o=await getOrigin()}catch{setStatus('Não achei sua localização — digite a partida abaixo.','err');showOriginInput();return}
+  setStatus('🗺️ Traçando a jornada…');
   try{
-    oCoord=silent?oCoord:await geocode(oTxt,'O');
-    dCoord=await geocode(dTxt,'D');
-    if(!silent) st.textContent='Calculando rotas…';
-
-    const url=`https://router.project-osrm.org/route/v1/driving/`+
-      `${oCoord.lon},${oCoord.lat};${dCoord.lon},${dCoord.lat}`+
-      `?overview=full&geometries=geojson&steps=true&alternatives=true`;
-    const data=await(await fetch(url)).json();
-    if(data.code!=='Ok') throw new Error('Rota não encontrada.');
-    routes=data.routes; selIdx=0;
-
-    clearMapLayers();
-
-    // Origin & dest pins
-    const pinO=L.circleMarker([oCoord.lat,oCoord.lon],
-      {radius:9,fillColor:'#22c55e',color:'#fff',weight:2.5,fillOpacity:1}).addTo(map);
-    const pinD=L.circleMarker([dCoord.lat,dCoord.lon],
-      {radius:9,fillColor:'#e94560',color:'#fff',weight:2.5,fillOpacity:1}).addTo(map);
-    pinLayers.push(pinO,pinD);
-
-    drawRoutes(routes,0);
-
-    if(!silent){
-      showRoutePanel();
-    } else {
-      // Silent recalc during nav
-      setNavSteps(routes[0].legs.flatMap(l=>l.steps));
-      toast('✅ Rota recalculada');
-      const rb=document.getElementById('recalcBar');
-      rb.classList.remove('run'); void rb.offsetWidth; rb.style.width='100%';
-      setTimeout(()=>{rb.style.width='0';},400);
-    }
-  }catch(e){
-    if(!silent){st.className='err';st.textContent='❌ '+e.message;}
-    else toast('Recalculo falhou: '+e.message);
-  }finally{
-    if(!silent){btn.disabled=false;btn.textContent='Traçar Rota'}
-  }
+    const rs=await osrm(o,d,true);
+    clearRouteLayers();
+    PR=rs.slice(0,3).map(buildRoute);selIdx=0;genSpawns(PR[0]);
+    setStatus('');showPreview();
+  }catch(e){setStatus('❌ '+e.message,'err')}
 }
-
-// ── ROUTE PANEL ───────────────────────────────────────
-function showRoutePanel(){
-  const r=routes[selIdx];
-  document.getElementById('rhDist').textContent=fmtD(r.distance);
-  document.getElementById('rhTime').textContent=fmtT(r.duration);
-  document.getElementById('rhETA').textContent='Chegada: '+etaHM(r.duration);
-
-  const ar=document.getElementById('altsRow');
-  if(routes.length>1){
-    ar.innerHTML=routes.map((x,i)=>`
-      <div class="altc ${i===selIdx?'sel':''}" data-i="${i}">
-        <div class="at">${fmtT(x.duration)}</div>
-        <div class="ad">${fmtD(x.distance)}</div>
-        <div class="al">Rota ${i+1}</div>
-      </div>`).join('');
-    ar.querySelectorAll('.altc').forEach(c=>{
-      c.addEventListener('click',()=>{
-        selIdx=+c.dataset.i;
-        const r2=routes[selIdx];
-        document.getElementById('rhDist').textContent=fmtD(r2.distance);
-        document.getElementById('rhTime').textContent=fmtT(r2.duration);
-        document.getElementById('rhETA').textContent='Chegada: '+etaHM(r2.duration);
-        drawRoutes(routes,selIdx);
-        ar.querySelectorAll('.altc').forEach(x=>x.classList.toggle('sel',x===c));
-      });
-    });
-  } else {ar.innerHTML=''}
-
-  showPanel('route');
-}
-
-function voltarBusca(){
-  clearMapLayers();
-  document.getElementById('inpO').value='';
-  document.getElementById('inpD').value='';
-  sel.O=sel.D=null; routes=[];
-  showPanel('search');
-}
-
-// ── PANEL SWITCHER ────────────────────────────────────
-function showPanel(which){
-  document.getElementById('searchPanel').style.display=which==='search'?'':'none';
-  document.getElementById('routePanel').style.display =which==='route' ?'':'none';
-  // 'nav' hides both
-}
-
-// ── NAV STEPS ─────────────────────────────────────────
-function setNavSteps(steps){
-  navSteps=steps;
-  // Start from first non-depart step
-  navStep=steps.findIndex(s=>s.maneuver.type!=='depart');
-  if(navStep<0) navStep=0;
-}
-
-// ── START NAV ─────────────────────────────────────────
-function iniciarNav(){
-  if(!navigator.geolocation){
-    toast('GPS não disponível — abra via HTTPS');return;
-  }
-  setNavSteps(routes[selIdx].legs.flatMap(l=>l.steps));
-  isNav=true;
-
-  showPanel('nav');
-  document.getElementById('navTop').classList.add('on');
-  document.getElementById('navBottom').classList.add('on');
-  document.getElementById('fabs').style.bottom='90px';
-
-  drawRoutes([routes[selIdx]],0);
-
-  navWatch=navigator.geolocation.watchPosition(
-    onGPS,
-    e=>toast('GPS: '+(e.code===1?'Permissão negada — ative nas configs':'Erro GPS'),4000),
-    {enableHighAccuracy:true,maximumAge:800,timeout:12000}
-  );
-}
-
-// ── GPS UPDATE ────────────────────────────────────────
-function onGPS(pos){
-  const{latitude:la,longitude:lo,speed,accuracy,heading}=pos.coords;
-
-  // GPS marker (blue dot or arrow with heading)
-  const hasHead=heading!=null&&!isNaN(heading)&&speed!=null&&speed>0.5;
-  const icon=L.divIcon({
-    className:'',
-    html: hasHead
-      ? `<div style="transform:rotate(${heading}deg);transform-origin:50% 70%">
-           <div class="gps-arrow"></div></div>`
-      : `<div class="gps-dot"></div>`,
-    iconSize:[16,16],iconAnchor:[8,8]
+function getOrigin(){
+  if(originOverride)return Promise.resolve(originOverride);
+  if(lastFix&&Date.now()-lastFix.t<60000)return Promise.resolve({lat:lastFix.lat,lon:lastFix.lon});
+  return new Promise((res,rej)=>{
+    if(!navigator.geolocation||gpsDenied)return rej();
+    navigator.geolocation.getCurrentPosition(p=>res({lat:p.coords.latitude,lon:p.coords.longitude}),rej,{enableHighAccuracy:true,timeout:9000,maximumAge:30000});
   });
-
-  if(!gpsMarker){
-    gpsMarker=L.marker([la,lo],{icon,zIndexOffset:1000}).addTo(map);
-  } else {
-    gpsMarker.setLatLng([la,lo]).setIcon(icon);
-  }
-
-  if(!accCircle){
-    accCircle=L.circle([la,lo],{
-      radius:accuracy||20,
-      color:  'rgba(59,130,246,.15)',
-      fillColor:'rgba(59,130,246,.08)',
-      fillOpacity:1,weight:1
-    }).addTo(map);
-  } else {
-    accCircle.setLatLng([la,lo]).setRadius(accuracy||20);
-  }
-
-  map.setView([la,lo],Math.max(map.getZoom(),16));
-
-  // Speed km/h
-  const kmh=speed!=null&&speed>0?Math.round(speed*3.6):0;
-  const sv=document.getElementById('spdVal');
-  sv.textContent=kmh;
-  sv.className=kmh>80?'speeding':'';
-
-  if(navSteps.length) updateNav(la,lo);
-  if(isNav) checkOffRoute(la,lo);
+}
+function estimate(Rt){
+  const km=Rt.total/1000,c=cls();
+  const xp=Rt.spawns.reduce((a,s)=>a+s.m.xp,0)*c.xp+Rt.total/20*c.xp+(30+km*25)*(1+.1*(S.lvl-1));
+  return{n:Rt.spawns.length,xp:Math.round(xp*(1+amu()/100))};
+}
+function fillPreview(){
+  const Rt=PR[selIdx],est=estimate(Rt),eli=Rt.spawns.filter(s=>s.m.elite||s.m.dragon).length;
+  $('questName').textContent='📜 Missão: '+short(dest.name);
+  $('rhTime').textContent=fmtT(Rt.duration);$('rhDist').textContent=fmtD(Rt.total);$('rhETA').textContent='· chegada '+etaHM(Rt.duration);
+  $('rewards').innerHTML=`⚔️ <b>${est.n}</b> monstros${eli?` (<b>${eli}</b> ★ fortes)`:''} · ✨ ~<b>${fmtN(est.xp)}</b> XP · 🎁 baú no destino`;
+  const ar=$('altsRow');
+  if(PR.length>1){
+    ar.innerHTML=PR.map((x,i)=>`<div class="altc ${i===selIdx?'sel':''}" data-i="${i}"><div class="at">${fmtT(x.duration)}</div><div class="ad">${fmtD(x.total)}</div></div>`).join('');
+    ar.querySelectorAll('.altc').forEach(c=>c.onclick=()=>selectAlt(+c.dataset.i));
+  }else ar.innerHTML='';
+}
+function showPreview(){
+  followIdle=false;drawRoutes();drawSpawns(PR[selIdx]);drawCastle();fillPreview();panel('route');
+  map.fitBounds(L.latLngBounds(PR[selIdx].coords),{paddingTopLeft:[30,90],paddingBottomRight:[30,330]});
+  startCountdown();
+}
+function selectAlt(i){
+  if(i===selIdx||isNav)return;stopCountdown();clearSpawns(PR[selIdx]);selIdx=i;
+  if(!PR[i].spawns.length)genSpawns(PR[i]);
+  drawRoutes();drawSpawns(PR[i]);fillPreview();
+}
+function startCountdown(){
+  stopCountdown();const b=$('cdBar');void b.offsetWidth;b.style.transition='width 8s linear';b.style.width='100%';
+  cdTimer=setTimeout(()=>startNav(false),8000);
+}
+function stopCountdown(){clearTimeout(cdTimer);cdTimer=null;const b=$('cdBar');b.style.transition='none';b.style.width='0'}
+$('routePanel').addEventListener('pointerdown',e=>{if(!e.target.closest('.btn.go'))stopCountdown()});
+function cancelRoute(){
+  stopCountdown();clearRouteLayers();PR=[];panel('search');followIdle=true;
+  if(lastFix)map.setView([lastFix.lat,lastFix.lon],16);
+}
+function panel(w){
+  ['searchPanel','routePanel','arrivePanel'].forEach(id=>$(id).style.display='none');
+  if(w!=='none')$(w+'Panel').style.display='block';
+  document.body.classList.toggle('preview',w==='route');
 }
 
-// ── NAV UI UPDATE ─────────────────────────────────────
-function updateNav(la,lo){
-  // Advance steps
-  while(navStep<navSteps.length-1){
-    const loc=navSteps[navStep].maneuver.location;
-    if(hav(la,lo,loc[1],loc[0])<ADVANCE_M) navStep++;
-    else break;
-  }
-  const st=navSteps[navStep];
-  if(!st) return;
-  const loc=st.maneuver.location;
-  const dn=hav(la,lo,loc[1],loc[0]);
+/* ── NAVEGAÇÃO ───────────────────────────────────────── */
+let wake=null,offSince=0,recalcBusy=false,stopArm=0;
+async function grabWake(){try{wake=await navigator.wakeLock?.request('screen')}catch{}}
+function releaseWake(){try{wake?.release()}catch{}wake=null}
+document.addEventListener('visibilitychange',()=>{if(isNav&&document.visibilityState==='visible')grabWake()});
 
-  const[icon,inst]=manobra(st.maneuver.type,st.maneuver.modifier);
-  const prevName=navStep>0?navSteps[navStep-1].name:'';
-
-  document.getElementById('navIconBox').textContent=icon;
-  document.getElementById('navInst').textContent=inst;
-  document.getElementById('navRoad').textContent=st.name||prevName||'';
-
-  // Distance to next maneuver
-  const dv=document.getElementById('navDistVal');
-  const du=document.getElementById('navDistUnit');
-  if(dn<950){dv.textContent=Math.round(dn/10)*10;du.textContent='m'}
-  else{dv.textContent=(dn/1000).toFixed(1);du.textContent='km'}
-
-  // Remaining
-  const remD=navSteps.slice(navStep).reduce((s,x)=>s+x.distance,0);
-  const remT=navSteps.slice(navStep).reduce((s,x)=>s+x.duration,0);
-  document.getElementById('navRem').textContent=fmtD(remD);
-  document.getElementById('navETA').textContent='Chegada: '+etaHM(remT);
-  document.getElementById('navTime').textContent=fmtT(remT)+' restantes';
-
-  if(st.maneuver.type==='arrive'){
-    toast('🏁 Você chegou ao destino!',6000);
-    setTimeout(pararNav,7000);
-  }
+function startNav(simulate){
+  if(isNav||!PR.length)return;stopCountdown();
+  PR.forEach((x,i)=>{if(i!==selIdx)clearSpawns(x)});
+  R=PR[selIdx];PR=[R];selIdx=0;drawRoutes();
+  isNav=true;document.body.classList.add('nav');panel('none');
+  $('navTop').classList.add('on');$('navBottom').classList.add('on');$('hud').style.display='none';
+  $('navInst').textContent='Aguardando GPS…';$('navRoad').textContent='';
+  T={start:Date.now(),m:0,kills:0,xp:0,gold:0,items:[]};
+  followPaused=false;lastZoomSet=0;offSince=0;
+  grabWake();
+  speak(`Jornada iniciada rumo a ${short(dest.name)}. ${fmtSpeech(R.total)} pela frente.`);
+  if(simulate){simSnap=JSON.stringify(S);startSim()}
+  else{startGPS();if(lastFix)onFix({...lastFix,t:Date.now()})}
+  hud();
+}
+function navUpdate(sn,f){
+  if(sn.dist<50)actLines.forEach(l=>l.setLatLngs([[sn.lat,sn.lon],...R.coords.slice(sn.i+1)]));
+  let k=R.steps.findIndex(s=>s.cum>sn.prog+8&&s.type!=='depart');if(k<0)k=R.steps.length-1;
+  const st=R.steps[k],dn=Math.max(0,st.cum-sn.prog),[ic,inst]=manobra(st.type,st.mod,st.exit);
+  $('navIconBox').textContent=ic;$('navInst').textContent=inst;$('navRoad').textContent=st.name||st.ref||'';
+  if(dn<950){$('navDistVal').textContent=Math.round(dn/10)*10;$('navDistUnit').textContent='m'}
+  else{$('navDistVal').textContent=(dn/1000).toFixed(1).replace('.',',');$('navDistUnit').textContent='km'}
+  const rem=Math.max(0,R.total-sn.prog),remT=R.duration*rem/R.total;
+  $('navRem').textContent=fmtD(rem)+' · '+fmtT(remT);$('navETA').textContent='Chegada '+etaHM(remT);
+  const kmh=f.spd>0?Math.round(f.spd*3.6):0;
+  $('spdVal').textContent=kmh;$('spdVal').className=kmh>80?'fast':'';
+  $('navMount').textContent=kmh<3?'🧍 Parado':kmh<12?'🚶 A pé':kmh<40?'🐴 Trotando':kmh<80?'🐎 A galope':'🦅 Voando de grifo';
+  announce(k,st,dn,inst,f.spd||0);
+  if(sn.dist<80){const reach=cls().reach;R.spawns.forEach(s=>{if(!s.done&&s.cum<=sn.prog+reach&&s.cum>=sn.prog-400)battle(s)})}
+  if(!sim)offRouteCheck(sn,f);
+  if(rem<35||hav(f.lat,f.lon,dest.lat,dest.lon)<30)arrive();
+}
+function announce(k,st,dn,inst,spd){
+  const a=R.ann[k]||(R.ann[k]={}),road=st.name?` na ${st.name}`:'';
+  if(st.type==='arrive'){if(!a.n&&dn<250){a.n=1;speak('Seu destino está logo à frente')}return}
+  const fMax=spd>20?800:450,fMin=spd>20?350:180,near=Math.max(60,spd*5);
+  if(!a.f&&dn<=fMax&&dn>=fMin){a.f=1;speak(`Em ${Math.round(dn/50)*50} metros, ${inst.toLowerCase()}${road}`)}
+  else if(!a.n&&dn<near){a.n=1;a.f=1;speak(inst+road)}
+}
+function offRouteCheck(sn,f){
+  const lim=Math.max(55,(f.acc||10)*1.3);
+  if(sn.dist>lim){if(!offSince)offSince=Date.now();else if(Date.now()-offSince>6000&&!recalcBusy)recalc(f)}
+  else offSince=0;
+}
+async function recalc(f){
+  recalcBusy=true;card('🧭','Desvio detectado','Traçando novo caminho…');
+  try{
+    const rs=await osrm({lat:f.lat,lon:f.lon},dest,false);
+    if(!isNav)return;
+    clearSpawns(R);R=buildRoute(rs[0]);PR=[R];selIdx=0;genSpawns(R,200);drawRoutes();drawSpawns(R);
+    speak('Rota recalculada');
+  }catch{card('⚠️','Não consegui recalcular','Tentando de novo…','lose')}
+  finally{recalcBusy=false;offSince=0}
+}
+function arrive(){
+  if(!isNav)return;isNav=false;
+  const km=R.total/1000,mt=Math.min(5,1+Math.floor((S.lvl-1)/3));
+  const boss=mkMon({n:'Guardião de '+short(dest.name),e:'🗿',t:mt},{elite:true});
+  const res=fight(boss);let bossTxt;
+  if(res.win){S.hp=Math.max(1,Math.round(res.php));const x=gainXP(boss.xp),g=gainGold(boss.gold);S.stats.kills++;S.daily.kills++;T.kills++;
+    bossTxt=`🗿 Guardião derrotado (+${x} XP, +${g} 🪙)`}
+  else{S.hp=Math.round(maxHP()*.35);bossTxt='🗿 O guardião resistiu, mas o baú é seu'}
+  const bonus=rawXP(Math.round((30+km*25)*(1+.1*(S.lvl-1))*cls().xp*(1+amu()/100)));
+  const loot=handleItem(makeItem(rollRar(Math.min(.6,km/40))));
+  S.stats.trips++;ensureDaily();S.daily.trips++;if(isNight())S.stats.nightTrips++;
+  checkQuests();checkAch();
+  const mins=Math.max(1,Math.round((Date.now()-T.start)/60000));
+  $('arDest').textContent=short(dest.name)+(simSnap?' · modo treino (não salvo)':'');
+  $('arGrid').innerHTML=[[fmtD(Math.max(T.m,R.total)),'Distância'],[mins+' min','Tempo'],[T.kills,'Monstros'],
+    ['+'+fmtN(T.xp),'XP'],['+'+fmtN(T.gold),'Ouro'],['Nv '+S.lvl,'Nível']]
+    .map(([v,k])=>`<div class="ar-c"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
+  $('arLoot').innerHTML=`<div style="color:#b59f7b;margin-bottom:5px">${bossTxt} · bônus da jornada <b style="color:#f6d77e">+${bonus} XP</b></div>
+    🎁 Baú: <span class="r-${loot.it.r}"><b>${esc(loot.it.name)}</b></span> (${RAR[loot.it.r].n}, ${statTxt(loot.it)}) — ${loot.act==='equipado'?'equipado!':'vendido por '+loot.g+' 🪙'}`;
+  save();endNav(true);panel('arrive');
+}
+function endNav(arrived){
+  isNav=false;stopSim();releaseWake();try{speechSynthesis.cancel()}catch{}
+  if(arrived)setTimeout(()=>speak('Você chegou! Missão concluída.'),50);
+  document.body.classList.remove('nav');$('navTop').classList.remove('on');$('navBottom').classList.remove('on');
+  $('hud').style.display='';$('recenterBtn').style.display='none';
+  clearRouteLayers();R=null;PR=[];T=arrived?T:null;
+  if(simSnap){S=JSON.parse(simSnap);simSnap=null;refreshAll()}
+  if(!arrived)panel('search');
+  followIdle=true;
+  if(lastFix){player?.setLatLng([lastFix.lat,lastFix.lon]);map.setView([lastFix.lat,lastFix.lon],16)}
+  hud();
+}
+function closeArrive(){T=null;panel('search');$('inpD').value='';hud()}
+function stopTap(){
+  if(Date.now()-stopArm<3000){endNav(false);toast('Jornada encerrada');return}
+  stopArm=Date.now();toast('Toque de novo no ✕ para encerrar');
 }
 
-// ── OFF-ROUTE ─────────────────────────────────────────
-function checkOffRoute(la,lo){
-  if(!navSteps.length||navSteps[navStep]?.maneuver.type==='arrive') return;
+/* ── MODO TREINO (simulação) ─────────────────────────── */
+function startSim(){
+  sim={prog:0,mult:1,timer:null};$('simBadge').style.display='block';simBadge();
+  let last=Date.now();
+  const tick=()=>{
+    if(!R||!isNav)return;const now=Date.now(),dt=Math.min(3,(now-last)/1000);last=now;
+    const v=12.5*sim.mult;sim.prog=Math.min(R.total,sim.prog+v*dt);
+    const p=pointAt(R,sim.prog),p2=pointAt(R,Math.min(R.total,sim.prog+8));
+    onFix({lat:p[0],lon:p[1],acc:5,spd:v,hdg:bearing(p,p2),t:now});
+  };
+  tick();sim.timer=setInterval(tick,1000);
+}
+function stopSim(){if(sim){clearInterval(sim.timer);sim=null}$('simBadge').style.display='none'}
+function simBadge(){$('simBadge').textContent=`🧪 TREINO ×${sim.mult} · toque p/ acelerar`}
+function simSpeed(){if(!sim)return;sim.mult=sim.mult>=8?1:sim.mult*2;simBadge()}
 
-  // Distance to nearest upcoming step maneuver
-  let minD=Infinity;
-  for(let i=navStep;i<Math.min(navStep+5,navSteps.length);i++){
-    const loc=navSteps[i].maneuver.location;
-    minD=Math.min(minD,hav(la,lo,loc[1],loc[0]));
-  }
-  if(minD>OFFROUTE_M){
-    if(!recalcTmr){
-      const rb=document.getElementById('recalcBar');
-      rb.classList.add('run');
-      toast('Fora da rota — recalculando…',8000);
-      recalcTmr=setTimeout(()=>{
-        recalcTmr=null;
-        // Update origin to current pos and recalculate silently
-        oCoord={lat:la,lon:lo};
-        sel.O={lat:la,lon:lo};
-        document.getElementById('inpO').value=`${la.toFixed(5)}, ${lo.toFixed(5)}`;
-        calcRota(true);
-      },RECALC_S*1000);
-    }
-  } else {
-    if(recalcTmr){
-      clearTimeout(recalcTmr);recalcTmr=null;
-      const rb=document.getElementById('recalcBar');
-      rb.classList.remove('run');rb.style.width='0';
-    }
-  }
+/* ── MANOBRAS ────────────────────────────────────────── */
+function manobra(type,mod,exit){
+  if(type==='depart')return['⬆️','Siga em frente'];
+  if(type==='arrive')return['🏰','Destino à frente'];
+  if(type==='roundabout'||type==='rotary')return['🔄',exit?`Na rotatória, pegue a ${exit}ª saída`:'Entre na rotatória'];
+  if(type==='exit roundabout'||type==='exit rotary')return['↗️','Saia da rotatória'];
+  if(type==='on ramp')return['↗️','Entre na pista'];
+  if(type==='off ramp')return['↘️','Pegue a saída'];
+  if(type==='merge')return['⤴️','Entre na via'];
+  if(type==='fork')return mod&&mod.includes('right')?['↱','Fique pela direita']:['↰','Fique pela esquerda'];
+  if(type==='end of road')return mod&&mod.includes('right')?['➡️','Vire à direita']:['⬅️','Vire à esquerda'];
+  if(!mod||mod==='straight')return['⬆️','Continue em frente'];
+  if(mod==='slight left')return['↖️','Mantenha à esquerda'];
+  if(mod==='slight right')return['↗️','Mantenha à direita'];
+  if(mod==='left')return['⬅️','Vire à esquerda'];
+  if(mod==='right')return['➡️','Vire à direita'];
+  if(mod==='sharp left')return['↩️','Vire bem à esquerda'];
+  if(mod==='sharp right')return['↪️','Vire bem à direita'];
+  if(mod==='uturn')return['🔃','Faça o retorno'];
+  return['⬆️','Continue'];
 }
 
-// ── STOP NAV ──────────────────────────────────────────
-function pararNav(){
-  isNav=false;
-  if(navWatch){navigator.geolocation.clearWatch(navWatch);navWatch=null}
-  if(gpsMarker){map.removeLayer(gpsMarker);gpsMarker=null}
-  if(accCircle){map.removeLayer(accCircle);accCircle=null}
-  if(recalcTmr){clearTimeout(recalcTmr);recalcTmr=null}
-  document.getElementById('navTop').classList.remove('on');
-  document.getElementById('navBottom').classList.remove('on');
-  document.getElementById('fabs').style.bottom='';
-  if(routes.length) showRoutePanel();
-  else showPanel('search');
+/* ── FICHA DO HERÓI ──────────────────────────────────── */
+let sheetTab='heroi',resetArm=0;
+const TABS=[['heroi','🧙 Herói'],['equip','🎒 Equipamento'],['quests','📜 Missões'],['ach','🏅 Conquistas'],['cfg','⚙️ Ajustes']];
+function openSheet(){regen();renderSheet();$('sheet').classList.add('on')}
+function closeSheet(){$('sheet').classList.remove('on')}
+function setTab(t){sheetTab=t;renderSheet()}
+function renderSheet(){
+  $('tabs').innerHTML=TABS.map(([k,n])=>`<div class="tab ${k===sheetTab?'on':''}" onclick="setTab('${k}')">${n}</div>`).join('');
+  const c=cls(),mx=maxHP();let h='';
+  if(sheetTab==='heroi'){
+    h=`<div class="hero"><div class="big sp walk">${spriteSVG(S.cls)}</div><div>
+        <div class="hn">${esc(S.name)}</div><div class="hc">${c.nome} · Nível ${S.lvl}</div>
+        ${S.title?`<div class="htitle">« ${esc(S.title)} »</div>`:''}</div></div>
+      <div class="row"><div class="r1"><span>✨ Experiência</span><b>${fmtN(S.xp)} / ${fmtN(needXP(S.lvl))}</b></div><div class="qbar"><i style="width:${S.xp/needXP(S.lvl)*100}%;background:linear-gradient(90deg,#5b4bd6,#a89bff)"></i></div></div>
+      <div class="row"><div class="r1"><span>❤️ Vida</span><b>${Math.round(S.hp)} / ${mx}</b></div><div class="qbar"><i style="width:${S.hp/mx*100}%;background:linear-gradient(90deg,#a3221d,#e5534b)"></i></div></div>
+      <div class="stats">
+        <div class="st"><span>⚔️ Ataque</span><b>${atk()}</b></div><div class="st"><span>🛡️ Defesa</span><b>${def()}</b></div>
+        <div class="st"><span>💥 Crítico</span><b>${Math.round(c.crit*100)}%</b></div><div class="st"><span>🪙 Ouro</span><b>${fmtN(S.gold)}</b></div>
+        <div class="st"><span>✨ Bônus XP</span><b>+${Math.round((c.xp-1)*100+amu())}%</b></div><div class="st"><span>🏹 Alcance</span><b>${c.reach} m</b></div>
+      </div>
+      <div class="sect">Registros</div>
+      <div class="stats">
+        <div class="st"><span>🗺️ Distância</span><b>${S.stats.km.toFixed(1).replace('.',',')} km</b></div><div class="st"><span>💀 Monstros</span><b>${fmtN(S.stats.kills)}</b></div>
+        <div class="st"><span>🏰 Jornadas</span><b>${S.stats.trips}</b></div><div class="st"><span>🐉 Dragões</span><b>${S.stats.dragons}</b></div>
+      </div>
+      <div class="r2" style="font-size:11.5px;color:#8a7658;margin-top:10px">${esc(c.desc)}</div>`;
+  }else if(sheetTab==='equip'){
+    h=Object.keys(SLOT).map(k=>{const it=S.equip[k];
+      return `<div class="row"><div class="r1"><span>${SLOT[k]}</span>${it?`<b class="r-${it.r}">${esc(it.name)}</b>`:'<span style="color:#7a6446">vazio</span>'}</div>
+        <div class="r2">${it?`${RAR[it.r].n} · ${statTxt(it)}`:'Itens caem dos monstros e dos baús'}${k==='weapon'&&S.smith.w?` · ferreiro +${S.smith.w}`:''}${k==='armor'&&S.smith.a?` · ferreiro +${S.smith.a}`:''}</div></div>`}).join('')+
+      `<div class="row"><div class="r1"><span>🔨 Próximo aprimoramento</span><b>${fmtN(smithCost())} 🪙</b></div><div class="r2">O ferreiro usa seu ouro automaticamente</div><div class="qbar"><i style="width:${Math.min(100,S.gold/smithCost()*100)}%"></i></div></div>
+      <div class="sect">Últimos achados</div>`+
+      (S.loot.length?S.loot.map(it=>`<div class="row"><div class="r1"><span class="r-${it.r}">${esc(it.name)}</span><span style="font-size:11.5px;color:#b59f7b">${it.act==='equipado'?'equipado':'+'+it.g+' 🪙'}</span></div><div class="r2">${RAR[it.r].n} · ${statTxt(it)}</div></div>`).join('')
+        :'<div class="r2" style="color:#7a6446">Nada ainda. Faça uma jornada!</div>');
+  }else if(sheetTab==='quests'){
+    ensureDaily();
+    h='<div class="r2" style="color:#8a7658;margin-bottom:9px">Renovam todo dia. Recompensas entregues automaticamente.</div>'+
+      DQ.map(q=>{const v=S.daily[q.id],done=S.daily.claimed.includes(q.id),k=1+.15*(S.lvl-1);
+        return `<div class="row"><div class="r1"><span>${done?'✅':'📜'} ${q.t}</span><b>${q.u==='km'?v.toFixed(1).replace('.',','):v} / ${q.goal}</b></div>
+          <div class="r2">Recompensa: ${Math.round(q.xp*k)} XP · ${Math.round(q.gold*k)} 🪙</div><div class="qbar"><i style="width:${Math.min(100,v/q.goal*100)}%"></i></div></div>`}).join('');
+  }else if(sheetTab==='ach'){
+    h=`<div class="r2" style="color:#8a7658;margin-bottom:9px">${S.ach.length} de ${ACH.length} desbloqueadas. A última vira seu título.</div>`+
+      ACH.map(a=>`<div class="row ${S.ach.includes(a.id)?'':'lock'}"><div class="r1"><span>${S.ach.includes(a.id)?'🏅':'🔒'} ${a.n}</span></div><div class="r2">${a.d}</div></div>`).join('');
+  }else{
+    const th=S.theme||'auto';
+    h=`<div class="row"><div class="r1"><span>🗺️ Visual do mapa</span></div><div class="opt">
+        ${[['auto','Automático'],['dia','Pergaminho'],['noite','Masmorra']].map(([k,n])=>`<button class="${th===k?'on':''}" onclick="setTheme('${k}')">${n}</button>`).join('')}</div></div>
+      <div class="row"><div class="r1"><span>🔊 Voz de navegação</span></div><div class="opt">
+        <button class="${!S.mute?'on':''}" onclick="S.mute=false;hud();save();renderSheet()">Ligada</button><button class="${S.mute?'on':''}" onclick="S.mute=true;hud();save();renderSheet()">Desligada</button></div></div>
+      <button class="btn prim" style="margin-top:6px" onclick="closeSheet();openClassSel(false)">Trocar classe / nome</button>
+      <div class="r2" style="color:#8a7658;margin:6px 2px 14px;font-size:11.5px">Trocar de classe mantém nível, ouro e conquistas.</div>
+      <button class="btn sec" id="resetBtn" onclick="resetTap()">Apagar todo o progresso</button>`;
+  }
+  $('sheetBody').innerHTML=h;
+}
+function setTheme(t){S.theme=t;applyTheme();save();renderSheet()}
+function resetTap(){
+  if(Date.now()-resetArm<4000){try{localStorage.removeItem(SAVE_KEY)}catch{}location.reload();return}
+  resetArm=Date.now();$('resetBtn').textContent='Toque de novo para apagar TUDO';
 }
 
-// ── KEYBOARD ──────────────────────────────────────────
-document.getElementById('inpO').addEventListener('keydown',e=>e.key==='Enter'&&document.getElementById('inpD').focus());
-document.getElementById('inpD').addEventListener('keydown',e=>e.key==='Enter'&&calcRota());
+/* ── ESCOLHA DE CLASSE ───────────────────────────────── */
+let selCls='cavaleiro';
+function openClassSel(){
+  selCls=S.cls||'cavaleiro';$('heroName').value=S.name==='Aventureiro'?'':S.name;
+  renderClassGrid();$('classSel').classList.add('on');
+}
+function renderClassGrid(){
+  $('clsGrid').innerHTML=Object.entries(CLASSES).map(([k,c])=>`<div class="cc ${k===selCls?'sel':''}" onclick="selCls='${k}';renderClassGrid()">
+    <div class="cv sp ${k===selCls?'walk':''}">${spriteSVG(k)}</div><div class="cn">${c.nome}</div><div class="cdx">${c.desc}</div></div>`).join('');
+}
+function confirmClass(){
+  const first=!S.cls;S.cls=selCls;S.name=$('heroName').value.trim()||S.name||'Aventureiro';
+  if(S.hp==null||first)S.hp=maxHP();else S.hp=Math.min(S.hp,maxHP());
+  save();$('classSel').classList.remove('on');refreshAll();
+  if(first){startGPS();card('🗡️',`Bem-vindo, ${esc(S.name)}!`,'Coloque um destino e a aventura começa.','gold')}
+}
 
-// ── INIT ──────────────────────────────────────────────
-showPanel('search');
+/* ── INÍCIO ──────────────────────────────────────────── */
+ensureDaily();applyTheme();setInterval(applyTheme,300000);
+setInterval(()=>{regen();hud()},10000);
+if('speechSynthesis' in window)speechSynthesis.getVoices();
+panel('search');
+if(!S.cls)openClassSel();else{refreshAll();startGPS()}
 </script>
 </body>
 </html>
