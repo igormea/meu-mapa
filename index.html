@@ -200,6 +200,7 @@ body.nav #fabs{bottom:150px}
 body.arrive #fabs{display:none}
 .fab{width:46px;height:46px;border-radius:50%;background:linear-gradient(180deg,var(--wood2),var(--wood));border:2px solid var(--edge);color:var(--gold2);font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.5)}
 #recenterBtn{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:160px;z-index:110;padding:10px 18px;border-radius:22px;font:700 14px var(--px);background:linear-gradient(180deg,#f3cf6e,#c8912f);color:var(--ink);border:2px solid #7a5420;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+#drBadge{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(118px + env(safe-area-inset-bottom));z-index:110;font:700 12px var(--px);padding:6px 12px;border-radius:10px;background:rgba(28,19,11,.95);color:var(--gold2);border:1.5px solid var(--gold);white-space:nowrap}
 #simBadge{display:none;position:fixed;right:10px;bottom:250px;z-index:110;font:700 11px var(--px);padding:6px 10px;border-radius:9px;background:#4c1d95;color:#fff;border:1.5px solid #c4b5fd;cursor:pointer}
 
 /* ───── FICHA DO HERÓI ───── */
@@ -276,6 +277,7 @@ body.arrive #fabs{display:none}
 </div>
 <button id="recenterBtn" onclick="resumeFollow()">🎯 Recentralizar</button>
 <div id="simBadge" onclick="simSpeed()"></div>
+<div id="drBadge">📡 Sem sinal de GPS — estimando posição</div>
 <div id="speedo">
   <div id="limitSign"></div>
   <div id="gauge"><svg viewBox="0 0 72 72"><path d="M14.6 57.4 A30 30 0 1 1 57.4 57.4" fill="none" stroke="#1c130b" stroke-width="7" stroke-linecap="round"/>
@@ -684,17 +686,78 @@ function refreshAll(){
 
 /* ── GPS ─────────────────────────────────────────────── */
 let watchId=null,lastFix=null,lastPos=null,followIdle=true,gpsDenied=false;
+/* ── SENSORES DO CELULAR ─────────────────────────────────
+   Bússola: direção quando você está parado ou a pé (o GPS só sabe a
+   direção quando você já está andando). No carro, depois de dirigir,
+   mantém a última direção do GPS (a bússola sofre com o metal do carro).
+   Acelerômetro: detecta se o celular está parado de verdade, pra travar
+   a posição e o herói não "dançar" no semáforo. */
+let compass=null,compassT=0,lastCourse=null,lastFastT=0,stillSince=0,motionOk=false;
+const accBuf=[];
+function onOri(e){
+  let hd=null;
+  if(e.webkitCompassHeading!=null)hd=e.webkitCompassHeading;
+  else if(e.absolute&&e.alpha!=null)hd=(360-e.alpha)%360;
+  if(hd==null||isNaN(hd))return;
+  hd=(hd+((screen.orientation&&screen.orientation.angle)||0))%360;
+  compass=compass==null?hd:(compass+angDiff(compass,hd)*.25+360)%360;compassT=Date.now();
+}
+function onMotion(e){
+  const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;motionOk=true;
+  accBuf.push(Math.hypot(a.x,a.y,a.z));if(accBuf.length>40)accBuf.shift();
+  if(accBuf.length<20)return;
+  const m=accBuf.reduce((s,v)=>s+v,0)/accBuf.length,sd=Math.sqrt(accBuf.reduce((s,v)=>s+(v-m)**2,0)/accBuf.length);
+  if(sd<.12){if(!stillSince)stillSince=Date.now()}else stillSince=0;
+}
+const isStill=()=>motionOk&&stillSince&&Date.now()-stillSince>2500;
+let sensorsOn=false;
+async function startSensors(){
+  if(sensorsOn)return;sensorsOn=true;
+  try{if(typeof DeviceOrientationEvent!=='undefined'&&DeviceOrientationEvent.requestPermission)await DeviceOrientationEvent.requestPermission()}catch{}
+  try{if(typeof DeviceMotionEvent!=='undefined'&&DeviceMotionEvent.requestPermission)await DeviceMotionEvent.requestPermission()}catch{}
+  if('ondeviceorientationabsolute' in window)window.addEventListener('deviceorientationabsolute',onOri,true);
+  else window.addEventListener('deviceorientation',onOri,true);
+  window.addEventListener('devicemotion',onMotion,true);
+}
+// melhor direção disponível agora
+function bestHeading(f){
+  if(f&&f.hdg!=null&&!isNaN(f.hdg)&&f.spd>1.5)return f.hdg;
+  if(lastCourse!=null&&Date.now()-lastFastT<120000)return lastCourse;   // estava dirigindo: mantém
+  if(compass!=null&&Date.now()-compassT<3000)return compass;
+  return null;
+}
+
+/* ── SEM SINAL DE GPS (túnel, viaduto) ───────────────────
+   Se o GPS some durante a navegação, o herói continua andando pela rota
+   na última velocidade conhecida por até 60 s. */
+let lastRealT=0,lastRealSpd=0,drProg=null;
+setInterval(()=>{
+  if(!isNav||!R||sim||!lastRealT)return;
+  const gap=Date.now()-lastRealT;
+  if(gap<3500||gap>60000||lastRealSpd<3){if(drProg!=null&&gap<3500){drProg=null;$('drBadge').style.display='none'}return}
+  if(drProg==null)drProg=R.prog||0;
+  drProg=Math.min(R.total,drProg+lastRealSpd);
+  const p=pointAt(R,drProg),p2=pointAt(R,Math.min(R.total,drProg+10));
+  $('drBadge').style.display='block';
+  onFix({lat:p[0],lon:p[1],acc:15,spd:lastRealSpd,hdg:bearing(p,p2),t:Date.now(),dr:true});
+},1000);
+
 function startGPS(){
   if(watchId!=null||!navigator.geolocation)return;
   watchId=navigator.geolocation.watchPosition(p=>{
     gpsDenied=false;
+    lastRealT=Date.now();lastRealSpd=p.coords.speed||0;
     if(!sim)onFix({lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy,spd:p.coords.speed,hdg:p.coords.heading,t:Date.now()});
   },e=>{
     if(e.code===1){gpsDenied=true;toast('📍 Permita a localização para o herói te acompanhar',4000)}
   },{enableHighAccuracy:true,maximumAge:1000,timeout:15000});
 }
 function onFix(f){
-  const first=!lastFix;if(!sim)lastFix=f;
+  const first=!lastFix;
+  // celular parado de verdade (acelerômetro) + GPS dizendo que andou pouco = oscilação → trava
+  if(!f.dr&&lastFix&&isStill()&&(f.spd==null||f.spd<1)&&hav(lastFix.lat,lastFix.lon,f.lat,f.lon)<40){f={...f,lat:lastFix.lat,lon:lastFix.lon,spd:0}}
+  if(!sim&&!f.dr)lastFix=f;
+  if(f.hdg!=null&&!isNaN(f.hdg)&&f.spd>4){lastCourse=f.hdg;lastFastT=Date.now()}
   regen();
   let moved=false;
   if(lastPos){
@@ -710,8 +773,8 @@ function onFix(f){
     navUpdate(sn,f);
   }
   if(brg==null){
-    if(f.hdg!=null&&!isNaN(f.hdg)&&f.spd>1)brg=f.hdg;
-    else if(prevDraw&&hav(prevDraw[0],prevDraw[1],lat,lon)>3)brg=bearing(prevDraw,[lat,lon]);
+    brg=bestHeading(f);
+    if(brg==null&&prevDraw&&hav(prevDraw[0],prevDraw[1],lat,lon)>3)brg=bearing(prevDraw,[lat,lon]);
   }
   const dur=first||!player?0:Math.min(1500,Math.max(300,f.t-(lastDrawT||f.t)))||1000;lastDrawT=f.t;
   ensurePlayer(lat,lon);movePlayer(lat,lon,dur);
@@ -911,7 +974,7 @@ async function goTo(d,noRecent){
 }
 function getOrigin(){
   if(originOverride)return Promise.resolve(originOverride);
-  if(lastFix&&Date.now()-lastFix.t<60000)return Promise.resolve({lat:lastFix.lat,lon:lastFix.lon,hdg:lastFix.spd>2?curHeading(lastFix):null,acc:lastFix.acc});
+  if(lastFix&&Date.now()-lastFix.t<60000)return Promise.resolve({lat:lastFix.lat,lon:lastFix.lon,hdg:bestHeading(lastFix),acc:lastFix.acc});
   return new Promise((res,rej)=>{
     if(!navigator.geolocation||gpsDenied)return rej();
     navigator.geolocation.getCurrentPosition(p=>res({lat:p.coords.latitude,lon:p.coords.longitude}),rej,{enableHighAccuracy:true,timeout:9000,maximumAge:30000});
@@ -967,7 +1030,8 @@ function releaseWake(){try{wake?.release()}catch{}wake=null}
 document.addEventListener('visibilitychange',()=>{if(isNav&&document.visibilityState==='visible')grabWake()});
 
 function startNav(simulate){
-  if(isNav||!PR.length)return;stopCountdown();
+  if(isNav||!PR.length)return;stopCountdown();startSensors();
+  drProg=null;
   try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume()}catch{}
   updSpeedo(0,0);
   PR.forEach((x,i)=>{if(i!==selIdx)clearSpawns(x)});
@@ -1000,7 +1064,7 @@ function navUpdate(sn,f){
   $('navMount').textContent=kmh<3?'🧍 Parado':kmh<12?'🚶 A pé':kmh<40?'🐴 Trotando':kmh<80?'🐎 A galope':'🦅 Voando de grifo';
   announce(k,st,dn,inst,f.spd||0);
   if(sn.dist<80){const reach=cls().reach;R.spawns.forEach(s=>{if(!s.done&&s.cum<=sn.prog+reach&&s.cum>=sn.prog-400)battle(s)})}
-  if(!sim)offRouteCheck(sn,f);
+  if(!sim&&!f.dr)offRouteCheck(sn,f);
   if(rem<35||hav(f.lat,f.lon,dest.lat,dest.lon)<30)arrive();
 }
 function announce(k,st,dn,inst,spd){
@@ -1015,7 +1079,7 @@ function announce(k,st,dn,inst,spd){
    e com pelo menos 25 s desde o último recálculo. */
 let offStart=null,lastRecalc=0,recalcFails=0;
 function curHeading(f){
-  if(f.hdg!=null&&!isNaN(f.hdg)&&f.spd>2)return f.hdg;
+  const bh=bestHeading(f);if(bh!=null)return bh;
   if(prevDraw&&hav(prevDraw[0],prevDraw[1],f.lat,f.lon)>8)return bearing(prevDraw,[f.lat,f.lon]);
   return null;
 }
@@ -1069,7 +1133,7 @@ function arrive(){
   save();endNav(true);panel('arrive');
 }
 function endNav(arrived){
-  isNav=false;stopSim();releaseWake();try{speechSynthesis.cancel()}catch{}
+  isNav=false;stopSim();releaseWake();drProg=null;$('drBadge').style.display='none';try{speechSynthesis.cancel()}catch{}
   if(arrived)setTimeout(()=>speak('Você chegou! Missão concluída.'),50);
   document.body.classList.remove('nav');$('navTop').classList.remove('on');$('navBottom').classList.remove('on');
   $('hud').style.display='';$('recenterBtn').style.display='none';
@@ -1257,6 +1321,8 @@ setInterval(()=>{regen();hud()},10000);
 if('speechSynthesis' in window)speechSynthesis.getVoices();
 panel('search');
 if(!S.cls)openClassSel();else{refreshAll();startGPS()}
+if(!(typeof DeviceOrientationEvent!=='undefined'&&DeviceOrientationEvent.requestPermission))startSensors();
+document.addEventListener('click',()=>startSensors(),{once:true});
 </script>
 </body>
 </html>
