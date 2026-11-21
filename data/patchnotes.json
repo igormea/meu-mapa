@@ -1,14 +1,15 @@
 [
  {
-  "v": "6.0.3",
+  "v": "1.15.3",
   "d": "21/11/2026",
   "t": "Terreno corrigido",
   "i": [
-   "Corrigido: bairros perto de rio (como Tabapuá, em Caucaia) apareciam como 'Praia e Dunas'. Bancos de areia de rio não contam mais como praia, e morar perto de um rio não transforma o bairro em 'Lagoa e Rio'."
+   "Corrigido: bairros perto de rio (como Tabapuá, em Caucaia) apareciam como 'Praia e Dunas'. Bancos de areia de rio não contam mais como praia, e morar perto de um rio não transforma o bairro em 'Lagoa e Rio'.",
+   "As versões foram renumeradas no padrão MAIOR.MENOR.CORREÇÃO: a antiga 6.0.3 agora é a 1.15.3."
   ]
  },
  {
-  "v": "6.0.2",
+  "v": "1.15.2",
   "d": "21/11/2026",
   "t": "Herói e monstros corrigidos",
   "i": [
@@ -18,7 +19,16 @@
   ]
  },
  {
-  "v": "6.0.0",
+  "v": "1.15.1",
+  "d": "21/11/2026",
+  "t": "Ajustes do teste de qualidade",
+  "i": [
+   "Busca: 'farmácia' traz farmácias e 'posto' traz postos de combustível primeiro; 'rua 10' acha a Rua 10, não a Rua 102.",
+   "No fim da viagem, o aviso de subir de nível vira um card e não cobre mais o resumo."
+  ]
+ },
+ {
+  "v": "1.15.0",
   "d": "21/11/2026",
   "t": "Pergaminhos, equipamento e Natal",
   "i": [
@@ -30,7 +40,7 @@
   ]
  },
  {
-  "v": "5.9.0",
+  "v": "1.14.0",
   "d": "21/11/2026",
   "t": "Bestiário e terrenos",
   "i": [
@@ -43,7 +53,7 @@
   ]
  },
  {
-  "v": "5.8.0",
+  "v": "1.13.0",
   "d": "21/11/2026",
   "t": "Controles do celular e números",
   "apk": true,
@@ -59,7 +69,7 @@
   ]
  },
  {
-  "v": "5.7.0",
+  "v": "1.12.0",
   "d": "21/11/2026",
   "t": "Jornada sem toque",
   "i": [
@@ -72,7 +82,7 @@
   ]
  },
  {
-  "v": "5.6.0",
+  "v": "1.11.0",
   "d": "21/11/2026",
   "t": "Busca nova e reportar bug",
   "i": [
@@ -84,7 +94,7 @@
   ]
  },
  {
-  "v": "5.5.0",
+  "v": "1.10.0",
   "d": "21/11/2026",
   "t": "Monstros 3D",
   "i": [
@@ -95,7 +105,7 @@
   ]
  },
  {
-  "v": "5.4.0",
+  "v": "1.9.0",
   "d": "21/11/2026",
   "t": "Tema Castelo e retratos 3D",
   "i": [
@@ -106,7 +116,7 @@
   ]
  },
  {
-  "v": "5.3.0",
+  "v": "1.8.0",
   "d": "21/11/2026",
   "t": "RPG mais profundo",
   "i": [
@@ -120,7 +130,7 @@
   ]
  },
  {
-  "v": "5.2.0",
+  "v": "1.7.1",
   "d": "21/11/2026",
   "t": "Ajustes do teste de rua",
   "i": [
@@ -130,7 +140,7 @@
   ]
  },
  {
-  "v": "5.1.0",
+  "v": "1.7.0",
   "d": "20/11/2026",
   "t": "Nasce o Ranvus Maps",
   "i": [
@@ -139,7 +149,7 @@
   ]
  },
  {
-  "v": "5.0.0",
+  "v": "1.6.0",
   "d": "20/11/2026",
   "t": "Alertas e mundo vivo",
   "i": [
@@ -150,7 +160,7 @@
   ]
  },
  {
-  "v": "4.5.0",
+  "v": "1.5.0",
   "d": "20/11/2026",
   "t": "Aplicativo Android",
   "apk": true,
@@ -161,7 +171,7 @@
   ]
  },
  {
-  "v": "4.3.0",
+  "v": "1.4.0",
   "d": "20/11/2026",
   "t": "Navegação mais esperta",
   "i": [
@@ -171,7 +181,7 @@
   ]
  },
  {
-  "v": "4.2.0",
+  "v": "1.3.0",
   "d": "20/11/2026",
   "t": "Velocímetro",
   "i": [
@@ -180,7 +190,7 @@
   ]
  },
  {
-  "v": "4.1.0",
+  "v": "1.2.0",
   "d": "20/11/2026",
   "t": "Câmera 3D",
   "i": [
@@ -189,7 +199,7 @@
   ]
  },
  {
-  "v": "4.0.0",
+  "v": "1.1.0",
   "d": "20/11/2026",
   "t": "Meu Mapa RPG",
   "i": [
