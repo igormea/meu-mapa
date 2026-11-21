@@ -1,0 +1,29 @@
+name: Atualizar dados do mapa (OSM)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * 1'   # toda segunda, 03:17 de Fortaleza
+  push:
+    branches: [main]
+    paths: ['tools/osm_extract.py', '.github/workflows/osm-data.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Extrair do Overpass
+        run: python3 tools/osm_extract.py 2>&1 | tee osm.log
+      - name: Mostrar resumo
+        if: always()
+        run: echo "::notice title=Dados OSM::$(grep -E '^[a-z]+ [0-9]+$' osm.log | tr '\n' ' ')"
+      - name: Salvar no repositório
+        run: |
+          git config user.name "meu-mapa-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/osm-ce.json
+          git diff --cached --quiet || (git commit -m "Dados OSM atualizados" && git pull --rebase && git push)
