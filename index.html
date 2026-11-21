@@ -247,6 +247,8 @@ body.arrive #fabs{display:none}
 .opt button.on{border-color:var(--gold);color:var(--gold2)}
 
 /* ───── ESCOLHA DE CLASSE ───── */
+#permSel{position:fixed;inset:0;z-index:650;display:none;overflow-y:auto;background:radial-gradient(circle at 50% 0,#4d3624,#140d07 70%);padding:calc(24px + env(safe-area-inset-top)) 16px 30px}
+#permSel.on{display:block}
 #classSel{position:fixed;inset:0;z-index:600;display:none;overflow-y:auto;background:radial-gradient(circle at 50% 0,#4d3624,#140d07 70%);padding:calc(24px + env(safe-area-inset-top)) 16px 30px}
 #classSel.on{display:block}
 .cs-t{font:700 26px var(--px);color:var(--gold2);text-align:center;text-shadow:0 3px 0 #000}
@@ -356,6 +358,16 @@ body.arrive #fabs{display:none}
   <div id="sheetBox"><div class="handle"></div><div id="tabs"></div><div id="sheetBody"></div></div>
 </div>
 
+<!-- PERMISSÕES (só no app) -->
+<div id="permSel" class="clsLike">
+  <div class="cs-t">🛡️ Antes da jornada</div>
+  <div class="cs-s">O app precisa de algumas permissões para te guiar.</div>
+  <div class="row"><div class="r1"><span>📍 Localização</span><b id="pmLoc">—</b></div><div class="r2">Obrigatória. Escolha "Durante o uso do app" e deixe a <b>localização precisa</b> ligada.</div></div>
+  <div class="row"><div class="r1"><span>🔔 Notificações</span><b id="pmNot">—</b></div><div class="r2">Mostra "jornada em andamento" e mantém o GPS funcionando com a tela apagada.</div></div>
+  <div class="row"><div class="r1"><span>🔋 Bateria</span><b>manual</b></div><div class="r2">No Xiaomi/Poco: segure o ícone do app → Informações → Economia de bateria → <b>Sem restrições</b>. Sem isso o sistema pode fechar o GPS em segundo plano.</div></div>
+  <button class="btn prim" style="margin-top:8px" onclick="askPerms()">Permitir</button>
+  <button class="btn sec" style="margin-top:8px" onclick="closePerms()">Agora não</button>
+</div>
 <!-- CLASSE -->
 <div id="classSel">
   <div class="cs-t">⚔️ Escolha sua classe</div>
@@ -382,7 +394,7 @@ try{
   NATIVE=!!(C&&C.isNativePlatform&&C.isNativePlatform());
   if(NATIVE){
     const reg=n=>C.registerPlugin?C.registerPlugin(n):(C.Plugins&&C.Plugins[n]);
-    NAT={bg:reg('BackgroundGeolocation'),tts:reg('TextToSpeech'),awake:reg('KeepAwake')};
+    NAT={bg:reg('BackgroundGeolocation'),tts:reg('TextToSpeech'),awake:reg('KeepAwake'),geo:reg('Geolocation'),notif:reg('LocalNotifications')};
     if(!NAT.bg||!NAT.tts||!NAT.awake){NATIVE=false;NAT=null}
   }
 }catch(e){NATIVE=false;NAT=null;window.__showErr&&window.__showErr('Capacitor: '+e.message)}
@@ -1365,12 +1377,36 @@ function confirmClass(){
   if(first){startGPS();card('🗡️',`Bem-vindo, ${esc(S.name)}!`,'Coloque um destino e a aventura começa.','gold')}
 }
 
+/* ── PERMISSÕES (app Android) ───────────────────────────── */
+const permTxt=s=>s==='granted'?'✅ ok':s==='denied'?'❌ negada':'pendente';
+async function permState(){
+  let loc='prompt',not='prompt';
+  try{const r=await NAT.geo.checkPermissions();loc=r.location}catch{}
+  try{const r=await NAT.notif.checkPermissions();not=r.display}catch{}
+  $('pmLoc').textContent=permTxt(loc);$('pmNot').textContent=permTxt(not);
+  return{loc,not};
+}
+async function askPerms(){
+  try{await NAT.geo.requestPermissions({permissions:['location','coarseLocation']})}catch(e){}
+  try{await NAT.notif.requestPermissions()}catch(e){}
+  const s=await permState();
+  if(s.loc==='granted'){closePerms();startGPS();toast('📍 Localização liberada')}
+  else toast('Sem localização o herói não consegue te acompanhar. Libere em Configurações → Apps → Meu Mapa RPG → Permissões.',6000);
+}
+function closePerms(){$('permSel').classList.remove('on')}
+async function checkPermsAtStart(){
+  if(!NATIVE||!NAT.geo)return;
+  const s=await permState();
+  if(s.loc!=='granted'||s.not!=='granted')$('permSel').classList.add('on');
+}
+
 /* ── INÍCIO ──────────────────────────────────────────── */
 ensureDaily();applyTheme();setInterval(applyTheme,300000);
 setInterval(()=>{regen();hud()},10000);
 if('speechSynthesis' in window)speechSynthesis.getVoices();
 panel('search');
 if(!S.cls)openClassSel();else{refreshAll();startGPS()}
+checkPermsAtStart();
 if(!(typeof DeviceOrientationEvent!=='undefined'&&DeviceOrientationEvent.requestPermission))startSensors();
 document.addEventListener('click',()=>startSensors(),{once:true});
 </script>
