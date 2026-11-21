@@ -23,7 +23,18 @@ jobs:
           ( for u in "https://opengameart.org/content/lowpoly-animated-monsters" "https://opengameart.org/content/textured-cute-monster-pack"; do
               echo "== página $u"; curl -sSL -A "Mozilla/5.0" "$u" | grep -oE 'https://opengameart.org/sites/default/files/[^"]+\.zip' | sort -u; done ) | tee paginas.txt
           for link in $(grep -oE 'https://opengameart.org/sites/default/files/[^ ]+\.zip' paginas.txt | sort -u); do get "$link" "$(basename "$link" | sed 's/%20/_/g;s/%40//g')"; done
-          ( cat paginas.txt; ls -la; for z in *.zip; do [ -f "$z" ] || continue; echo "== $z"; unzip -l "$z" | awk '{print $4}' | grep -iE "\.(fbx|glb|gltf|blend|obj|png)$" | head -120; done ) > inventario.txt 2>&1
+          # mais pacotes: coleção CC0 da Quaternius (monstros/animais/criaturas) + 50+ Monsters (isaiah658, CC0)
+          ( curl -sSL -A "Mozilla/5.0" "https://opengameart.org/content/all-cc0-uploader-quaternius" | grep -oE 'href="/content/[^"]+"' | sed 's/href="//;s/"//' | sort -u \
+              | grep -iE "monster|animal|creature|enem|dragon|zombie|demon|ghost|slime|fish|bird|insect|spider|mech|robot|alien"; echo /node/167827 ) | tee paginas2.txt
+          for pg in $(cat paginas2.txt); do echo "== página $pg" >> paginas.txt; curl -sSL -A "Mozilla/5.0" "https://opengameart.org$pg" | grep -oE 'https://opengameart.org/sites/default/files/[^"]+\.(zip|rar|7z)' | sort -u | tee -a paginas.txt; done
+          for link in $(grep -oE 'https://opengameart.org/sites/default/files/[^ ]+\.zip' paginas.txt | sort -u); do f="$(basename "$link" | sed 's/%20/_/g;s/%40//g')"; [ -f "$f" ] || get "$link" "$f"; done
+          # Ultimate Monsters (quaternius.com → Google Drive)
+          pip install -q gdown >/dev/null 2>&1
+          for pg in https://quaternius.com/packs/ultimatemonsters.html https://quaternius.com/packs/ultimateanimatedanimals.html; do
+            echo "== site $pg" >> paginas.txt
+            for d in $(curl -sSL -A "Mozilla/5.0" "$pg" | grep -oE 'https://drive\.google\.com/[^"]+' | sort -u); do echo "$d" >> paginas.txt; (cd "$(mktemp -d)" && gdown -q --fuzzy "$d" && for f in *; do mv "$f" "$OLDPWD/$(basename "$pg" .html)_$(echo "$f" | tr ' ' '_')"; done) || echo "FALHOU $d" >> paginas.txt; done
+          done
+          ( cat paginas.txt; ls -la; for z in *.zip; do [ -f "$z" ] || continue; echo "== $z"; unzip -l "$z" | awk '{print $4}' | grep -iE "\.(fbx|glb|gltf|png)$" | head -300; done ) > inventario.txt 2>&1
           cat inventario.txt; exit 0
       - name: Publicar para uso no app
         uses: softprops/action-gh-release@v2
