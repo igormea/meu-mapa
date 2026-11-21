@@ -16,24 +16,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Instalar osmium
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool
-      - name: Baixar extrato do Nordeste (Geofabrik) e filtrar o Ceará
+      - name: Extrair (Geofabrik + osmium)
+        shell: bash
         run: |
-          curl -sSfL -o ne.osm.pbf https://download.geofabrik.de/south-america/brazil/nordeste-latest.osm.pbf
-          osmium extract -b -41.45,-7.95,-37.20,-2.70 ne.osm.pbf -o ce.osm.pbf --overwrite
-          osmium tags-filter ce.osm.pbf n/highway=speed_camera n/enforcement=maxspeed n/traffic_calming \
-            n/barrier=toll_booth n/railway=level_crossing n/highway=traffic_signals \
-            nwr/amenity=parking,fuel,pharmacy -o f.osm.pbf --overwrite
-          osmium export f.osm.pbf -f geojsonseq -o f.geojsonseq --overwrite
-      - name: Gerar data/osm-ce.json
-        run: python3 tools/osm_extract.py f.geojsonseq | tee osm.log
-      - name: Resumo
-        if: always()
-        run: echo "::notice title=Dados OSM::$(tr '\n' ' ' < osm.log 2>/dev/null)"
+          set -o pipefail
+          (
+            set -ex
+            sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool
+            curl -sSfL -o ne.osm.pbf https://download.geofabrik.de/south-america/brazil/nordeste-latest.osm.pbf
+            ls -la ne.osm.pbf
+            osmium extract -b -41.45,-7.95,-37.20,-2.70 ne.osm.pbf -o ce.osm.pbf --overwrite
+            osmium tags-filter ce.osm.pbf n/highway=speed_camera n/enforcement=maxspeed n/traffic_calming \
+              n/barrier=toll_booth n/railway=level_crossing n/highway=traffic_signals \
+              nwr/amenity=parking,fuel,pharmacy -o f.osm.pbf --overwrite
+            osmium export f.osm.pbf -f geojsonseq -o f.geojsonseq --overwrite
+            python3 tools/osm_extract.py f.geojsonseq
+          ) 2>&1 | tee osm.log
+
       - name: Salvar no repositório
+        shell: bash
         run: |
           git config user.name "meu-mapa-bot"
           git config user.email "actions@users.noreply.github.com"
           git add data/osm-ce.json
-          git diff --cached --quiet || (git commit -m "Dados OSM atualizados" && git pull --rebase && git push)
+          git diff --cached --quiet || (git commit -m "Dados OSM atualizados" && git pull --rebase && git push) 2>&1 | tee -a osm.log
+
+      - name: Publicar registro (para diagnóstico)
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: osm-log
+          name: Registro da extração OSM
+          body: Registro da última execução do robô de dados.
+          files: osm.log
+          prerelease: true
+          make_latest: false

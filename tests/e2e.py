@@ -10,7 +10,8 @@ from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PORT = 8765
-BASE = f"http://localhost:{PORT}/index.html"
+BASE = os.environ.get("BASE_URL", f"http://localhost:{PORT}/index.html")
+APP_ORIGIN = BASE.rsplit("/", 1)[0]
 ORIGIN = {"lat": -3.7319, "lon": -38.5267}
 DEST = {"name": "Praia do Futuro, Fortaleza", "sub": "", "lat": -3.7434, "lon": -38.4614}
 
@@ -34,7 +35,7 @@ def router(route):
     j = lambda o: route.fulfill(status=200, content_type="application/json", body=json.dumps(o),
                                 headers={"Access-Control-Allow-Origin": "*"})
     try:
-        if url.startswith(f"http://localhost:{PORT}"):
+        if url.startswith(f"http://localhost:{PORT}") or url.startswith(APP_ORIGIN):
             if "/data/osm-ce.json" in url and OSM_FIXTURE is not None: return j(OSM_FIXTURE)
             return route.continue_()
         if "tile.openstreetmap.org" in url: return route.fulfill(status=200, content_type="image/png", body=TILE, headers={"Access-Control-Allow-Origin": "*"})
