@@ -100,6 +100,7 @@ function renderSheet(){
       <div class="row"><div class="r1"><span>🏙️ Prédios em 3D</span></div><div class="opt">
         <button class="${S.b3d!==false?'on':''}" onclick="S.b3d=true;applyTheme();save();renderSheet()">Ligado</button><button class="${S.b3d===false?'on':''}" onclick="S.b3d=false;applyTheme();save();renderSheet()">Desligado</button></div></div>
       <button class="btn prim" style="margin-top:6px" onclick="closeSheet();openReport()">🐞 Reportar bug / sugestão</button>
+      <button class="btn prim" style="margin-top:8px" onclick="closeSheet();showNews(true)">📜 Novidades (Patch Notes) · v${APPV}</button>
       <button class="btn prim" style="margin-top:8px" onclick="closeSheet();openClassSel(false)">Trocar classe / nome</button>
       <div class="r2" style="color:#837aa8;margin:6px 2px 14px;font-size:11.5px">Trocar de classe mantém nível, ouro e conquistas.</div>
       <div class="sect">Backup do progresso</div>

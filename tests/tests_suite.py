@@ -742,3 +742,13 @@ def t55_hud_cidade_e_xp(c):
     c.js("()=>{window.__rev=0;const f=window.fetch;window.fetch=(u,...a)=>{if(String(u).includes('/reverse'))__rev++;return f(u,...a)}}")
     c.js("async()=>{await cityTick(-3.731,-38.521)}"); assert c.js("()=>__rev") == 0
     c.js("async()=>{await cityTick(-3.80,-38.52)}"); assert c.js("()=>__rev") == 1
+
+@test
+def t56_novidades(c):
+    c.open(); c.hero()
+    c.js("async()=>{await showNews(true)}")
+    assert c.js("()=>document.querySelectorAll('#newsBody .pn').length") >= 10
+    assert c.js("()=>S.seenV") == c.js("()=>NOTES[0].v")
+    if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/news.png")
+    c.page.go_back(); c.page.wait_for_timeout(250)
+    assert not c.js("()=>$('newsPanel').classList.contains('on')")

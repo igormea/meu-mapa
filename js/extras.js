@@ -166,3 +166,18 @@ async function listenOnce(cb){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return toast('Voz não disponível aqui');
   const rec=new SR();rec.lang='pt-BR';rec.onresult=e=>{const t=e.results?.[0]?.[0]?.transcript;if(t)cb(t)};rec.start();toast('🎙️ Pode falar…',3000);
 }
+
+/* ── NOVIDADES (patch notes) ── ao abrir uma versão nova, mostra o que mudou; lista completa em Ajustes */
+let NOTES=null;
+async function loadNotes(){if(!NOTES)try{NOTES=await(await fetch('data/patchnotes.json?v='+APPV)).json()}catch{NOTES=[]}return NOTES}
+function notesHTML(list){return list.map(n=>`<div class="pn"><div class="pn-h"><b>Versão ${esc(n.v)} — ${esc(n.t)}</b><span>${esc(n.d)}</span></div>
+  ${n.apk?'<div class="pn-apk">📲 Esta versão pede instalar o APK novo</div>':''}<ul>${n.i.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}
+async function showNews(all){
+  const L=await loadNotes();if(!L.length)return;
+  let p=$('newsPanel');if(!p){p=document.createElement('div');p.id='newsPanel';p.innerHTML='<div class="rp-box"><div class="handle"></div><div class="rp-t">📜 Novidades</div><div id="newsBody"></div><div class="opt"><button class="prim" id="newsOk">Entendi</button></div></div>';
+    document.body.appendChild(p);$('newsOk').onclick=()=>closeNews();p.onclick=e=>{if(e.target===p)closeNews()};dragToClose(p.querySelector('.rp-box'),()=>closeNews())}
+  $('newsBody').innerHTML=notesHTML(all?L:L.slice(0,1));p.classList.add('on');layerPush('news',()=>closeNews(true));
+  S.seenV=L[0].v;save();
+}
+function closeNews(fromBack){$('newsPanel')?.classList.remove('on');if(!fromBack)layerPop('news')}
+setTimeout(async()=>{const L=await loadNotes();if(L.length&&S.cls&&S.seenV&&S.seenV!==L[0].v&&!isNav)showNews(false);else if(L.length&&!S.seenV){S.seenV=L[0].v;save()}},3500);

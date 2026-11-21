@@ -420,3 +420,14 @@ body.searching #hud,body.searching #fabs,body.searching #recenterBtn,body.search
 #tabs,.rp-t{touch-action:none}
 #sheetBox,#stopPanel,.rp-box{touch-action:pan-y}
 #hudXpTx{font:600 10px var(--num);color:#8fb0ff;margin-top:2px;letter-spacing:.2px}
+
+/* novidades */
+#newsPanel{display:none;position:fixed;inset:0;z-index:900;background:rgba(5,4,12,.75);align-items:flex-end;justify-content:center}
+#newsPanel.on{display:flex}
+#newsPanel .rp-box{max-height:82vh;display:flex;flex-direction:column}
+#newsBody{overflow-y:auto;margin:6px 0 4px}
+.pn{margin-bottom:12px}.pn-h{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;color:var(--gold2);border-bottom:1px solid var(--edge);padding-bottom:4px}
+.pn-h span{color:var(--muted);font-size:11.5px;white-space:nowrap}
+.pn ul{margin:6px 0 0;padding-left:18px}.pn li{font-size:13px;color:var(--parch);margin-bottom:4px;line-height:1.35}
+.pn-apk{font-size:12px;color:#f3a3a3;margin-top:5px}
+#newsPanel .opt{display:flex}#newsPanel .opt button{flex:1;padding:11px;border-radius:10px;border:2px solid var(--gold);background:#8f1d2c;color:#fff;font:700 14px var(--px)}
