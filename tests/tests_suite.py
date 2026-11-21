@@ -632,8 +632,7 @@ def t48_bardo_reinos(c):
 @test
 def t49_cerco_no_engarrafamento(c):
     c.open(); c.hero(); c.route_to()
-    c.js("()=>{startNav(true);sim.mult=0;S.hp=maxHP()}")
-    k0 = c.js("()=>T.kills")
+    c.js("()=>{startNav(true);sim.mult=0;S.hp=maxHP();window.__noJourney=1}")
     # 2 min andando só 100 m → engarrafamento
     c.js("""()=>{const n=Date.now();jamHist=[];for(let i=0;i<8;i++)jamHist.push([n-125000+i*15000,-3.7300+i*0.0001,-38.52]);
       siegeTick({lat:-3.7292,lon:-38.52,spd:1},5000)}""")

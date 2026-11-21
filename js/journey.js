@@ -132,7 +132,7 @@ function showPatrol(nm,p){
 let jLast=null;
 // chamado a cada posição durante a navegação
 function journeyTick(f,sn,kmh,lim){
-  if(!T)return;
+  if(!T||window.__noJourney)return;   // __noJourney: só nos testes
   if(!T.origin)T.origin=[f.lat,f.lon];
   const dm=jLast?hav(jLast[0],jLast[1],f.lat,f.lon):0;jLast=[f.lat,f.lon];
   honorTick(kmh,lim,dm);
