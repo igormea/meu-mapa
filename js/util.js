@@ -1,6 +1,6 @@
 'use strict';
-/* versão: MAIOR.MENOR.CORREÇÃO — correção 1.15.3→1.15.4 · novidade →1.16.0 · incompatível com a anterior →2.0.0 */
-const APPV='1.15.3';
+/* versão: MAIOR.MENOR.CORREÇÃO — correção 1.16.0→1.16.1 · novidade →1.17.0 · incompatível com a anterior →2.0.0 */
+const APPV='1.16.0';
 /* ═══════════════════════════════════════════════════════
    MEU MAPA RPG — v4
    Tiles OSM (estilizados) · Nominatim · OSRM · GPS

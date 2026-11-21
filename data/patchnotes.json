@@ -1,5 +1,18 @@
 [
  {
+  "v": "1.16.0",
+  "d": "21/11/2026",
+  "t": "Bestiário gigante",
+  "i": [
+   "📖 O bestiário passou de 85 para 139 monstros, 131 deles em 3D animado.",
+   "Chegaram os pacotes Ultimate Monsters e Ultimate Animals: ninjas, orcs, magos, Rei Cogumelo, Rei Alpaca, dragões voadores, fantasmas-caveira, raposa, touro, cervo real, lobo alfa, husky, jumento e muito mais.",
+   "Formas evoluídas e mais raras: Cogumelo Coroado, Goleling Coroado, Glub Ancião, Abelhão Blindado, Imperador Alpaca, Dragão Alado Supremo.",
+   "Novos lendários: Rei Cogumelo (só na chuva, na mata), Imperador Alpaca (no comércio, em viagens de 30+ km) e Dino Primordial (estrada, 120+ km).",
+   "Monstros que antes eram emoji ganharam corpo 3D: Sapo Venenoso, Jacaré do Mangue, Zumbi, Gárgula, Fada do Lago, Gaivota, Garça e Calango.",
+   "Todo terreno agora tem de 11 a 25 monstros diferentes."
+  ]
+ },
+ {
   "v": "1.15.3",
   "d": "21/11/2026",
   "t": "Terreno corrigido",

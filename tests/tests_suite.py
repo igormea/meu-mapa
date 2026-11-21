@@ -505,7 +505,9 @@ def t42_todos_monstros_3d(c):
     c.open(); c.hero(); c.route_to()
     c.wait("window.Hero3D && Hero3D.state.ready", 20000)
     kinds = c.js("()=>[...new Set(MONS.filter(m=>m.m3d).map(m=>m.m3d))]")
-    assert len(kinds) >= 27, kinds
+    assert len(kinds) >= 90, len(kinds)
+    falta = c.js("""async()=>{const r=[];await Promise.all([...new Set(MONS.filter(m=>m.m3d).map(m=>m.m3d))].map(async k=>{const x=await fetch('models/mon/'+k+'.glb',{method:'HEAD'});if(!x.ok)r.push(k)}));return r}""")
+    assert falta == [], falta
     # retratos de todos existem
     bad = c.js("""async()=>{const r=[];for(const k of MONS.filter(m=>m.m3d).map(monKey)){const i=new Image();i.src='models/portraits/'+k+'.png';
       await new Promise(f=>{i.onload=i.onerror=f});if(!i.naturalWidth)r.push(k)}return r}""")
