@@ -344,10 +344,11 @@ def t29_torres_do_vigia_aparecem_no_mapa(c):
 @test
 def t30_fonte_legivel_nos_numeros(c):
     c.open(); c.hero()
-    c.page.wait_for_function("document.fonts.check(\"700 26px 'Fredoka'\")", timeout=10000)
+    c.page.wait_for_function("document.fonts.check(\"700 26px 'Alegreya Sans'\")", timeout=10000)
     ff = c.js("()=>getComputedStyle(document.getElementById('spdVal')).fontFamily")
-    assert "Fredoka" in ff, ff
-    assert "Pixelify" in c.js("()=>getComputedStyle(document.querySelector('.cs-t')).fontFamily")
+    assert "Alegreya Sans" in ff, ff
+    assert "lining-nums" in c.js("()=>getComputedStyle(document.getElementById('spdVal')).fontVariantNumeric")
+    assert "Cinzel" in c.js("()=>getComputedStyle(document.querySelector('.cs-t')).fontFamily")
 
 @test
 def t31_curva_certa_nao_recalcula(c):

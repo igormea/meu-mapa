@@ -13,7 +13,8 @@ function smith(){let c;while(S.gold>=(c=smithCost())){S.gold-=c;const w=S.smith.
   card('🔨','O ferreiro trabalhou!',w?`Sua arma agora é <b>+${S.smith.w}</b>`:`Sua armadura agora é <b>+${S.smith.a}</b>`,'gold')}}
 function levelUp(){
   $('lvNum').textContent=S.lvl;hero3d('act','cheer');
-  setTimeout(()=>card('✨','Novo ponto de talento!','Distribua na mochila 🎒 → Talentos quando estiver parado','gold'),1500);const o=$('lvlUp');o.classList.remove('on');void o.offsetWidth;o.classList.add('on');
+  clearTimeout(window.__talTmr);   // vários níveis de uma vez → um aviso só, com o total
+  window.__talTmr=setTimeout(()=>{const n=talentPoints();if(n)card('✨',n>1?`${n} pontos de talento para usar!`:'Novo ponto de talento!','Distribua na mochila 🎒 → Talentos quando estiver parado','gold')},1500);const o=$('lvlUp');o.classList.remove('on');void o.offsetWidth;o.classList.add('on');
   speak(`Subiu para o nível ${S.lvl}!`,'fun');
 }
 let lastRegen=Date.now();

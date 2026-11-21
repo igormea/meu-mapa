@@ -1,7 +1,7 @@
 'use strict';
 /* ── SAVE ────────────────────────────────────────────── */
 const SAVE_KEY='meumapa_rpg_v1';
-const defSave=()=>({name:'Aventureiro',cls:null,lvl:1,xp:0,hp:null,gold:0,title:'',theme:'auto',mute:false,
+const defSave=()=>({name:'Aventureiro',cls:null,lvl:1,xp:0,hp:null,gold:0,title:'',theme:'castelo',mute:false,
   equip:{weapon:null,armor:null,amulet:null},smith:{w:0,a:0},
   stats:{km:0,kills:0,trips:0,dragons:0,gold:0,items:0,legend:0,nightTrips:0},
   daily:{date:'',km:0,kills:0,trips:0,claimed:[]},ach:[],loot:[],recents:[]});

@@ -12,7 +12,7 @@ function renderSheet(){
     h=`<div class="hero"><div class="big sp walk">${spriteSVG(S.cls)}</div><div>
         <div class="hn">${esc(S.name)}</div><div class="hc">${c.nome} · Nível ${S.lvl}</div>
         ${S.title?`<div class="htitle">« ${esc(S.title)} »</div>`:''}</div></div>
-      <div class="row"><div class="r1"><span>✨ Experiência</span><b>${fmtN(S.xp)} / ${fmtN(needXP(S.lvl))}</b></div><div class="qbar"><i style="width:${S.xp/needXP(S.lvl)*100}%;background:linear-gradient(90deg,#5b4bd6,#a89bff)"></i></div></div>
+      <div class="row"><div class="r1"><span>✨ Experiência</span><b>${fmtN(S.xp)} / ${fmtN(needXP(S.lvl))}</b></div><div class="qbar"><i style="width:${S.xp/needXP(S.lvl)*100}%;background:linear-gradient(90deg,#2f4fc9,#8fb0ff)"></i></div></div>
       <div class="row"><div class="r1"><span>❤️ Vida</span><b>${Math.round(S.hp)} / ${mx}</b></div><div class="qbar"><i style="width:${S.hp/mx*100}%;background:linear-gradient(90deg,#a3221d,#e5534b)"></i></div></div>
       <div class="stats">
         <div class="st"><span>⚔️ Ataque</span><b>${atk()}</b></div><div class="st"><span>🛡️ Defesa</span><b>${def()}</b></div>
@@ -33,12 +33,12 @@ function renderSheet(){
         <div class="st"><span>🗺️ Distância</span><b>${S.stats.km.toFixed(1).replace('.',',')} km</b></div><div class="st"><span>💀 Monstros</span><b>${fmtN(S.stats.kills)}</b></div>
         <div class="st"><span>🏰 Jornadas</span><b>${S.stats.trips}</b></div><div class="st"><span>🐉 Dragões</span><b>${S.stats.dragons}</b></div>
       </div>
-      <div class="r2" style="font-size:11.5px;color:#8a7658;margin-top:10px">${esc(c.desc)}</div>`;
+      <div class="r2" style="font-size:11.5px;color:#837aa8;margin-top:10px">${esc(c.desc)}</div>`;
   }else if(sheetTab==='tal'){
     const pts=talentPoints();
-    h=`<div class="row"><div class="r1"><span>✨ Pontos disponíveis</span><b style="color:${pts?'#f6d77e':'inherit'}">${pts}</b></div><div class="r2">Você ganha 1 ponto a cada nível. Distribua com o carro parado.</div></div>`+
+    h=`<div class="row"><div class="r1"><span>✨ Pontos disponíveis</span><b style="color:${pts?'#e8c86a':'inherit'}">${pts}</b></div><div class="r2">Você ganha 1 ponto a cada nível. Distribua com o carro parado.</div></div>`+
       Object.entries(TAL).map(([id,T])=>{const r=S.talents?.[id]||0,lock=T.lvl&&S.lvl<T.lvl;
-        return `<div class="row tal ${lock?'lock':''}"><div class="ti">${T.ic}</div><div class="tx"><div class="r1"><span><b>${T.n}</b></span><span style="color:#b59f7b">${r}/${T.max}</span></div>
+        return `<div class="row tal ${lock?'lock':''}"><div class="ti">${T.ic}</div><div class="tx"><div class="r1"><span><b>${T.n}</b></span><span style="color:#9b93c4">${r}/${T.max}</span></div>
           <div class="r2">${T.d}${lock?` · libera no nível ${T.lvl}`:''}</div><div class="pips">${Array.from({length:T.max},(_,i)=>`<i class="${i<r?'on':''}"></i>`).join('')}</div></div>
           <button onclick="learnTalent('${id}')" ${!pts||r>=T.max||lock?'disabled':''} aria-label="Aprender ${T.n}">+</button></div>`}).join('')+
       `<button class="btn sec" style="margin-top:8px" onclick="respecTalents()">Redistribuir pontos (${fmtN(respecCost())} 🪙)</button>`;
@@ -47,36 +47,36 @@ function renderSheet(){
     h=(Object.keys(sc).length?`<div class="row"><div class="r1"><span>💠 Conjuntos</span><b>${as?'ativo!':''}</b></div><div class="r2">${Object.entries(sc).map(([s,n])=>`${s}: ${n}/3 — ${SETS[s].d}${s===as?' ✅':''}`).join('<br>')}</div></div>`:
       `<div class="row lock"><div class="r1"><span>💠 Conjuntos</span></div><div class="r2">Itens "do Sertão", "da Beira-Mar", "do Dragão", "da Lua Cheia", "do Farol" e "do Cangaço" formam conjuntos. 3 peças iguais = bônus.</div></div>`)+
       Object.keys(SLOT).map(k=>{const it=S.equip[k];
-      return `<div class="row"><div class="r1"><span>${SLOT[k]}</span>${it?`<b class="r-${it.r}">${esc(it.name)}</b>`:'<span style="color:#7a6446">vazio</span>'}</div>
+      return `<div class="row"><div class="r1"><span>${SLOT[k]}</span>${it?`<b class="r-${it.r}">${esc(it.name)}</b>`:'<span style="color:#6f679a">vazio</span>'}</div>
         <div class="r2">${it?`${RAR[it.r].n} · ${statTxt(it)}`:'Itens caem dos monstros e dos baús'}${k==='weapon'&&S.smith.w?` · ferreiro +${S.smith.w}`:''}${k==='armor'&&S.smith.a?` · ferreiro +${S.smith.a}`:''}</div></div>`}).join('')+
       `<div class="row"><div class="r1"><span>🔨 Próximo aprimoramento</span><b>${fmtN(smithCost())} 🪙</b></div><div class="r2">O ferreiro usa seu ouro automaticamente</div><div class="qbar"><i style="width:${Math.min(100,S.gold/smithCost()*100)}%"></i></div></div>
       <div class="sect">Últimos achados</div>`+
-      (S.loot.length?S.loot.map(it=>`<div class="row"><div class="r1"><span class="r-${it.r}">${esc(it.name)}</span><span style="font-size:11.5px;color:#b59f7b">${it.act==='equipado'?'equipado':'+'+it.g+' 🪙'}</span></div><div class="r2">${RAR[it.r].n} · ${statTxt(it)}</div></div>`).join('')
-        :'<div class="r2" style="color:#7a6446">Nada ainda. Faça uma jornada!</div>');
+      (S.loot.length?S.loot.map(it=>`<div class="row"><div class="r1"><span class="r-${it.r}">${esc(it.name)}</span><span style="font-size:11.5px;color:#9b93c4">${it.act==='equipado'?'equipado':'+'+it.g+' 🪙'}</span></div><div class="r2">${RAR[it.r].n} · ${statTxt(it)}</div></div>`).join('')
+        :'<div class="r2" style="color:#6f679a">Nada ainda. Faça uma jornada!</div>');
   }else if(sheetTab==='quests'){
     ensureDaily();
-    h='<div class="r2" style="color:#8a7658;margin-bottom:9px">Renovam todo dia. Recompensas entregues automaticamente.</div>'+
+    h='<div class="r2" style="color:#837aa8;margin-bottom:9px">Renovam todo dia. Recompensas entregues automaticamente.</div>'+
       DQ.map(q=>{const v=S.daily[q.id],done=S.daily.claimed.includes(q.id),k=1+.15*(S.lvl-1);
         return `<div class="row"><div class="r1"><span>${done?'✅':'📜'} ${q.t}</span><b>${q.u==='km'?v.toFixed(1).replace('.',','):v} / ${q.goal}</b></div>
           <div class="r2">Recompensa: ${Math.round(q.xp*k)} XP · ${Math.round(q.gold*k)} 🪙</div><div class="qbar"><i style="width:${Math.min(100,v/q.goal*100)}%"></i></div></div>`}).join('');
     ensureWeek();
-    h+='<div class="sect">Semanais</div><div class="r2" style="color:#8a7658;margin-bottom:9px">Renovam toda segunda-feira.</div>'+
+    h+='<div class="sect">Semanais</div><div class="r2" style="color:#837aa8;margin-bottom:9px">Renovam toda segunda-feira.</div>'+
       WQ.map(q=>{const v=S.week[q.id]||0,done=S.week.claimed.includes(q.id),k=1+.15*(S.lvl-1);
         return `<div class="row"><div class="r1"><span>${done?'✅':'🏆'} ${q.t}</span><b>${q.u==='km'?v.toFixed(1).replace('.',','):v} / ${q.goal}</b></div>
           <div class="r2">Recompensa: ${Math.round(q.xp*k)} XP · ${Math.round(q.gold*k)} 🪙</div><div class="qbar"><i style="width:${Math.min(100,v/q.goal*100)}%"></i></div></div>`}).join('');
     const wk=weekKey();
-    h+='<div class="sect">Masmorras</div><div class="r2" style="color:#8a7658;margin-bottom:9px">Estacione perto (fique parado ~40 s) ou chegue de rota. Uma vez por dia cada.</div>'+
+    h+='<div class="sect">Masmorras</div><div class="r2" style="color:#837aa8;margin-bottom:9px">Estacione perto (fique parado ~40 s) ou chegue de rota. Uma vez por dia cada.</div>'+
       DUNGEONS.map(d=>`<div class="row ${S.dungeons?.[d.id]===dayKey()?'':'lock'}"><div class="r1"><span>🏯 ${d.n}</span><b>${S.dungeons?.[d.id]===dayKey()?'concluída hoje ✔':'aberta'}</b></div></div>`).join('');
-    h+='<div class="sect">Chefes lendários de Fortaleza</div><div class="r2" style="color:#8a7658;margin-bottom:9px">Passe perto deles para lutar. Voltam toda semana.</div>'+
+    h+='<div class="sect">Chefes lendários de Fortaleza</div><div class="r2" style="color:#837aa8;margin-bottom:9px">Passe perto deles para lutar. Voltam toda semana.</div>'+
       BOSSES.map(b=>`<div class="row ${S.bosses?.[b.id]===wk?'':'lock'}"><div class="r1"><span>${b.e} ${b.n}</span><b>${S.bosses?.[b.id]===wk?'derrotado ✔':'à solta'}</b></div></div>`).join('')+
-      `<div class="r2" style="color:#8a7658;margin-top:8px">🗺️ Áreas exploradas: <b style="color:#f6d77e">${fmtN(S.stats.cells||0)}</b></div>`;
+      `<div class="r2" style="color:#837aa8;margin-top:8px">🗺️ Áreas exploradas: <b style="color:#e8c86a">${fmtN(S.stats.cells||0)}</b></div>`;
   }else if(sheetTab==='ach'){
-    h=`<div class="r2" style="color:#8a7658;margin-bottom:9px">${S.ach.length} de ${ACH.length} desbloqueadas. A última vira seu título.</div>`+
+    h=`<div class="r2" style="color:#837aa8;margin-bottom:9px">${S.ach.length} de ${ACH.length} desbloqueadas. A última vira seu título.</div>`+
       ACH.map(a=>`<div class="row ${S.ach.includes(a.id)?'':'lock'}"><div class="r1"><span>${S.ach.includes(a.id)?'🏅':'🔒'} ${a.n}</span></div><div class="r2">${a.d}</div></div>`).join('');
   }else{
-    const th=S.theme||'auto';
+    const th=themeKey();
     h=`<div class="row"><div class="r1"><span>🗺️ Visual do mapa</span></div><div class="opt">
-        ${[['auto','Automático'],['dia','Pergaminho'],['noite','Masmorra']].map(([k,n])=>`<button class="${th===k?'on':''}" onclick="setTheme('${k}')">${n}</button>`).join('')}</div></div>
+        ${[['castelo','Castelo'],['dia','Pergaminho'],['noite','Masmorra']].map(([k,n])=>`<button class="${th===k?'on':''}" onclick="setTheme('${k}')">${n}</button>`).join('')}</div></div>
       <div class="row"><div class="r1"><span>🔊 Voz</span></div><div class="opt">
         <button class="${!S.mute&&!S.less?'on':''}" onclick="setVoice('full')">Completa</button><button class="${!S.mute&&S.less?'on':''}" onclick="setVoice('less')">Menos falante</button><button class="${S.mute?'on':''}" onclick="setVoice('off')">Desligada</button></div>
         <div class="r2">"Menos falante": só as curvas na hora e os alertas de segurança.</div></div>
@@ -94,15 +94,15 @@ function renderSheet(){
       <div class="row"><div class="r1"><span>🏙️ Prédios em 3D</span></div><div class="opt">
         <button class="${S.b3d!==false?'on':''}" onclick="S.b3d=true;applyTheme();save();renderSheet()">Ligado</button><button class="${S.b3d===false?'on':''}" onclick="S.b3d=false;applyTheme();save();renderSheet()">Desligado</button></div></div>
       <button class="btn prim" style="margin-top:6px" onclick="closeSheet();openClassSel(false)">Trocar classe / nome</button>
-      <div class="r2" style="color:#8a7658;margin:6px 2px 14px;font-size:11.5px">Trocar de classe mantém nível, ouro e conquistas.</div>
+      <div class="r2" style="color:#837aa8;margin:6px 2px 14px;font-size:11.5px">Trocar de classe mantém nível, ouro e conquistas.</div>
       <div class="sect">Backup do progresso</div>
-      <div class="r2" style="color:#8a7658;margin-bottom:7px">Gera um código com todo o seu progresso. Guarde no WhatsApp/Keep e cole em outro aparelho (ou no app) para continuar de onde parou.</div>
+      <div class="r2" style="color:#837aa8;margin-bottom:7px">Gera um código com todo o seu progresso. Guarde no WhatsApp/Keep e cole em outro aparelho (ou no app) para continuar de onde parou.</div>
       <div class="opt"><button onclick="exportSave()">📤 Exportar</button><button onclick="importSave()">📥 Importar</button></div>
       <textarea id="bkText" rows="3" style="display:none"></textarea>
       <div style="height:12px"></div>
       <button class="btn sec" id="resetBtn" onclick="resetTap()">Apagar todo o progresso</button>
       <div class="sect">Diagnóstico de rota</div>
-      <div class="r2" style="color:#8a7658;font-size:11.5px;line-height:1.5">${(()=>{try{const a=JSON.parse(localStorage.getItem('meumapa_log')||'[]');return a.length?a.map(esc).join('<br>'):'Nenhum registro ainda.'}catch{return ''}})()}</div>`;
+      <div class="r2" style="color:#837aa8;font-size:11.5px;line-height:1.5">${(()=>{try{const a=JSON.parse(localStorage.getItem('meumapa_log')||'[]');return a.length?a.map(esc).join('<br>'):'Nenhum registro ainda.'}catch{return ''}})()}</div>`;
   }
   $('sheetBody').innerHTML=h;
 }
