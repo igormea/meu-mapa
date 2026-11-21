@@ -30,20 +30,21 @@ function near1(t,w){
 // toks: palavras já normalizadas e com abreviações expandidas (expandQ)
 function localSearch(toks,c){
   if(!PL||!toks.length)return[];
-  const catWant=toks.map(t=>PKW[t]).find(Boolean),rest=toks.filter(t=>!PKW[t]);
   const res=[],k=Math.cos(c.lat*Math.PI/180);
   for(const it of PL.items){
-    if(catWant&&it.c!==catWant&&!rest.length)continue;
     let sc=0,ok=true;
-    for(const t of (catWant&&it.c===catWant?rest:toks)){
-      if(it.w.some(w=>w.startsWith(t)))sc+=1;
+    for(const t of toks){
+      const cb=PKW[t]===it.c?.3:0;                                  // nome E categoria batem ("posto" → postos de combustível)
+      if(it.w.includes(t))sc+=1.2+cb;                              // palavra exata ("rua 10" ≠ "rua 102")
+      else if(it.w.some(w=>w.startsWith(t)))sc+=1+cb;
+      else if(PKW[t]===it.c)sc+=.8;                                 // "farmácia" acha farmácias mesmo sem a palavra no nome
       else if(it.w.some(w=>near1(t,w)))sc+=.7;
       else if(t.length>=3&&it.w.some(w=>w.includes(t)))sc+=.5;
       else{ok=false;break}
     }
     if(!ok)continue;
     const d2=(it.lat-c.lat)**2+((it.lon-c.lon)*k)**2;
-    res.push([sc+(catWant&&it.c===catWant?1:0),d2,it]);
+    res.push([Math.round(sc*5)/5,d2,it]);
   }
   res.sort((a,b)=>(b[0]-a[0])||(a[1]-b[1]));
   return res.slice(0,12).map(([,,it])=>({name:it.n,lat:it.lat,lon:it.lon,loc:1,ic:PCAT[it.c]?.[0]||'📍',

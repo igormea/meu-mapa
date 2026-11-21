@@ -811,3 +811,15 @@ def t59_evento_natal(c):
     c.js("()=>{EVENTS.natal.on=()=>true;renderEnv()}")
     assert c.js("()=>{for(let i=0;i<600;i++){const m=rollMonster(-3.70,-38.40,0);if(MONS.find(x=>x.n===m.n)?.ev)return 'ok'}return 'nenhum'}") == "ok"
     assert "🎄 Natal" in c.js("()=>$('hudEnv').textContent")
+
+@test
+def t60_navegacao_sem_sobreposicao(c):
+    for vw, vh in [(360, 740), (412, 915)]:
+        c.open(); c.page.set_viewport_size({"width": vw, "height": vh}); c.hero(); c.route_to()
+        c.js("()=>{startNav(true);sim.mult=2}"); c.wait("isNav && R.prog>150", 15000); c.page.wait_for_timeout(300)
+        ov = c.js("""()=>{const ids=['navTop','laneBar','alertBar','speedo','fabs','navBottom','recenterBtn','simBadge'],b={};
+          for(const id of ids){const e=document.getElementById(id);if(!e)continue;const cs=getComputedStyle(e);if(cs.display==='none'||cs.visibility==='hidden')continue;
+            const r=e.getBoundingClientRect();if(r.width&&r.height)b[id]=r}
+          const k=Object.keys(b),o=[];for(let i=0;i<k.length;i++)for(let j=i+1;j<k.length;j++){const a=b[k[i]],d=b[k[j]];
+            if(a.left<d.right-2&&d.left<a.right-2&&a.top<d.bottom-2&&d.top<a.bottom-2)o.push(k[i]+'×'+k[j])}return o}""")
+        assert ov == [], (vw, ov)

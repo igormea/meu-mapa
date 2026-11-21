@@ -14,7 +14,7 @@ function smith(){let c;while(S.gold>=(c=smithCost())){S.gold-=c;const w=S.smith.
 function levelUp(){
   $('lvNum').textContent=S.lvl;hero3d('act','cheer');
   clearTimeout(window.__talTmr);   // vários níveis de uma vez → um aviso só, com o total
-  window.__talTmr=setTimeout(()=>{const n=talentPoints();if(n)card('✨',n>1?`${n} pontos de talento para usar!`:'Novo ponto de talento!','Distribua na mochila 🎒 → Talentos quando estiver parado','gold')},1500);const o=$('lvlUp');o.classList.remove('on');void o.offsetWidth;o.classList.add('on');
+  window.__talTmr=setTimeout(()=>{const n=talentPoints();if(n)card('✨',n>1?`${n} pontos de talento para usar!`:'Novo ponto de talento!','Distribua na mochila 🎒 → Talentos quando estiver parado','gold')},1500);const o=$('lvlUp');if(document.body.classList.contains('arrive')||$('arrivePanel').style.display==='block'||!isNav&&T){const L=S.lvl;setTimeout(()=>card("⭐",`Nível ${L}!`,'Vida restaurada · atributos aumentados','epic'),300)}else{o.classList.remove('on');void o.offsetWidth;o.classList.add('on')}
   speak(`Subiu para o nível ${S.lvl}!`,'fun');
 }
 let lastRegen=Date.now();
