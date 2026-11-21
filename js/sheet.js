@@ -1,0 +1,105 @@
+'use strict';
+/* ── FICHA DO HERÓI ──────────────────────────────────── */
+let sheetTab='heroi',resetArm=0;
+const TABS=[['heroi','🧙 Herói'],['equip','🎒 Equipamento'],['quests','📜 Missões'],['ach','🏅 Conquistas'],['cfg','⚙️ Ajustes']];
+function openSheet(){regen();renderSheet();$('sheet').classList.add('on')}
+function closeSheet(){$('sheet').classList.remove('on')}
+function setTab(t){sheetTab=t;renderSheet()}
+function renderSheet(){
+  $('tabs').innerHTML=TABS.map(([k,n])=>`<div class="tab ${k===sheetTab?'on':''}" onclick="setTab('${k}')">${n}</div>`).join('');
+  const c=cls(),mx=maxHP();let h='';
+  if(sheetTab==='heroi'){
+    h=`<div class="hero"><div class="big sp walk">${spriteSVG(S.cls)}</div><div>
+        <div class="hn">${esc(S.name)}</div><div class="hc">${c.nome} · Nível ${S.lvl}</div>
+        ${S.title?`<div class="htitle">« ${esc(S.title)} »</div>`:''}</div></div>
+      <div class="row"><div class="r1"><span>✨ Experiência</span><b>${fmtN(S.xp)} / ${fmtN(needXP(S.lvl))}</b></div><div class="qbar"><i style="width:${S.xp/needXP(S.lvl)*100}%;background:linear-gradient(90deg,#5b4bd6,#a89bff)"></i></div></div>
+      <div class="row"><div class="r1"><span>❤️ Vida</span><b>${Math.round(S.hp)} / ${mx}</b></div><div class="qbar"><i style="width:${S.hp/mx*100}%;background:linear-gradient(90deg,#a3221d,#e5534b)"></i></div></div>
+      <div class="stats">
+        <div class="st"><span>⚔️ Ataque</span><b>${atk()}</b></div><div class="st"><span>🛡️ Defesa</span><b>${def()}</b></div>
+        <div class="st"><span>💥 Crítico</span><b>${Math.round(c.crit*100)}%</b></div><div class="st"><span>🪙 Ouro</span><b>${fmtN(S.gold)}</b></div>
+        <div class="st"><span>✨ Bônus XP</span><b>+${Math.round((c.xp-1)*100+amu())}%</b></div><div class="st"><span>🏹 Alcance</span><b>${c.reach} m</b></div>
+      </div>
+      <div class="sect">Registros</div>
+      <div class="stats">
+        <div class="st"><span>🗺️ Distância</span><b>${S.stats.km.toFixed(1).replace('.',',')} km</b></div><div class="st"><span>💀 Monstros</span><b>${fmtN(S.stats.kills)}</b></div>
+        <div class="st"><span>🏰 Jornadas</span><b>${S.stats.trips}</b></div><div class="st"><span>🐉 Dragões</span><b>${S.stats.dragons}</b></div>
+      </div>
+      <div class="r2" style="font-size:11.5px;color:#8a7658;margin-top:10px">${esc(c.desc)}</div>`;
+  }else if(sheetTab==='equip'){
+    h=Object.keys(SLOT).map(k=>{const it=S.equip[k];
+      return `<div class="row"><div class="r1"><span>${SLOT[k]}</span>${it?`<b class="r-${it.r}">${esc(it.name)}</b>`:'<span style="color:#7a6446">vazio</span>'}</div>
+        <div class="r2">${it?`${RAR[it.r].n} · ${statTxt(it)}`:'Itens caem dos monstros e dos baús'}${k==='weapon'&&S.smith.w?` · ferreiro +${S.smith.w}`:''}${k==='armor'&&S.smith.a?` · ferreiro +${S.smith.a}`:''}</div></div>`}).join('')+
+      `<div class="row"><div class="r1"><span>🔨 Próximo aprimoramento</span><b>${fmtN(smithCost())} 🪙</b></div><div class="r2">O ferreiro usa seu ouro automaticamente</div><div class="qbar"><i style="width:${Math.min(100,S.gold/smithCost()*100)}%"></i></div></div>
+      <div class="sect">Últimos achados</div>`+
+      (S.loot.length?S.loot.map(it=>`<div class="row"><div class="r1"><span class="r-${it.r}">${esc(it.name)}</span><span style="font-size:11.5px;color:#b59f7b">${it.act==='equipado'?'equipado':'+'+it.g+' 🪙'}</span></div><div class="r2">${RAR[it.r].n} · ${statTxt(it)}</div></div>`).join('')
+        :'<div class="r2" style="color:#7a6446">Nada ainda. Faça uma jornada!</div>');
+  }else if(sheetTab==='quests'){
+    ensureDaily();
+    h='<div class="r2" style="color:#8a7658;margin-bottom:9px">Renovam todo dia. Recompensas entregues automaticamente.</div>'+
+      DQ.map(q=>{const v=S.daily[q.id],done=S.daily.claimed.includes(q.id),k=1+.15*(S.lvl-1);
+        return `<div class="row"><div class="r1"><span>${done?'✅':'📜'} ${q.t}</span><b>${q.u==='km'?v.toFixed(1).replace('.',','):v} / ${q.goal}</b></div>
+          <div class="r2">Recompensa: ${Math.round(q.xp*k)} XP · ${Math.round(q.gold*k)} 🪙</div><div class="qbar"><i style="width:${Math.min(100,v/q.goal*100)}%"></i></div></div>`}).join('');
+  }else if(sheetTab==='ach'){
+    h=`<div class="r2" style="color:#8a7658;margin-bottom:9px">${S.ach.length} de ${ACH.length} desbloqueadas. A última vira seu título.</div>`+
+      ACH.map(a=>`<div class="row ${S.ach.includes(a.id)?'':'lock'}"><div class="r1"><span>${S.ach.includes(a.id)?'🏅':'🔒'} ${a.n}</span></div><div class="r2">${a.d}</div></div>`).join('');
+  }else{
+    const th=S.theme||'auto';
+    h=`<div class="row"><div class="r1"><span>🗺️ Visual do mapa</span></div><div class="opt">
+        ${[['auto','Automático'],['dia','Pergaminho'],['noite','Masmorra']].map(([k,n])=>`<button class="${th===k?'on':''}" onclick="setTheme('${k}')">${n}</button>`).join('')}</div></div>
+      <div class="row"><div class="r1"><span>🔊 Voz de navegação</span></div><div class="opt">
+        <button class="${!S.mute?'on':''}" onclick="S.mute=false;hud();save();renderSheet()">Ligada</button><button class="${S.mute?'on':''}" onclick="S.mute=true;hud();save();renderSheet()">Desligada</button></div></div>
+      <div class="row"><div class="r1"><span>🏙️ Prédios em 3D</span></div><div class="opt">
+        <button class="${S.b3d!==false?'on':''}" onclick="S.b3d=true;applyTheme();save();renderSheet()">Ligado</button><button class="${S.b3d===false?'on':''}" onclick="S.b3d=false;applyTheme();save();renderSheet()">Desligado</button></div></div>
+      <button class="btn prim" style="margin-top:6px" onclick="closeSheet();openClassSel(false)">Trocar classe / nome</button>
+      <div class="r2" style="color:#8a7658;margin:6px 2px 14px;font-size:11.5px">Trocar de classe mantém nível, ouro e conquistas.</div>
+      <button class="btn sec" id="resetBtn" onclick="resetTap()">Apagar todo o progresso</button>
+      <div class="sect">Diagnóstico de rota</div>
+      <div class="r2" style="color:#8a7658;font-size:11.5px;line-height:1.5">${(()=>{try{const a=JSON.parse(localStorage.getItem('meumapa_log')||'[]');return a.length?a.map(esc).join('<br>'):'Nenhum registro ainda.'}catch{return ''}})()}</div>`;
+  }
+  $('sheetBody').innerHTML=h;
+}
+function setTheme(t){S.theme=t;applyTheme();save();renderSheet()}
+function resetTap(){
+  if(Date.now()-resetArm<4000){try{localStorage.removeItem(SAVE_KEY)}catch{}location.reload();return}
+  resetArm=Date.now();$('resetBtn').textContent='Toque de novo para apagar TUDO';
+}
+
+/* ── ESCOLHA DE CLASSE ───────────────────────────────── */
+let selCls='cavaleiro';
+function openClassSel(){
+  selCls=S.cls||'cavaleiro';$('heroName').value=S.name==='Aventureiro'?'':S.name;
+  renderClassGrid();$('classSel').classList.add('on');
+}
+function renderClassGrid(){
+  $('clsGrid').innerHTML=Object.entries(CLASSES).map(([k,c])=>`<div class="cc ${k===selCls?'sel':''}" onclick="selCls='${k}';renderClassGrid()">
+    <div class="cv sp ${k===selCls?'walk':''}">${spriteSVG(k)}</div><div class="cn">${c.nome}</div><div class="cdx">${c.desc}</div></div>`).join('');
+}
+function confirmClass(){
+  const first=!S.cls;S.cls=selCls;S.name=$('heroName').value.trim()||S.name||'Aventureiro';
+  if(S.hp==null||first)S.hp=maxHP();else S.hp=Math.min(S.hp,maxHP());
+  save();$('classSel').classList.remove('on');refreshAll();
+  if(first){startGPS();card('🗡️',`Bem-vindo, ${esc(S.name)}!`,'Coloque um destino e a aventura começa.','gold')}
+}
+
+/* ── PERMISSÕES (app Android) ───────────────────────────── */
+const permTxt=s=>s==='granted'?'✅ ok':s==='denied'?'❌ negada':'pendente';
+async function permState(){
+  let loc='prompt',not='prompt';
+  try{const r=await NAT.geo.checkPermissions();loc=r.location}catch{}
+  try{const r=await NAT.notif.checkPermissions();not=r.display}catch{}
+  $('pmLoc').textContent=permTxt(loc);$('pmNot').textContent=permTxt(not);
+  return{loc,not};
+}
+async function askPerms(){
+  try{await NAT.geo.requestPermissions({permissions:['location','coarseLocation']})}catch(e){}
+  try{await NAT.notif.requestPermissions()}catch(e){}
+  const s=await permState();
+  if(s.loc==='granted'){closePerms();startGPS();toast('📍 Localização liberada')}
+  else toast('Sem localização o herói não consegue te acompanhar. Libere em Configurações → Apps → Meu Mapa RPG → Permissões.',6000);
+}
+function closePerms(){$('permSel').classList.remove('on')}
+async function checkPermsAtStart(){
+  if(!NATIVE||!NAT.geo)return;
+  const s=await permState();
+  if(s.loc!=='granted'||s.not!=='granted')$('permSel').classList.add('on');
+}
