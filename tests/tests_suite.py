@@ -796,9 +796,10 @@ def t58_pergaminho_de_chefe(c):
     # equipamento visível
     c.wait("window.Hero3D && Hero3D.state.ready && Hero3D.__model", 20000)
     vis = "()=>{let v=[];Hero3D.__model.traverse(o=>{if(o.isMesh&&/Sword|Shield|Helmet|Cape/.test(o.name))v.push(o.name+':'+o.visible)});return v.sort().join(',')}"
-    c.js("()=>Hero3D.gear({w:null,a:null})"); assert "true" not in c.js(vis), c.js(vis)
-    c.js("()=>Hero3D.gear({w:3,a:null})"); v = c.js(vis); assert "1H_Sword:true" in v and "Knight_Helmet:false" in v, v
-    c.js("()=>Hero3D.gear({w:3,a:0})"); assert "false" not in c.js(vis)
+    c.js("()=>Hero3D.gear({w:null,a:null})"); assert "false" not in c.js(vis), c.js(vis)      # traje da classe sempre visível
+    glow = "()=>{let v=[];Hero3D.__model.traverse(o=>{if(o.isMesh&&/Sword|Helmet/.test(o.name))v.push(o.name+':'+o.material.emissive.getHexString())});return v.sort().join(',')}"
+    assert "000000" in c.js(glow).split(",")[0]
+    c.js("()=>Hero3D.gear({w:4,a:null})"); g = c.js(glow); assert "1H_Sword:000000" not in g and "Knight_Helmet:000000" in g, g
 
 @test
 def t59_evento_natal(c):
@@ -823,3 +824,12 @@ def t60_navegacao_sem_sobreposicao(c):
           const k=Object.keys(b),o=[];for(let i=0;i<k.length;i++)for(let j=i+1;j<k.length;j++){const a=b[k[i]],d=b[k[j]];
             if(a.left<d.right-2&&d.left<a.right-2&&a.top<d.bottom-2&&d.top<a.bottom-2)o.push(k[i]+'×'+k[j])}return o}""")
         assert ov == [], (vw, ov)
+
+
+@test
+def t61_modelos_nao_ficam_do_avesso(c):
+    # a câmera de trás deve ver as COSTAS do herói (antes via a frente "por dentro")
+    c.open(); c.hero(); c.route_to()
+    c.js("()=>{startNav(true);sim.mult=0}"); c.wait("window.Hero3D && Hero3D.state.ready && Hero3D.__model", 20000)
+    det = c.js("""()=>{let d=null;Hero3D.__model.traverse(o=>{if(o.isMesh&&d==null){o.updateMatrixWorld(true);d=o.matrixWorld.determinant()}});return d}""")
+    assert det > 0, det     # sem espelho no modelo (o espelho do mapa fica na câmera)

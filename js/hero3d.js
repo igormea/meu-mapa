@@ -32,7 +32,9 @@ const layer = {
     const map = window.__map;
     // desenha relativo ao centro do mapa (evita perder precisão com coordenadas do planeta inteiro → modelo "estilhaçado")
     const c = map.getCenter(); ORG = maplibregl.MercatorCoordinate.fromLngLat([c.lng, c.lat], 0);
-    camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix).multiply(new THREE.Matrix4().makeTranslation(ORG.x, ORG.y, ORG.z));
+    // o "y" do mapa (mercator) cresce pro sul; o espelhamento fica na câmera, assim os modelos não ficam "do avesso"
+    // (antes o espelho ficava no modelo e a câmera de trás enxergava a frente do personagem por dentro)
+    camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix).multiply(new THREE.Matrix4().makeTranslation(ORG.x, ORG.y, ORG.z)).multiply(new THREE.Matrix4().makeScale(1, -1, 1));
     let any = false;
     // herói
     const ll = H.model && window.__heroPos ? window.__heroPos() : null;
@@ -71,7 +73,7 @@ function placeAt(obj, lat, lon, heading, px, height, map) {
   const tilt = Math.max(0, 58 - map.getPitch()) * Math.PI / 180, b = map.getBearing() * Math.PI / 180;
   const tiltM = new THREE.Matrix4().makeRotationAxis(_v.set(Math.cos(b), -Math.sin(b), 0), -tilt);
   obj.matrixAutoUpdate = false;
-  obj.matrix.makeTranslation(mc.x - ORG.x, mc.y - ORG.y, mc.z - ORG.z).scale(_v.set(s, -s, s)).multiply(tiltM).multiply(_rx).multiply(rotY);
+  obj.matrix.makeTranslation(mc.x - ORG.x, -(mc.y - ORG.y), mc.z - ORG.z).scale(_v.set(s, s, s)).multiply(tiltM).multiply(_rx).multiply(rotY);
   obj.matrixWorldNeedsUpdate = true;
 }
 function bearingTo(la1, lo1, la2, lo2) {
@@ -151,7 +153,7 @@ async function setClass(cls) {
   applyGear();
   window.__map.triggerRepaint();
 }
-/* equipamento visível: arma/escudo só com arma equipada, elmo/capa só com armadura; brilho na cor da raridade */
+/* equipamento visível: arma/escudo e elmo/capa brilham na cor da raridade do que está equipado */
 let GEAR = { w: null, a: null };
 const RCOL = ['#000000', '#3f8f4f', '#3b6fd1', '#9b4fe0', '#e0a020'];   // incomum, raro, épico, lendário
 function applyGear() {
@@ -162,7 +164,7 @@ function applyGear() {
     const isW = /Sword|Axe|Staff|Knife|Crossbow|Shield/i.test(nm), isA = /Helmet|Hat|Cape/i.test(nm);
     if (!isW && !isA) return;
     const r = isW ? GEAR.w : GEAR.a;
-    o.visible = r != null;
+    o.visible = true;                         // o traje da classe sempre aparece (sem elmo o cavaleiro ficava careca)
     if (!o.userData.mat0) o.userData.mat0 = o.material;
     if (r >= 1) { o.material = o.userData.mat0.clone(); o.material.emissive?.set(RCOL[Math.min(4, r)]).multiplyScalar(r >= 3 ? .55 : .35); }
     else o.material = o.userData.mat0;

@@ -1,5 +1,15 @@
 [
  {
+  "v": "6.0.2",
+  "d": "21/11/2026",
+  "t": "Herói e monstros corrigidos",
+  "i": [
+   "Corrigido: o herói e os monstros em 3D eram desenhados 'do avesso'. Com a câmera atrás, dava pra ver a frente do personagem por dentro, como se fosse transparente.",
+   "Corrigido: sem armadura equipada, o herói aparecia sem elmo nem capa (o cavaleiro ficava careca). O traje da classe agora sempre aparece, e o equipamento brilha na cor da raridade.",
+   "O Reportar bug manda direto pro WhatsApp do Igor."
+  ]
+ },
+ {
   "v": "6.0",
   "d": "21/11/2026",
   "t": "Pergaminhos, equipamento e Natal",
