@@ -21,16 +21,24 @@ jobs:
         run: |
           set -o pipefail
           (
-            set -ex
-            sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool
-            curl -sSfL -o ne.osm.pbf https://download.geofabrik.de/south-america/brazil/nordeste-latest.osm.pbf
-            ls -la ne.osm.pbf
-            osmium extract -b -41.45,-7.95,-37.20,-2.70 ne.osm.pbf -o ce.osm.pbf --overwrite
-            osmium tags-filter ce.osm.pbf n/highway=speed_camera n/enforcement=maxspeed n/traffic_calming \
-              n/barrier=toll_booth n/railway=level_crossing n/highway=traffic_signals \
-              nwr/amenity=parking,fuel,pharmacy -o f.osm.pbf --overwrite
-            osmium export f.osm.pbf -f geojsonseq -o f.geojsonseq --overwrite
-            python3 tools/osm_extract.py f.geojsonseq
+            set -x
+            ok=0
+            sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool >/dev/null
+            for url in https://download.geofabrik.de/south-america/brazil/nordeste-latest.osm.pbf \
+                       https://download.openstreetmap.fr/extracts/south-america/brazil/nordeste/ceara-latest.osm.pbf; do
+              if curl -sSfL --retry 4 --retry-all-errors --retry-delay 15 --connect-timeout 30 -o src.osm.pbf "$url"; then
+                ls -la src.osm.pbf
+                osmium extract -b -41.45,-7.95,-37.20,-2.70 src.osm.pbf -o ce.osm.pbf --overwrite &&
+                osmium tags-filter ce.osm.pbf n/highway=speed_camera n/enforcement=maxspeed n/traffic_calming \
+                  n/barrier=toll_booth n/railway=level_crossing n/highway=traffic_signals \
+                  nwr/amenity=parking,fuel,pharmacy -o f.osm.pbf --overwrite &&
+                osmium export f.osm.pbf -f geojsonseq -o f.geojsonseq --overwrite &&
+                python3 tools/osm_extract.py f.geojsonseq && { ok=1; break; }
+              fi
+              echo "fonte falhou: $url"
+            done
+            if [ $ok = 0 ]; then echo "plano B: Overpass"; python3 tools/osm_overpass.py && ok=1; fi
+            [ $ok = 1 ]
           ) 2>&1 | tee osm.log
 
       - name: Salvar no repositório
