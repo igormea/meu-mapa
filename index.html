@@ -2,6 +2,21 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<script>
+// Mostra qualquer erro na tela (pra diagnosticar no app Android)
+(function(){
+  function show(msg){
+    var d=document.getElementById('errBox');
+    if(!d){d=document.createElement('div');d.id='errBox';
+      d.style.cssText='position:fixed;left:8px;right:8px;top:40%;z-index:99999;background:#7f1d1d;color:#fff;font:12px monospace;padding:10px;border-radius:8px;white-space:pre-wrap;max-height:45vh;overflow:auto';
+      (document.body||document.documentElement).appendChild(d);d.onclick=function(){d.remove()}}
+    d.textContent+=msg+'\n';
+  }
+  window.__showErr=show;
+  window.addEventListener('error',function(e){show('ERRO: '+(e.message||e)+' @'+(e.lineno||'?')+(e.filename?' '+String(e.filename).split('/').pop():''))});
+  window.addEventListener('unhandledrejection',function(e){show('ERRO (async): '+((e.reason&&(e.reason.message||e.reason))||e))});
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#2a1c12">
 <meta name="mobile-web-app-capable" content="yes">
@@ -361,12 +376,16 @@ const $=id=>document.getElementById(id);
 /* ── APP ANDROID (Capacitor) ─────────────────────────────
    No APK, usa recursos nativos: GPS em segundo plano, voz nativa e tela ligada.
    No navegador, nada disso existe e o site segue funcionando igual. */
-const NATIVE=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
-const NAT=NATIVE?{
-  bg:window.Capacitor.registerPlugin('BackgroundGeolocation'),
-  tts:window.Capacitor.registerPlugin('TextToSpeech'),
-  awake:window.Capacitor.registerPlugin('KeepAwake'),
-}:null;
+let NATIVE=false,NAT=null;
+try{
+  const C=window.Capacitor;
+  NATIVE=!!(C&&C.isNativePlatform&&C.isNativePlatform());
+  if(NATIVE){
+    const reg=n=>C.registerPlugin?C.registerPlugin(n):(C.Plugins&&C.Plugins[n]);
+    NAT={bg:reg('BackgroundGeolocation'),tts:reg('TextToSpeech'),awake:reg('KeepAwake')};
+    if(!NAT.bg||!NAT.tts||!NAT.awake){NATIVE=false;NAT=null}
+  }
+}catch(e){NATIVE=false;NAT=null;window.__showErr&&window.__showErr('Capacitor: '+e.message)}
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
@@ -530,6 +549,8 @@ function paintTheme(night){
   map.setPaintProperty('bg','background-color',t.bg);map.setPaintProperty('b3d','fill-extrusion-color',t.b3d);
   map.setLayoutProperty('b3d','visibility',S.b3d===false?'none':'visible');
 }
+if(typeof maplibregl==='undefined')window.__showErr('A biblioteca do mapa (MapLibre) não carregou. Verifique a internet.');
+else if(!(()=>{try{const c=document.createElement('canvas');return !!(c.getContext('webgl2')||c.getContext('webgl'))}catch{return false}})())window.__showErr('Este aparelho/app não liberou WebGL (gráficos 3D) para o mapa.');
 const map=new maplibregl.Map({container:'map',style:STYLE,
   center:[-38.5267,-3.7319],zoom:13,pitch:0,maxPitch:70,attributionControl:{compact:true}});
 const EMPTY={type:'FeatureCollection',features:[]};
