@@ -1,0 +1,34 @@
+name: Baixar pacotes de monstros (CC0)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/monsters-fetch.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar do OpenGameArt (Quaternius, CC0)
+        shell: bash
+        run: |
+          mkdir -p out && cd out
+          get(){ curl -sSfL --retry 3 --retry-all-errors -A "Mozilla/5.0" -o "$2" "$1" && echo "ok $2 $(stat -c%s "$2")" || echo "FALHOU $1"; }
+          get "https://opengameart.org/sites/default/files/Animated%20Monster%20Pack%20by%20%40Quaternius.zip" quaternius_monsters_2018.zip
+          get "https://opengameart.org/sites/default/files/cute_animated_monsters_-_aug_2020.zip" quaternius_cute_monsters.zip
+          for z in *.zip; do echo "== $z"; unzip -l "$z" | awk '{print $4}' | grep -iE "\.(fbx|glb|gltf|blend|obj|png)$" | head -80; done | tee inventario.txt
+      - name: Publicar para uso no app
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: monster-src
+          name: Pacotes de monstros (fonte, CC0)
+          body: Pacotes CC0 de Quaternius baixados do OpenGameArt, para converter em modelos do Ranvus Maps.
+          files: |
+            out/*.zip
+            out/inventario.txt
+          prerelease: true
+          make_latest: false
