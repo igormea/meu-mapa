@@ -358,6 +358,15 @@ body.arrive #fabs{display:none}
    Tiles OSM (estilizados) · Nominatim · OSRM · GPS
 ═══════════════════════════════════════════════════════ */
 const $=id=>document.getElementById(id);
+/* ── APP ANDROID (Capacitor) ─────────────────────────────
+   No APK, usa recursos nativos: GPS em segundo plano, voz nativa e tela ligada.
+   No navegador, nada disso existe e o site segue funcionando igual. */
+const NATIVE=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
+const NAT=NATIVE?{
+  bg:window.Capacitor.registerPlugin('BackgroundGeolocation'),
+  tts:window.Capacitor.registerPlugin('TextToSpeech'),
+  awake:window.Capacitor.registerPlugin('KeepAwake'),
+}:null;
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
@@ -482,7 +491,9 @@ function card(e,t,s='',k=''){
   setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),400)},3600);
 }
 function speak(t){
-  if(S.mute||!('speechSynthesis' in window))return;
+  if(S.mute)return;
+  if(NATIVE){NAT.tts.speak({text:t,lang:'pt-BR',rate:1.0,volume:1.0,category:'playback'}).catch(()=>{});return}
+  if(!('speechSynthesis' in window))return;
   try{const u=new SpeechSynthesisUtterance(t);u.lang='pt-BR';u.rate=1.05;
     const v=speechSynthesis.getVoices().find(v=>(v.lang||'').toLowerCase().startsWith('pt'));if(v)u.voice=v;
     speechSynthesis.speak(u)}catch{}
@@ -742,6 +753,24 @@ setInterval(()=>{
   onFix({lat:p[0],lon:p[1],acc:15,spd:lastRealSpd,hdg:bearing(p,p2),t:Date.now(),dr:true});
 },1000);
 
+let bgWatch=null;
+async function startBgGPS(){
+  if(!NATIVE||bgWatch)return;
+  try{
+    bgWatch=await NAT.bg.addWatcher({backgroundTitle:'Meu Mapa RPG — jornada em andamento',backgroundMessage:'Seu herói continua te guiando',
+      requestPermissions:true,stale:false,distanceFilter:0},(loc,err)=>{
+      if(err){if(err.code==='NOT_AUTHORIZED')toast('📍 Permita a localização nas configurações do app',4000);return}
+      if(!loc)return;lastRealT=Date.now();lastRealSpd=loc.speed||0;
+      if(!sim)onFix({lat:loc.latitude,lon:loc.longitude,acc:loc.accuracy,spd:loc.speed,hdg:loc.bearing,t:Date.now()});
+    });
+    if(watchId!=null){navigator.geolocation.clearWatch(watchId);watchId=null}
+  }catch{bgWatch=null}
+}
+async function stopBgGPS(){
+  if(!bgWatch)return;const id=bgWatch;bgWatch=null;
+  try{await NAT.bg.removeWatcher({id})}catch{}
+  startGPS();
+}
 function startGPS(){
   if(watchId!=null||!navigator.geolocation)return;
   watchId=navigator.geolocation.watchPosition(p=>{
@@ -1025,8 +1054,8 @@ function panel(w){
 
 /* ── NAVEGAÇÃO ───────────────────────────────────────── */
 let wake=null,offSince=0,recalcBusy=false,stopArm=0;
-async function grabWake(){try{wake=await navigator.wakeLock?.request('screen')}catch{}}
-function releaseWake(){try{wake?.release()}catch{}wake=null}
+async function grabWake(){if(NATIVE){NAT.awake.keepAwake().catch(()=>{});return}try{wake=await navigator.wakeLock?.request('screen')}catch{}}
+function releaseWake(){if(NATIVE){NAT.awake.allowSleep().catch(()=>{});return}try{wake?.release()}catch{}wake=null}
 document.addEventListener('visibilitychange',()=>{if(isNav&&document.visibilityState==='visible')grabWake()});
 
 function startNav(simulate){
@@ -1046,7 +1075,7 @@ function startNav(simulate){
   grabWake();
   speak(`Jornada iniciada rumo a ${short(dest.name)}. ${fmtSpeech(R.total)} pela frente.`);
   if(simulate){simSnap=JSON.stringify(S);startSim()}
-  else{startGPS();if(lastFix)onFix({...lastFix,t:Date.now()})}
+  else{startGPS();startBgGPS();if(lastFix)onFix({...lastFix,t:Date.now()})}
   hud();
 }
 function navUpdate(sn,f){
@@ -1133,7 +1162,7 @@ function arrive(){
   save();endNav(true);panel('arrive');
 }
 function endNav(arrived){
-  isNav=false;stopSim();releaseWake();drProg=null;$('drBadge').style.display='none';try{speechSynthesis.cancel()}catch{}
+  isNav=false;stopSim();releaseWake();stopBgGPS();drProg=null;$('drBadge').style.display='none';try{speechSynthesis.cancel()}catch{}
   if(arrived)setTimeout(()=>speak('Você chegou! Missão concluída.'),50);
   document.body.classList.remove('nav');$('navTop').classList.remove('on');$('navBottom').classList.remove('on');
   $('hud').style.display='';$('recenterBtn').style.display='none';
