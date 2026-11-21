@@ -13,7 +13,7 @@ import { clone as cloneSkinned } from '../vendor/three/addons/utils/SkeletonUtil
 const PX_TALL = 44;            // altura do herói na tela (pixels)
 const H = { ready: false, cls: null, heading: 0, shownHeading: 0, speed: 0, model: null, height: 1,
             mixer: null, actions: {}, current: null, oneShot: null, loading: null, failed: false };
-let renderer, scene, camera, loader, lastT = performance.now(), nextFrame = 0;
+let ORG = { x: 0, y: 0, z: 0 }, renderer, scene, camera, loader, lastT = performance.now(), nextFrame = 0;
 
 const layer = {
   id: 'hero3d', type: 'custom', renderingMode: '3d',
@@ -30,7 +30,9 @@ const layer = {
   render(gl, matrix) {
     const now = performance.now(), dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
     const map = window.__map;
-    camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
+    // desenha relativo ao centro do mapa (evita perder precisão com coordenadas do planeta inteiro → modelo "estilhaçado")
+    const c = map.getCenter(); ORG = maplibregl.MercatorCoordinate.fromLngLat([c.lng, c.lat], 0);
+    camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix).multiply(new THREE.Matrix4().makeTranslation(ORG.x, ORG.y, ORG.z));
     let any = false;
     // herói
     const ll = H.model && window.__heroPos ? window.__heroPos() : null;
@@ -45,7 +47,9 @@ const layer = {
       if (!m.obj) continue;
       m.mixer.update(dt);
       const face = ll ? bearingTo(m.lat, m.lon, ll.lat, ll.lng) : 0;      // olha para o herói
-      placeAt(m.obj, m.lat, m.lon, face, m.px, m.height, map); any = true;
+      // sem animação de morte: encolhe até sumir
+      const shrink = m.dying && !m.actions.death ? Math.max(0.01, 1 - (performance.now() - m.dying) / 500) : 1;
+      placeAt(m.obj, m.lat, m.lon, face, m.px * shrink, m.height, map); any = true;
     }
     if (!any) return;
     renderer.resetState();
@@ -67,7 +71,7 @@ function placeAt(obj, lat, lon, heading, px, height, map) {
   const tilt = Math.max(0, 58 - map.getPitch()) * Math.PI / 180, b = map.getBearing() * Math.PI / 180;
   const tiltM = new THREE.Matrix4().makeRotationAxis(_v.set(Math.cos(b), -Math.sin(b), 0), -tilt);
   obj.matrixAutoUpdate = false;
-  obj.matrix.makeTranslation(mc.x, mc.y, mc.z).scale(_v.set(s, -s, s)).multiply(tiltM).multiply(_rx).multiply(rotY);
+  obj.matrix.makeTranslation(mc.x - ORG.x, mc.y - ORG.y, mc.z - ORG.z).scale(_v.set(s, -s, s)).multiply(tiltM).multiply(_rx).multiply(rotY);
   obj.matrixWorldNeedsUpdate = true;
 }
 function bearingTo(la1, lo1, la2, lo2) {
@@ -79,7 +83,7 @@ function bearingTo(la1, lo1, la2, lo2) {
 /* ── MONSTROS 3D ── modelos carregados uma vez por tipo e clonados por monstro */
 const MON = new Map(), TPL = {};
 async function template(kind) {
-  if (!TPL[kind]) TPL[kind] = loader.loadAsync(`models/mon/${kind}.glb?v=1`).then(g => {
+  if (!TPL[kind]) TPL[kind] = loader.loadAsync(`models/mon/${kind}.glb?v=2`).then(g => {
     g.scene.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
     const box = new THREE.Box3().setFromObject(g.scene); return { g, height: Math.max(.5, box.max.y - box.min.y) };
   });
@@ -104,8 +108,8 @@ async function monAdd(id, kind, lat, lon, px = 36) {
 function monRemove(id) { const m = MON.get(id); if (!m) return; if (m.obj) scene.remove(m.obj); MON.delete(id); }
 function monKill(id) {
   const m = MON.get(id); if (!m || !m.obj || m.dying) return monRemove(id);
-  m.dying = true; m.mixer.stopAllAction(); m.actions.death?.reset().play();
-  setTimeout(() => monRemove(id), 1600);
+  m.dying = performance.now(); m.mixer.stopAllAction(); m.actions.death?.reset().play();
+  setTimeout(() => monRemove(id), m.actions.death ? 1600 : 520);
 }
 
 function play(name, fade = 0.25) {
@@ -156,7 +160,7 @@ window.Hero3D = {
     for (const id of [...MON.keys()]) if (!want.has(id) && !MON.get(id).dying) monRemove(id);
     for (const x of list) monAdd(x.id, x.kind, x.lat, x.lon, x.px);
   },
-  monKill, monAttack(id) { const m = MON.get(id); m?.actions?.attack?.reset().play(); },
+  monKill, monAttack(id) { const m = MON.get(id); (m?.actions?.attack || m?.actions?.hit)?.reset().play(); },
   get mons() { return [...MON.values()].map(m => ({ id: m.id, kind: m.kind, ready: !!m.obj, dying: !!m.dying })); },
   get state() { return { ready: H.ready, cls: H.cls, anim: Object.keys(H.actions).find(k => H.actions[k] === H.current) || null, heading: H.heading, failed: H.failed }; },
 };

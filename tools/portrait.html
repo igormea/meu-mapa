@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from '../vendor/three/addons/libs/meshopt_decoder.module.js';
+import { clone as cloneSkinned } from '../vendor/three/addons/utils/SkeletonUtils.js';
 window.shoot = async (url, opt = {}) => {
   const r = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), alpha: true, antialias: true, preserveDrawingBuffer: true });
   r.setClearColor(0x000000, 0); r.outputColorSpace = THREE.SRGBColorSpace;
@@ -15,14 +16,15 @@ window.shoot = async (url, opt = {}) => {
   const key = new THREE.DirectionalLight(0xfff0d8, 2.6); key.position.set(2, 3, 3); scene.add(key);
   const rim = new THREE.DirectionalLight(0x8fb0ff, 2.2); rim.position.set(-3, 2, -2); scene.add(rim);
   const l = new GLTFLoader(); l.setMeshoptDecoder(MeshoptDecoder);
-  const g = await l.loadAsync(url); const m = g.scene; scene.add(m);
+  const g = await l.loadAsync(url); const m = opt.clone ? cloneSkinned(g.scene) : g.scene; scene.add(m);
   const mixer = new THREE.AnimationMixer(m); const clip = g.animations.find(a => a.name === (opt.anim || 'idle'));
   if (clip) { mixer.clipAction(clip).play(); mixer.update(opt.t || 0.6); }
   m.rotation.y = opt.rot ?? 0.55;
   m.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(m), size = box.getSize(new THREE.Vector3()), ctr = box.getCenter(new THREE.Vector3());
-  const cam = new THREE.PerspectiveCamera(28, 1, 0.1, 100);
+  const cam = new THREE.PerspectiveCamera(28, 1, 0.1, 100000);
   const dist = size.y / (2 * Math.tan(THREE.MathUtils.degToRad(14))) * (opt.zoom || 1.12);
+  cam.near = dist / 100; cam.far = dist * 10; cam.updateProjectionMatrix();
   cam.position.set(ctr.x, ctr.y + size.y * 0.08, ctr.z + dist); cam.lookAt(ctr.x, ctr.y + size.y * (opt.look ?? 0.02), ctr.z);
   r.render(scene, cam);
   return document.getElementById('c').toDataURL('image/png');

@@ -63,7 +63,7 @@ function snap(la,lo){
 let spawnSeq=0;
 /* monstros 3D: os que têm modelo e estão a até 700 m do herói (máx. 6) aparecem em 3D; o resto fica no ícone */
 function mon3dTick(lat,lon){
-  if(!window.Hero3D?.state.ready)return;
+  if(!window.Hero3D?.state.ready||window.__noMonTick)return;  // __noMonTick: usado só nos testes
   const Rt=isNav?R:PR[selIdx];const list=[];
   if(Rt)for(const s of Rt.spawns){if(s.done||!s.m.m3d)continue;const d=hav(lat,lon,s.lat,s.lon);if(d<700)list.push({id:s.id,kind:s.m.m3d,lat:s.lat,lon:s.lon,px:s.m.elite?40:34,d})}
   list.sort((a,b)=>a.d-b.d);window.Hero3D.monSync(list.slice(0,6));

@@ -1,3 +1,4 @@
+import os
 import e2e
 from e2e import test, ORIGIN, DEST, READY
 import time
@@ -497,3 +498,24 @@ def t41_monstros_3d_aparecem_e_morrem(c):
     assert c.js(f"()=>Hero3D.mons.find(m=>m.id==={sid})?.dying") is True
     c.wait(f"!Hero3D.mons.some(m=>m.id==={sid})", 5000)
     c.js("()=>cancelRoute()"); assert c.js("()=>Hero3D.mons.length") == 0
+
+@test
+def t42_todos_monstros_3d(c):
+    c.open(); c.hero(); c.route_to()
+    c.wait("window.Hero3D && Hero3D.state.ready", 20000)
+    kinds = c.js("()=>MONS.filter(m=>m.m3d).map(m=>m.m3d)")
+    assert len(kinds) == 20 and len(set(kinds)) == 20, kinds
+    # retratos de todos existem
+    bad = c.js("""async()=>{const r=[];for(const k of MONS.filter(m=>m.m3d).map(m=>m.m3d)){const i=new Image();i.src='models/portraits/'+k+'.png';
+      await new Promise(f=>{i.onload=i.onerror=f});if(!i.naturalWidth)r.push(k)}return r}""")
+    assert bad == [], bad
+    # carrega os 16 novos modelos direto no Hero3D (sem limite de 6 do jogo)
+    c.js("""()=>{window.__noMonTick=1;const p=pointAt(PR[0],60);Hero3D.monSync(MONS.filter(m=>m.m3d&&m.m3d.startsWith('q_')).map((m,i)=>
+      ({id:9000+i,kind:m.m3d,lat:p[0]+((i%4)-1.5)*1.6e-4,lon:p[1]+(Math.floor(i/4)-1.5)*1.6e-4,px:34})))}""")
+    c.wait("Hero3D.mons.filter(m=>m.kind.startsWith('q_')&&m.ready).length===16", 30000)
+    if os.environ.get("SHOT"):
+        c.js("""()=>{const p=pointAt(PR[0],60);__map.jumpTo({center:[p[1],p[0]],zoom:18.6,pitch:55,bearing:0})}"""); c.page.wait_for_timeout(1500)
+        c.page.screenshot(path="/tmp/mons_map.png")
+    # quem não tem animação de morte encolhe e some
+    c.js("()=>{Hero3D.monKill(9000+MONS.filter(m=>m.m3d&&m.m3d.startsWith('q_')).findIndex(m=>m.m3d==='q_mushroom'))}")
+    c.wait("Hero3D.mons.length===15", 3000)

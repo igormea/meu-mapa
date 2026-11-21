@@ -1,7 +1,7 @@
 /* Ranvus Maps — cache offline.
    App: rede primeiro (sempre pega a versão nova), cache se estiver sem internet.
    Mapa (tiles OSM): cache primeiro, até ~3.500 pedaços dos lugares que você já viu. */
-const APP_CACHE='mmrpg-app-5.4.0', TILE_CACHE='mmrpg-tiles', MAX_TILES=3500;
+const APP_CACHE='mmrpg-app-5.5.0', TILE_CACHE='mmrpg-tiles', MAX_TILES=3500;
 const SHELL=['./','index.html','css/app.css','vendor/maplibre-gl.js','vendor/maplibre-gl.css',
   'vendor/fonts/pixelify-sans-latin-400-normal.woff2','vendor/fonts/pixelify-sans-latin-600-normal.woff2','vendor/fonts/pixelify-sans-latin-700-normal.woff2','vendor/fonts/fredoka-latin-400-normal.woff2','vendor/fonts/fredoka-latin-500-normal.woff2','vendor/fonts/fredoka-latin-600-normal.woff2','vendor/fonts/fredoka-latin-700-normal.woff2','vendor/fonts/cinzel-latin-700-normal.woff2','vendor/fonts/alegreya-sans-latin-500-normal.woff2','vendor/fonts/alegreya-sans-latin-700-normal.woff2',
   'icon-192.png','manifest.json'];
