@@ -62,7 +62,7 @@ function snap(la,lo){
 }
 function genSpawns(Rt,from=250){
   const sp=Math.max(380,Rt.total/60);let d=from+rnd(0,200);
-  while(d<Rt.total-180){const p=pointAt(Rt,d);Rt.spawns.push({cum:d,lat:p[0],lon:p[1],m:rollMonster(),done:false,mk:null});d+=sp+rnd(0,sp*.9)}
+  while(d<Rt.total-180){const p=pointAt(Rt,d);Rt.spawns.push({cum:d,lat:p[0],lon:p[1],m:rollMonster(p[0],p[1]),done:false,mk:null});d+=sp+rnd(0,sp*.9)}
 }
 function drawSpawns(Rt){Rt.spawns.forEach(s=>{if(s.done||s.mk)return;
   s.mk=addMk(`<div class="mon ${s.m.dragon?'dragon':s.m.elite?'elite':''}">${s.m.e}</div>`,s.lat,s.lon,'bottom')})}

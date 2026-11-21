@@ -5,6 +5,7 @@ function ensurePlayer(lat,lon){
   if(player)return;
   player=addMk(`<div class="pl"><div class="pl-ring"></div><div class="spr sp" id="plSpr">${spriteSVG(S.cls)}</div><div class="pl-lv" id="plLv">Nv ${S.lvl}</div></div>`,lat,lon,'bottom');
   player.getElement().style.zIndex=10;
+  drawPet();
 }
 // move o herói suavemente (mesma duração da câmera → fica parado na tela)
 // ganchos do herói 3D (js/hero3d.js)
@@ -31,6 +32,7 @@ function hud(){
   $('nbKills').textContent='⚔️ '+(T?T.kills:0);
   const lv=$('plLv');if(lv)lv.textContent='Nv '+S.lvl;
   $('muteBtn').textContent=S.mute?'🔇':S.less?'🔉':'🔊';
+  const tp=talentPoints(),hp=$('hudPts');if(hp){hp.textContent=tp;hp.style.display=tp?'flex':'none'}
 }
 function refreshAll(){
   hud();$('hudAva').innerHTML=spriteSVG(S.cls);

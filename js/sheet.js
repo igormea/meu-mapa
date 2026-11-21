@@ -1,7 +1,7 @@
 'use strict';
 /* ── FICHA DO HERÓI ──────────────────────────────────── */
 let sheetTab='heroi',resetArm=0;
-const TABS=[['heroi','🧙 Herói'],['equip','🎒 Equipamento'],['quests','📜 Missões'],['ach','🏅 Conquistas'],['cfg','⚙️ Ajustes']];
+const TABS=[['heroi','🧙 Herói'],['tal','✨ Talentos'],['equip','🎒 Equipamento'],['quests','📜 Missões'],['ach','🏅 Conquistas'],['cfg','⚙️ Ajustes']];
 function openSheet(){regen();renderSheet();$('sheet').classList.add('on')}
 function closeSheet(){$('sheet').classList.remove('on')}
 function setTab(t){sheetTab=t;renderSheet()}
@@ -16,17 +16,37 @@ function renderSheet(){
       <div class="row"><div class="r1"><span>❤️ Vida</span><b>${Math.round(S.hp)} / ${mx}</b></div><div class="qbar"><i style="width:${S.hp/mx*100}%;background:linear-gradient(90deg,#a3221d,#e5534b)"></i></div></div>
       <div class="stats">
         <div class="st"><span>⚔️ Ataque</span><b>${atk()}</b></div><div class="st"><span>🛡️ Defesa</span><b>${def()}</b></div>
-        <div class="st"><span>💥 Crítico</span><b>${Math.round(c.crit*100)}%</b></div><div class="st"><span>🪙 Ouro</span><b>${fmtN(S.gold)}</b></div>
-        <div class="st"><span>✨ Bônus XP</span><b>+${Math.round((c.xp-1)*100+amu())}%</b></div><div class="st"><span>🏹 Alcance</span><b>${c.reach} m</b></div>
+        <div class="st"><span>💥 Crítico</span><b>${Math.round(critChance()*100)}%</b></div><div class="st"><span>🪙 Ouro</span><b>${fmtN(S.gold)}</b></div>
+        <div class="st"><span>✨ Bônus XP</span><b>+${Math.round(((c.xp-1)+amu()/100+bonus('xp'))*100)}%</b></div><div class="st"><span>🏹 Alcance</span><b>${c.reach} m</b></div>
       </div>
+      <div class="sect">Habilidade da classe</div>
+      <div class="row"><div class="r1"><span>${SKILL[S.cls||'cavaleiro'].ic} ${SKILL[S.cls||'cavaleiro'].n}</span><b>automática</b></div><div class="r2">${SKILL[S.cls||'cavaleiro'].d}${S.talents?.dominio?` · +${S.talents.dominio*25}% (Domínio)`:''}</div></div>
+      <div class="sect">Companheiro</div>
+      ${(()=>{const p=S.pet;if(!p)return`<div class="row lock"><div class="r1"><span>🥚 Nenhum ainda</span></div><div class="r2">No nível 3 você encontra um ovo misterioso.</div></div>`;
+        if(p.egg)return`<div class="row"><div class="r1"><span>🥚 Ovo misterioso</span><b>${p.km.toFixed(1).replace('.',',')} / ${PET_HATCH_KM} km</b></div><div class="r2">Choca andando. O que será que vai sair?</div><div class="qbar"><i style="width:${Math.min(100,p.km/PET_HATCH_KM*100)}%"></i></div></div>`;
+        const P=PETS[p.type];return`<div class="row"><div class="r1"><span>${P.e} ${P.n} · Nv ${p.lvl}</span><b>+${Math.round(P.per*(1+(p.lvl-1)*.1)*100)}% ${P.d}</b></div><div class="r2">Ajuda em toda batalha · próximo nível em ${Math.max(0,PET_KM_LVL*p.lvl-p.km).toFixed(1).replace('.',',')} km</div><div class="qbar"><i style="width:${Math.min(100,p.km/(PET_KM_LVL*p.lvl)*100)}%"></i></div></div>`})()}
+      <div class="sect">Mundo</div>
+      <div class="row"><div class="r1"><span>${REGION[S.curRegion]?REGION[S.curRegion].ic+' '+REGION[S.curRegion].n:'🗺️ Região desconhecida'}</span><b>${(S.regions||[]).length}/5 regiões</b></div>
+        <div class="r2">${(()=>{const e=envNow(),t=[];if(e.rain)t.push('🌧️ Chuva: aquáticos aparecem mais, +10% XP');if(e.moon)t.push('🌕 Lua cheia: lobos e lobisomens, +25% XP');if(e.hot)t.push('☀️ Calor: criaturas de fogo, +10% ouro');if(isNight())t.push('🌙 Noite: morcegos, zumbis e fantasmas');return t.join('<br>')||'Tempo calmo'})()}</div></div>
       <div class="sect">Registros</div>
       <div class="stats">
         <div class="st"><span>🗺️ Distância</span><b>${S.stats.km.toFixed(1).replace('.',',')} km</b></div><div class="st"><span>💀 Monstros</span><b>${fmtN(S.stats.kills)}</b></div>
         <div class="st"><span>🏰 Jornadas</span><b>${S.stats.trips}</b></div><div class="st"><span>🐉 Dragões</span><b>${S.stats.dragons}</b></div>
       </div>
       <div class="r2" style="font-size:11.5px;color:#8a7658;margin-top:10px">${esc(c.desc)}</div>`;
+  }else if(sheetTab==='tal'){
+    const pts=talentPoints();
+    h=`<div class="row"><div class="r1"><span>✨ Pontos disponíveis</span><b style="color:${pts?'#f6d77e':'inherit'}">${pts}</b></div><div class="r2">Você ganha 1 ponto a cada nível. Distribua com o carro parado.</div></div>`+
+      Object.entries(TAL).map(([id,T])=>{const r=S.talents?.[id]||0,lock=T.lvl&&S.lvl<T.lvl;
+        return `<div class="row tal ${lock?'lock':''}"><div class="ti">${T.ic}</div><div class="tx"><div class="r1"><span><b>${T.n}</b></span><span style="color:#b59f7b">${r}/${T.max}</span></div>
+          <div class="r2">${T.d}${lock?` · libera no nível ${T.lvl}`:''}</div><div class="pips">${Array.from({length:T.max},(_,i)=>`<i class="${i<r?'on':''}"></i>`).join('')}</div></div>
+          <button onclick="learnTalent('${id}')" ${!pts||r>=T.max||lock?'disabled':''} aria-label="Aprender ${T.n}">+</button></div>`}).join('')+
+      `<button class="btn sec" style="margin-top:8px" onclick="respecTalents()">Redistribuir pontos (${fmtN(respecCost())} 🪙)</button>`;
   }else if(sheetTab==='equip'){
-    h=Object.keys(SLOT).map(k=>{const it=S.equip[k];
+    const sc=setCount(),as=activeSet();
+    h=(Object.keys(sc).length?`<div class="row"><div class="r1"><span>💠 Conjuntos</span><b>${as?'ativo!':''}</b></div><div class="r2">${Object.entries(sc).map(([s,n])=>`${s}: ${n}/3 — ${SETS[s].d}${s===as?' ✅':''}`).join('<br>')}</div></div>`:
+      `<div class="row lock"><div class="r1"><span>💠 Conjuntos</span></div><div class="r2">Itens "do Sertão", "da Beira-Mar", "do Dragão", "da Lua Cheia", "do Farol" e "do Cangaço" formam conjuntos. 3 peças iguais = bônus.</div></div>`)+
+      Object.keys(SLOT).map(k=>{const it=S.equip[k];
       return `<div class="row"><div class="r1"><span>${SLOT[k]}</span>${it?`<b class="r-${it.r}">${esc(it.name)}</b>`:'<span style="color:#7a6446">vazio</span>'}</div>
         <div class="r2">${it?`${RAR[it.r].n} · ${statTxt(it)}`:'Itens caem dos monstros e dos baús'}${k==='weapon'&&S.smith.w?` · ferreiro +${S.smith.w}`:''}${k==='armor'&&S.smith.a?` · ferreiro +${S.smith.a}`:''}</div></div>`}).join('')+
       `<div class="row"><div class="r1"><span>🔨 Próximo aprimoramento</span><b>${fmtN(smithCost())} 🪙</b></div><div class="r2">O ferreiro usa seu ouro automaticamente</div><div class="qbar"><i style="width:${Math.min(100,S.gold/smithCost()*100)}%"></i></div></div>
@@ -45,6 +65,8 @@ function renderSheet(){
         return `<div class="row"><div class="r1"><span>${done?'✅':'🏆'} ${q.t}</span><b>${q.u==='km'?v.toFixed(1).replace('.',','):v} / ${q.goal}</b></div>
           <div class="r2">Recompensa: ${Math.round(q.xp*k)} XP · ${Math.round(q.gold*k)} 🪙</div><div class="qbar"><i style="width:${Math.min(100,v/q.goal*100)}%"></i></div></div>`}).join('');
     const wk=weekKey();
+    h+='<div class="sect">Masmorras</div><div class="r2" style="color:#8a7658;margin-bottom:9px">Estacione perto (fique parado ~40 s) ou chegue de rota. Uma vez por dia cada.</div>'+
+      DUNGEONS.map(d=>`<div class="row ${S.dungeons?.[d.id]===dayKey()?'':'lock'}"><div class="r1"><span>🏯 ${d.n}</span><b>${S.dungeons?.[d.id]===dayKey()?'concluída hoje ✔':'aberta'}</b></div></div>`).join('');
     h+='<div class="sect">Chefes lendários de Fortaleza</div><div class="r2" style="color:#8a7658;margin-bottom:9px">Passe perto deles para lutar. Voltam toda semana.</div>'+
       BOSSES.map(b=>`<div class="row ${S.bosses?.[b.id]===wk?'':'lock'}"><div class="r1"><span>${b.e} ${b.n}</span><b>${S.bosses?.[b.id]===wk?'derrotado ✔':'à solta'}</b></div></div>`).join('')+
       `<div class="r2" style="color:#8a7658;margin-top:8px">🗺️ Áreas exploradas: <b style="color:#f6d77e">${fmtN(S.stats.cells||0)}</b></div>`;

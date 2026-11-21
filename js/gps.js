@@ -123,5 +123,6 @@ function onFix(f){
   prevDraw=[lat,lon];
   if(!f.dr&&!sim)visitCell(f.lat,f.lon,f.acc);
   bossCheck(lat,lon);
+  rpgTick(lat,lon,f.spd,!f.dr&&!sim);
   hud();if(!isNav)save();
 }

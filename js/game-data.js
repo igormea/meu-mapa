@@ -43,12 +43,32 @@ function spriteSVG(key){
 }
 
 /* ── MONSTROS / ITENS / CONQUISTAS ───────────────────── */
+// Monstros. r = regiões onde aparecem (sem r = qualquer lugar); night = só à noite;
+// aq = aquático (mais comum na chuva); moon = mais comum na lua cheia; moonOnly = só na lua cheia; hot = mais comum no calor
 const MONS=[
-  {n:'Rato de Esgoto',e:'🐀',t:1},{n:'Morcego Noturno',e:'🦇',t:1,night:1},{n:'Caranguejo da Beira-Mar',e:'🦀',t:1},
-  {n:'Cacto Vivo',e:'🌵',t:2},{n:'Serpente do Mangue',e:'🐍',t:2},{n:'Aranha Gigante',e:'🕷️',t:2},
-  {n:'Lobo Cinzento',e:'🐺',t:3},{n:'Escorpião do Sertão',e:'🦂',t:3},{n:'Javali Furioso',e:'🐗',t:3},
-  {n:'Esqueleto Errante',e:'💀',t:4},{n:'Zumbi da Madrugada',e:'🧟',t:4,night:1},{n:'Fantasma',e:'👻',t:4,night:1},
-  {n:'Ogro da Ponte',e:'👹',t:5},{n:'Troll das Dunas',e:'🧌',t:5},
+  {n:'Rato de Esgoto',e:'🐀',t:1,r:['cidade','centro']},
+  {n:'Morcego Noturno',e:'🦇',t:1,night:1},
+  {n:'Caranguejo da Beira-Mar',e:'🦀',t:1,r:['costa'],aq:1},
+  {n:'Gaivota Ladra',e:'🐦',t:1,r:['costa']},
+  {n:'Sapo Venenoso',e:'🐸',t:1,r:['mata'],aq:1},
+  {n:'Calango Ligeiro',e:'🦎',t:1,r:['sertao'],hot:1},
+  {n:'Cacto Vivo',e:'🌵',t:2,r:['sertao','mata']},
+  {n:'Serpente do Mangue',e:'🐍',t:2,r:['mata','costa'],aq:1},
+  {n:'Aranha Gigante',e:'🕷️',t:2,r:['mata','centro','cidade']},
+  {n:'Polvo das Jangadas',e:'🐙',t:3,r:['costa'],aq:1},
+  {n:'Lobo Cinzento',e:'🐺',t:3,r:['cidade','mata','sertao'],moon:1},
+  {n:'Escorpião do Sertão',e:'🦂',t:3,r:['sertao','cidade'],hot:1},
+  {n:'Javali Furioso',e:'🐗',t:3,r:['mata','sertao']},
+  {n:'Jacaré do Mangue',e:'🐊',t:4,r:['mata','costa'],aq:1},
+  {n:'Esqueleto Errante',e:'💀',t:4,r:['centro','cidade']},
+  {n:'Zumbi da Madrugada',e:'🧟',t:4,night:1,r:['centro','cidade']},
+  {n:'Fantasma',e:'👻',t:4,night:1,r:['centro']},
+  {n:'Lagarto de Fogo',e:'🦎',t:4,r:['sertao'],hot:1},
+  {n:'Tubarão de Areia',e:'🦈',t:5,r:['costa'],aq:1},
+  {n:'Ogro da Ponte',e:'👹',t:5,r:['cidade','centro']},
+  {n:'Troll das Dunas',e:'🧌',t:5,r:['costa','sertao']},
+  {n:'Ent Jovem',e:'🌳',t:5,r:['mata']},
+  {n:'Lobisomem',e:'🐺',t:5,moonOnly:1},
   {n:'Dragão Ancião',e:'🐉',t:6},
 ];
 const RAR=[{n:'Comum',m:1,w:60},{n:'Incomum',m:1.3,w:25},{n:'Raro',m:1.7,w:10},{n:'Épico',m:2.3,w:4},{n:'Lendário',m:3.2,w:1}];
@@ -73,4 +93,10 @@ const ACH=[
   {id:'leg',n:'Relíquia Lendária',d:'Encontre um item lendário',f:()=>S.stats.legend>=1},
   {id:'night',n:'Cavaleiro da Noite',d:'Conclua uma jornada à noite',f:()=>S.stats.nightTrips>=1},
   {id:'rich',n:'Barão do Ouro',d:'Junte 5.000 de ouro no total',f:()=>S.stats.gold>=5000},
+  {id:'pet',n:'Melhor Amigo',d:'Choque o ovo do seu companheiro',f:()=>!!S.pet?.type},
+  {id:'dun',n:'Explorador de Masmorras',d:'Conclua uma masmorra',f:()=>(S.stats.dungeons||0)>=1},
+  {id:'reg',n:'Andarilho de Fortaleza',d:'Visite as 5 regiões',f:()=>(S.regions||[]).length>=5},
+  {id:'set',n:'Conjunto Completo',d:'Equipe as 3 peças de um conjunto',f:()=>!!activeSet()},
+  {id:'chuva',n:'Caçador da Chuva',d:'Derrote um monstro aquático na chuva',f:()=>(S.stats.aqKills||0)>=1},
+  {id:'tal',n:'Mestre dos Talentos',d:'Distribua 10 pontos de talento',f:()=>talentSpent()>=10},
 ];

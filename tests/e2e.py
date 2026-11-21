@@ -18,6 +18,7 @@ DEST = {"name": "Praia do Futuro, Fortaleza", "sub": "", "lat": -3.7434, "lon": 
 buf = io.BytesIO(); Image.new("RGB", (256, 256), (230, 215, 180)).save(buf, "PNG"); TILE = buf.getvalue()
 OSM_FIXTURE = None   # definido por teste quando quiser injetar dados OSM
 REQS = []            # URLs pedidas aos serviços externos (para conferir parâmetros)
+WEATHER = {"temperature_2m": 29.0, "weather_code": 1, "precipitation": 0}   # clima falso padrão
 
 class Quiet(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a): pass
@@ -46,6 +47,7 @@ def router(route):
         if "valhalla" in url: return j(mocks.valhalla(route.request.post_data))
         if "photon.komoot.io" in url: return j(mocks.photon(url))
         if "nominatim" in url: return j([])
+        if "open-meteo.com" in url: return j({"current": WEATHER})
         return route.abort()
     except Exception as e:
         print("mock erro", url, e); return route.abort()

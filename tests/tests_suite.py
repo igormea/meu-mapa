@@ -359,3 +359,116 @@ def t31_curva_certa_nao_recalcula(c):
         const lag=hs[Math.max(0,hs.length-3)];const j=(Math.random()-.5)*0.00014;
         lastRealT=Date.now();onFix({lat:p[0]+j,lon:p[1]-j,acc:8,spd:11,hdg:lag,t:Date.now()});await new Promise(r=>setTimeout(r,400))}}""")
     assert c.js("()=>lastRecalc") == 0, "recalculou numa curva feita corretamente"
+
+# ───────── v5.3: mecânicas de RPG ─────────
+@test
+def t32_talentos(c):
+    c.open(); c.hero("cavaleiro")
+    c.js("()=>{for(let i=0;i<6;i++)gainXP(needXP(S.lvl)+1);S.gold=99999}")
+    lvl = c.js("()=>S.lvl"); assert c.js("()=>talentPoints()") == lvl - 1
+    a0 = c.js("()=>atk()")
+    c.js("()=>{learnTalent('forca');learnTalent('forca')}")
+    assert c.js("()=>S.talents.forca") == 2 and c.js("()=>atk()") > a0
+    assert c.js("()=>{hud();return document.getElementById('hudPts').textContent}") == str(lvl - 3)
+    c.js("()=>learnTalent('dominio')"); assert c.js("()=>S.talents.dominio||0") == 0     # trava de nível 10
+    c.js("()=>{respecTalents()}"); assert c.js("()=>talentSpent()") == 2                  # 1º toque só confirma
+    c.js("()=>{respecTalents()}"); assert c.js("()=>talentSpent()") == 0
+
+@test
+def t33_habilidades_de_classe(c):
+    c.open(); c.hero("mago")
+    r = c.js("""()=>{const out={};for(const k of ['cavaleiro','barbaro','mago','ladino','arqueiro']){S.cls=k;S.hp=maxHP();const seen=new Set();let steal=0;
+      for(let i=0;i<300;i++){S.hp=maxHP();const m=mkMon(MONS[10],{elite:true});const f=fight(m);f.skills.forEach(s=>seen.add(s));if(f.steal)steal++}
+      out[k]={skills:[...seen],steal}}return out}""")
+    assert any("Bola de fogo" in s for s in r["mago"]["skills"]), r["mago"]
+    assert any("Bloqueio" in s for s in r["cavaleiro"]["skills"]), r["cavaleiro"]
+    assert any("Fúria" in s for s in r["barbaro"]["skills"]), r["barbaro"]
+    assert any("Tiro certeiro" in s for s in r["arqueiro"]["skills"]), r["arqueiro"]
+    assert any("sombras" in s for s in r["ladino"]["skills"]) and 50 < r["ladino"]["steal"] < 140, r["ladino"]
+
+@test
+def t34_companheiro_choca_e_evolui(c):
+    c.open(); c.hero()
+    c.js("()=>{petAddKm(5)}"); assert c.js("()=>S.pet") is None                # nível 1: sem ovo
+    c.js("()=>{while(S.lvl<3)gainXP(needXP(S.lvl)+1);petAddKm(0.1)}")
+    assert c.js("()=>S.pet.egg") is True
+    assert c.js("()=>document.querySelector('.pl .pet').textContent") == "🥚"
+    c.js("()=>petAddKm(2)")
+    t = c.js("()=>S.pet.type"); assert t in ["lobo", "falcao", "dragao", "tartaruga", "gato"]
+    assert c.js("()=>document.querySelector('.pl .pet').textContent") != "🥚"
+    c.js("()=>petAddKm(5.1)"); assert c.js("()=>S.pet.lvl") == 2
+    k = c.js("()=>PETS[S.pet.type].k"); assert c.js(f"()=>bonus('{k}')") > 0
+
+@test
+def t35_regioes_e_monstros_locais(c):
+    c.open(); c.hero()
+    r = c.js("""()=>[regionAt(-3.7275,-38.5275),regionAt(-3.7222,-38.4930),regionAt(-3.7455,-38.4870),regionAt(-4.6,-39.3),regionAt(-3.8300,-38.5300)]""")
+    assert r == ["centro", "costa", "mata", "sertao", "cidade"], r
+    ok = c.js("()=>{for(let i=0;i<200;i++){const m=rollMonster(-3.7222,-38.4930);if(m.dragon)continue;const b=MONS.find(x=>x.n===m.n);if(b.r&&!b.r.includes('costa'))return m.n}return 'ok'}")
+    assert ok == "ok", ok
+
+@test
+def t36_clima_chuva_e_lua(c):
+    import e2e
+    e2e.WEATHER = {"temperature_2m": 24.0, "weather_code": 63, "precipitation": 2.5}
+    try:
+        c.open(); c.hero()
+        c.js("async()=>{ENV.t=0;await weatherTick(-3.73,-38.52)}")
+        assert c.js("()=>ENV.rain") is True
+        assert c.js("()=>{renderEnv();return document.getElementById('hudEnv').textContent}").count("Chuva") == 1
+        assert abs(c.js("()=>bonus('xp')") - 0.10) < 1e-9 or c.js("()=>envNow().moon")
+        n = c.js("()=>{let aq=0;for(let i=0;i<400;i++){const m=rollMonster(-3.7222,-38.4930);const b=MONS.find(x=>x.n===m.n);if(b&&b.aq)aq++}return aq}")
+        assert n > 200, n          # na chuva, na costa, aquáticos dominam
+        assert 0 <= c.js("()=>moonIllum(new Date('2026-11-24T12:00:00Z'))") <= 1
+    finally:
+        e2e.WEATHER = {"temperature_2m": 29.0, "weather_code": 1, "precipitation": 0}
+
+@test
+def t37_masmorra(c):
+    c.open(); c.hero("barbaro")
+    c.js("()=>{while(S.lvl<12)gainXP(needXP(S.lvl)+1);S.hp=maxHP()}")
+    d = c.js("()=>DUNGEONS[0]")
+    c.js(f"()=>dungeonTick({d['lat']},{d['lon']},0,true)")
+    c.wait("!dunRunning && S.dungeons && S.dungeons.iguatemi", 20000)
+    k0 = c.js("()=>S.stats.kills")
+    c.js(f"()=>dungeonTick({d['lat']},{d['lon']},0,true)")      # mesmo dia: não entra de novo
+    c.page.wait_for_timeout(1500); assert c.js("()=>S.stats.kills") == k0
+    # parado perto por 40 s (simulado) dispara a masmorra sozinha
+    d2 = c.js("()=>DUNGEONS[1]")
+    c.js(f"()=>{{dungeonTick({d2['lat']},{d2['lon']},0,false);dunNear.t-=41000;dungeonTick({d2['lat']},{d2['lon']},0,false)}}")
+    c.wait("!dunRunning && S.dungeons && S.dungeons.riomar", 20000)
+
+@test
+def t38_conjuntos(c):
+    c.open(); c.hero()
+    c.js("()=>{S.equip={weapon:null,armor:null,amulet:null}}")
+    for slot in ["weapon", "armor", "amulet"]:
+        c.js(f"()=>handleItem({{slot:'{slot}',r:1,pow:10,name:'Item do Dragão',set:'do Dragão'}})")
+    assert c.js("()=>activeSet()") == "do Dragão"
+    a = c.js("()=>bonus('atk')"); assert a >= 0.15, a
+    c.js("()=>handleItem({slot:'weapon',r:1,pow:11,name:'Espada do Farol',set:'do Farol'})")   # pouco melhor: não quebra o conjunto
+    assert c.js("()=>activeSet()") == "do Dragão"
+    c.js("()=>handleItem({slot:'weapon',r:3,pow:20,name:'Espada do Farol',set:'do Farol'})")   # muito melhor: troca
+    assert c.js("()=>activeSet()") is None
+
+@test
+def t39_balanceamento(c):
+    c.open(); c.hero()
+    r = c.js("""()=>{const out={};
+      for(const k of ['cavaleiro','barbaro','mago','ladino','arqueiro']){S.cls=k;S.talents={};S.pet=null;
+        for(const L of [1,5,10,20,35]){S.lvl=L;S.equip={weapon:null,armor:null,amulet:null};
+          const ip=Math.round((3+L*1.6)*1.3);S.equip.weapon={slot:'weapon',r:1,pow:ip,name:'x'};S.equip.armor={slot:'armor',r:1,pow:ip,name:'x'};
+          let win=0,eliteWin=0,hpLoss=0;
+          for(let i=0;i<400;i++){S.hp=maxHP();const m=rollMonster(-3.83,-38.53);if(m.dragon){i--;continue}const f=fight(m);if(f.win)win++;hpLoss+=(maxHP()-Math.max(0,f.php))/maxHP()}
+          for(let i=0;i<200;i++){S.hp=maxHP();const b=MONS.filter(x=>x.t<=Math.min(5,1+Math.floor((L-1)/3))&&x.t<6);const m=mkMon(b[i%b.length],{elite:true});if(fight(m).win)eliteWin++}
+          out[k+' nv'+L]=[Math.round(win/4),Math.round(eliteWin/2),Math.round(hpLoss/4)]}}
+      return out}""")
+    print("\n      classe/nível: [% vitória normal, % vitória elite, % vida perdida por luta]")
+    for k, v in r.items(): print(f"      {k:16} {v}")
+    for k, (w, we, loss) in r.items():
+        assert w >= 88, (k, w)             # monstros comuns: quase sempre vence
+        assert we >= 45, (k, we)           # elites: desafio, mas vencível
+        assert loss <= 32, (k, loss)       # não perde vida demais por luta
+    altos = [v for k, v in r.items() if not k.endswith('nv1')]
+    assert sum(v[2] for v in altos) / len(altos) >= 8, "fácil demais: quase não perde vida"
+    assert sum(v[1] for v in altos) / len(altos) <= 95, "fácil demais: elites quase nunca vencem"

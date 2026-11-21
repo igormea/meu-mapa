@@ -143,6 +143,7 @@ function arrive(){
   $('arLoot').innerHTML=`<div style="color:#b59f7b;margin-bottom:5px">${bossTxt} · bônus da jornada <b style="color:#f6d77e">+${bonus} XP</b></div>
     🎁 Baú: <span class="r-${loot.it.r}"><b>${esc(loot.it.name)}</b></span> (${RAR[loot.it.r].n}, ${statTxt(loot.it)}) — ${loot.act==='equipado'?'equipado!':'vendido por '+loot.g+' 🪙'}`;
   hero3d('act','cheer');
+  setTimeout(()=>dungeonTick(dest.lat,dest.lon,0,true),2500);
   const pk=drawParking();
   if(pk?.length)$('arLoot').innerHTML+=`<div style="margin-top:6px;color:#b59f7b">🅿️ ${pk.length} estacionamento(s) perto · o mais próximo a ${fmtD(pk[0].d)}</div>`;
   save();endNav(true);panel('arrive');if(pk?.length)setTimeout(drawParking,50);

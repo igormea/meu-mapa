@@ -17,9 +17,9 @@ function save(){if(simSnap)return;try{localStorage.setItem(SAVE_KEY,JSON.stringi
 
 /* ── ATRIBUTOS ───────────────────────────────────────── */
 const cls=()=>CLASSES[S.cls]||CLASSES.cavaleiro;
-const maxHP=()=>Math.round((50+S.lvl*12)*cls().hp+S.smith.a*3);
-const atk=()=>Math.round((6+S.lvl*2.2)*cls().atk+(S.equip.weapon?.pow||0)+S.smith.w*2);
-const def=()=>Math.round((3+S.lvl*1.4)*cls().def+(S.equip.armor?.pow||0)+S.smith.a*2);
+const maxHP=()=>Math.round(((50+S.lvl*12)*cls().hp+S.smith.a*3)*(1+bonus('hp')));
+const atk=()=>Math.round(((6+S.lvl*2.2)*cls().atk+(S.equip.weapon?.pow||0)+S.smith.w*2)*(1+bonus('atk')));
+const def=()=>Math.round(((3+S.lvl*1.4)*cls().def+(S.equip.armor?.pow||0)+S.smith.a*2)*(1+bonus('def')));
 const amu=()=>S.equip.amulet?.pow||0;
 const needXP=l=>Math.round(100*Math.pow(l,1.5));
 function isNight(){const h=new Date().getHours();return h>=18||h<6}
