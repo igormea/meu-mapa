@@ -1,3 +1,7 @@
+@font-face{font-family:'Fredoka';font-style:normal;font-weight:400;font-display:swap;src:url(../vendor/fonts/fredoka-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Fredoka';font-style:normal;font-weight:500;font-display:swap;src:url(../vendor/fonts/fredoka-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'Fredoka';font-style:normal;font-weight:600;font-display:swap;src:url(../vendor/fonts/fredoka-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Fredoka';font-style:normal;font-weight:700;font-display:swap;src:url(../vendor/fonts/fredoka-latin-700-normal.woff2) format('woff2')}
 @font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:400;font-display:swap;src:url(../vendor/fonts/pixelify-sans-latin-400-normal.woff2) format('woff2')}
 @font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:600;font-display:swap;src:url(../vendor/fonts/pixelify-sans-latin-600-normal.woff2) format('woff2')}
 @font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:700;font-display:swap;src:url(../vendor/fonts/pixelify-sans-latin-700-normal.woff2) format('woff2')}
@@ -5,7 +9,9 @@
   --wood:#2a1c12;--wood2:#3a281a;--edge:#6b4e2e;
   --gold:#e0b04c;--gold2:#f6d77e;--parch:#f2e2bf;--ink:#2b1d10;
   --text:#f3e6c8;--muted:#b59f7b;--green:#7fd35a;
-  --px:'Pixelify Sans',system-ui,sans-serif;
+  --px:'Fredoka',system-ui,sans-serif;          /* texto e números do app (legível) */
+  --num:'Fredoka',system-ui,sans-serif;
+  --pixel:'Pixelify Sans','Fredoka',system-ui,sans-serif; /* só títulos decorativos */
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;background:#1a120b;color:var(--text);font-family:'Segoe UI',system-ui,sans-serif}
@@ -276,3 +282,13 @@ body.has3d .pl-lv{top:-2px}
 .spr.flip{transform:scale(-.78,.78)}
 .cs-brand{display:flex;align-items:center;justify-content:center;gap:9px;font:700 18px var(--px);color:#f2e2bf;margin-bottom:10px;letter-spacing:.5px}
 .cs-brand img{width:34px;height:34px;border-radius:9px;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+
+/* Torre do Vigia (radar) */
+.tower{display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+.tw-ic{width:34px;height:34px;border-radius:50%;background:#2a1c12;border:3px solid #ff3b30;display:flex;align-items:center;justify-content:center;font-size:19px;line-height:1}
+.tw-lim{margin-top:-6px;min-width:24px;height:20px;padding:0 4px;border-radius:10px;background:#fff;border:2.5px solid #d32222;font:700 12px var(--num);color:#111;display:flex;align-items:center;justify-content:center}
+.tower.near .tw-ic{animation:towerP .7s ease-in-out infinite alternate}
+@keyframes towerP{from{transform:scale(1);box-shadow:0 0 0 rgba(255,59,48,0)}to{transform:scale(1.25);box-shadow:0 0 16px rgba(255,59,48,.9)}}
+
+/* fonte pixelada só nos títulos decorativos (sem números pequenos) */
+.cs-t,.cs-brand,#lvlUp .l1,.ar-t,.ttl,#hudName,.hn,.cc .cn{font-family:var(--pixel)}

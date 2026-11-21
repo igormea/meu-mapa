@@ -21,6 +21,7 @@ async function loadOSM(){
     OSM=await r.json();osmIdx=buildOsmIdx(OSM);
     PR.forEach(attachFeats);if(R&&!PR.includes(R))attachFeats(R);
     if(PR[selIdx])drawFeats(PR[selIdx]);
+    mapReady.then(()=>towerTick(true));
   }catch{}
 }
 function cellOf(lat,lon){return Math.floor(lat/OSM_CELL)+':'+Math.floor(lon/OSM_CELL)}
@@ -72,12 +73,38 @@ function attachFeats(Rt){
 function drawFeats(Rt){
   if(!Rt?.feats)return;let sig=0;
   for(const f of Rt.feats){
-    if(f.mk||f.t==='curve'||f.passed)continue;
+    if(f.mk||f.t==='curve'||f.t==='cam'||f.passed)continue;   // radares: camada própria (towerTick)
     if(f.t==='sig'&&++sig>150)continue;
     f.mk=addMk(`<div class="feat f-${f.t}" title="${FEAT[f.t].nome||''}">${FEAT[f.t].ic}</div>`,f.lat,f.lon,'center');
   }
 }
 function clearFeats(Rt){Rt?.feats?.forEach(f=>{if(f.mk){f.mk.remove();f.mk=null}})}
+
+/* Torres do Vigia (radares): sempre visíveis no mapa — todos os da área na tela,
+   não só os da rota. Atualiza só o que entrou/saiu da tela. */
+const towerMks=new Map();let towerT=0,towerNear=null;
+function towerHtml(lim){return `<div class="tower"><div class="tw-ic">🗼</div>${lim?`<div class="tw-lim">${lim}</div>`:''}</div>`}
+function towerTick(force){
+  if(!OSM?.cam?.length||!window.__map)return;
+  if(!force&&Date.now()-towerT<900)return;towerT=Date.now();
+  const z=map.getZoom(),keep=new Set();
+  if(z>=12.5){
+    const b=map.getBounds(),pad=.01;
+    const s=b.getSouth()-pad,n=b.getNorth()+pad,w=b.getWest()-pad,e=b.getEast()+pad;
+    let cnt=0;const shown=[];
+    for(const p of OSM.cam){
+      if(p[0]<s||p[0]>n||p[1]<w||p[1]>e)continue;
+      if(shown.some(q=>Math.abs(q[0]-p[0])<.00027&&Math.abs(q[1]-p[1])<.00027))continue;   // mesmo radar cadastrado 2x (<30 m)
+      shown.push(p);
+      const k=p[0]+','+p[1];keep.add(k);
+      if(!towerMks.has(k))towerMks.set(k,addMk(towerHtml(p[2]),p[0],p[1],'bottom'));
+      if(++cnt>=80)break;
+    }
+  }
+  for(const [k,m] of towerMks)if(!keep.has(k)){m.remove();towerMks.delete(k)}
+  for(const [k,m] of towerMks)m.getElement().firstElementChild.classList.toggle('near',k===towerNear);
+}
+map.on('moveend',()=>towerTick());
 
 /* alertas durante a navegação: chamado a cada posição */
 let alertShown=null;
@@ -86,13 +113,14 @@ function alertTick(prog,spd){
   const moto=S.vehicle==='moto';let show=null;
   for(const f of R.feats||[]){
     if(f.cum<prog-15){
-      if(!f.passed){f.passed=true;if(f.mk){f.mk.remove();f.mk=null}if(f.t==='cam')passedTower(f,spd)}
+      if(!f.passed){f.passed=true;if(f.mk){f.mk.remove();f.mk=null}if(f.t==='cam'){passedTower(f,spd);towerNear=null;towerTick(true)}}
       continue;
     }
     const cfg=FEAT[f.t];if(cfg.silent)continue;
     const ahead=f.cum-prog;if(ahead>cfg.dist(spd)){if(ahead>2500)break;continue}
     if((cfg.minSpd&&!(moto&&f.t==='bump'))&&spd<cfg.minSpd)continue;
     if(!f.said){f.said=true;speak(cfg.fala(f),'alert')}
+    if(f.t==='cam'&&towerNear!==f.lat+','+f.lon){towerNear=f.lat+','+f.lon;towerTick(true)}
     if(!show)show={ic:cfg.ic,nome:cfg.nome,sub:cfg.sub(f),d:ahead,kind:f.t};
   }
   // queda do limite de velocidade à frente

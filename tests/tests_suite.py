@@ -123,7 +123,7 @@ def t10_alertas_na_previa(c):
     assert f.count("sig") == 2, f            # o de fora da rota não entra
     txt = c.js("()=>document.getElementById('rewards').textContent")
     assert "1 radares" in txt and "1 lombadas" in txt and "1 pedágio" in txt, txt
-    assert c.js("()=>document.querySelectorAll('.feat.f-cam').length") == 1
+    c.wait("document.querySelectorAll('.tower').length===1", 5000)   # radar na rota vira Torre do Vigia (sem duplicar)
     assert c.js("()=>document.querySelectorAll('.feat.f-park').length") == 1   # só o perto do destino
 
 @test
@@ -307,3 +307,55 @@ def t26_heroi_3d_falha_volta_para_2d(c):
     assert not c.js("()=>document.body.classList.contains('has3d')")
     assert c.js("()=>getComputedStyle(document.getElementById('plSpr')||document.body).display") != "none"
     c.errors.clear()   # o erro de rede do modelo bloqueado é esperado
+
+@test
+def t27_recalculo_rapido_ao_entrar_em_outra_rua(c):
+    # anda pela rota (leste) e vira para o norte numa rua lateral a 40 km/h, 1 posição por segundo (tempo real)
+    c.open(); c.hero(); c.route_to()
+    c.js("()=>startNav(false)")
+    t = c.js("""async()=>{
+      const go=async(lat,lon,hdg)=>{lastRealT=Date.now();onFix({lat,lon,acc:8,spd:11,hdg,t:Date.now()});await new Promise(r=>setTimeout(r,1000))};
+      for(let d=100;d<=300;d+=11){const p=pointAt(R,d);await go(p[0],p[1],90)}
+      const base=pointAt(R,300);const t0=Date.now();let n=0;
+      while(lastRecalc===0&&n<25){n++;await go(base[0]+n*11/111000,base[1],0)}
+      return {s:(Date.now()-t0)/1000,metros_na_rua_errada:n*11}}""")
+    assert c.js("()=>lastRecalc>0"), "não recalculou"
+    assert t["s"] <= 8, t           # antes: ~15 s + trava de 25 s no início
+    print("      recálculo após", t)
+
+@test
+def t28_gps_oscilando_ao_lado_da_rota_nao_recalcula(c):
+    c.open(); c.hero(); c.route_to()
+    c.js("()=>startNav(false)")
+    c.js("""async()=>{for(let d=100;d<=400;d+=11){const p=pointAt(R,d);const j=(Math.random()-.5)*0.0005;
+      lastRealT=Date.now();onFix({lat:p[0]+j,lon:p[1],acc:12,spd:11,hdg:90,t:Date.now()});await new Promise(r=>setTimeout(r,250))}}""")
+    assert c.js("()=>lastRecalc") == 0, "recalculou com GPS oscilando dentro da margem"
+
+@test
+@osm
+def t29_torres_do_vigia_aparecem_no_mapa(c):
+    c.open(); c.hero(); c.wait("OSM && OSM.gen==='teste'")
+    c.js("()=>map.jumpTo({center:[-38.5150,-3.7319],zoom:15})"); c.page.wait_for_timeout(1500)
+    assert c.js("()=>document.querySelectorAll('.tower').length") == 1       # duplicado (5 m) aparece uma vez só
+    assert c.js("()=>document.querySelector('.tower .tw-lim').textContent") == "40"
+    c.js("()=>map.jumpTo({center:[-38.30,-3.60],zoom:15})"); c.page.wait_for_timeout(1500)
+    assert c.js("()=>document.querySelectorAll('.tower').length") == 0      # fora da tela some
+
+@test
+def t30_fonte_legivel_nos_numeros(c):
+    c.open(); c.hero()
+    c.page.wait_for_function("document.fonts.check(\"700 26px 'Fredoka'\")", timeout=10000)
+    ff = c.js("()=>getComputedStyle(document.getElementById('spdVal')).fontFamily")
+    assert "Fredoka" in ff, ff
+    assert "Pixelify" in c.js("()=>getComputedStyle(document.querySelector('.cs-t')).fontFamily")
+
+@test
+def t31_curva_certa_nao_recalcula(c):
+    # segue a rota passando pela esquina; a direção do GPS chega atrasada 2 posições e com erro de 8 m
+    c.open(); c.hero(); c.route_to()
+    c.js("()=>startNav(false)")
+    c.js("""async()=>{const turn=R.steps[1].cum;const hs=[];
+      for(let d=turn-150;d<=turn+200;d+=11){const p=pointAt(R,d),q=pointAt(R,d+8);hs.push(bearing(p,q));
+        const lag=hs[Math.max(0,hs.length-3)];const j=(Math.random()-.5)*0.00014;
+        lastRealT=Date.now();onFix({lat:p[0]+j,lon:p[1]-j,acc:8,spd:11,hdg:lag,t:Date.now()});await new Promise(r=>setTimeout(r,400))}}""")
+    assert c.js("()=>lastRecalc") == 0, "recalculou numa curva feita corretamente"

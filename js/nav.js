@@ -16,7 +16,7 @@ function startNav(simulate){
   $('navTop').classList.add('on');$('navBottom').classList.add('on');$('hud').style.display='none';
   $('navInst').textContent='Aguardando GPS…';$('navRoad').textContent='';
   T={start:Date.now(),m:0,kills:0,xp:0,gold:0,items:[]};
-  followPaused=false;offSince=0;offStart=null;lastRecalc=Date.now();recalcFails=0;logEv('jornada iniciada → '+short(dest.name));
+  followPaused=false;offSince=0;offStart=null;lastRecalc=0;recalcFails=0;logEv('jornada iniciada → '+short(dest.name));
   { const s0=simulate||!lastFix?R.coords[0]:[lastFix.lat,lastFix.lon];
     enterNavCamera(s0[0],s0[1],bearing(R.coords[0],pointAt(R,Math.min(R.total,40)))); }
   grabWake();
@@ -65,9 +65,11 @@ function renderLanes(st,dn){
   el.innerHTML=st.lanes.map(l=>`<span class="ln ${l.ok?'ok':''}">${(l.ind.length?l.ind:['none']).map(i=>LANE_IC[i]||'⬆').join('')}</span>`).join('');
   el.classList.add('on');
 }
-/* Fora da rota só quando é desvio de verdade:
-   longe da linha por 8 s seguidos, andando, tendo percorrido 60 m fora,
-   e com pelo menos 25 s desde o último recálculo. */
+/* Saiu da rota? Detecção rápida, mas sem alarme falso:
+   - fora da linha da rota por mais de ~35 m (mais se o GPS estiver impreciso),
+   - andando (parado no semáforo não conta) e já ter percorrido 25 m fora,
+   - 4 s seguidos — ou só 2 s se você está indo numa direção bem diferente da rota (entrou noutra rua),
+   - pelo menos 10 s desde o último recálculo. */
 let offStart=null,lastRecalc=0,recalcFails=0;
 function curHeading(f){
   const bh=bestHeading(f);if(bh!=null)return bh;
@@ -75,13 +77,16 @@ function curHeading(f){
   return null;
 }
 function offRouteCheck(sn,f){
-  const lim=Math.max(60,(f.acc||10)*1.5);
+  // direção bem diferente da rota (>60°) = sinal forte de que entrou noutra rua → age mais cedo
+  const hd=f.hdg!=null&&!isNaN(f.hdg)&&f.spd>2?f.hdg:(prevDraw&&hav(prevDraw[0],prevDraw[1],f.lat,f.lon)>5?bearing(prevDraw,[f.lat,f.lon]):null);
+  const wrongDir=hd!=null&&Math.abs(angDiff(hd,sn.brg))>60;
+  const lim=wrongDir?Math.max(20,(f.acc||10)):Math.max(35,(f.acc||10)*1.2);
   if(sn.dist<=lim){offSince=0;offStart=null;return}
   if(f.spd!=null&&f.spd<1.5)return;                 // parado: GPS oscilando, ignora
   if(!offSince){offSince=Date.now();offStart=[f.lat,f.lon];return}
   const moved=hav(offStart[0],offStart[1],f.lat,f.lon);
-  const cool=Date.now()-lastRecalc>(recalcFails?45000:25000);
-  if(Date.now()-offSince>8000&&moved>60&&cool&&!recalcBusy)recalc(f,sn.dist);
+  const cool=Date.now()-lastRecalc>(recalcFails?20000:10000);
+  if(Date.now()-offSince>(wrongDir?1500:4000)&&moved>(wrongDir?15:25)&&cool&&!recalcBusy)recalc(f,sn.dist);
 }
 async function recalc(f,dist){
   recalcBusy=true;lastRecalc=Date.now();
