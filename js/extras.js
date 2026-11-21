@@ -114,3 +114,53 @@ function importSave(){
   try{localStorage.setItem(SAVE_KEY,JSON.stringify(data))}catch{}
   location.reload();
 }
+
+/* ── REPORTAR BUG / SUGESTÃO ─────────────────────────────── */
+/* Quem usa descreve (digitando ou falando) e o app monta a mensagem com tudo que ajuda a investigar:
+   versão, celular, últimos erros, onde estava na rota. Envia pelo WhatsApp. */
+const REPORT_TO='';   // número do Igor (só dígitos, com 55+DDD). Vazio = a pessoa escolhe o contato no WhatsApp
+function reportInfo(){
+  const ua=navigator.userAgent,and=(ua.match(/Android [^;)]+(?:; [^;)]+)?/)||[''])[0];
+  const L=[`📱 Ranvus Maps v${APPV} · ${NATIVE?'APK':'navegador'}`,`Aparelho: ${and||ua.slice(0,90)} · tela ${innerWidth}x${innerHeight}`,
+    `Herói: ${S.name||'?'} · ${cls()?.nome||'?'} nv ${S.lvl} · tema ${S.theme||'castelo'}`];
+  if(lastFix)L.push(`GPS: ${lastFix.lat.toFixed(5)},${lastFix.lon.toFixed(5)} ±${Math.round(lastFix.acc||0)}m · ${Math.round((lastFix.spd||0)*3.6)} km/h`);
+  if(isNav&&R&&dest){const rem=Math.max(0,R.total-(R.prog||0));L.push(`Rota: indo p/ ${short(dest.name)} · faltam ${fmtD(rem)} de ${fmtD(R.total)}${sim?' (treino)':''}`)}
+  else if(dest)L.push(`Último destino: ${short(dest.name)}`);
+  const er=(window.__errLog||[]).slice(-5);L.push(er.length?'Últimos erros:\n'+er.join('\n'):'Últimos erros: nenhum');
+  try{const lg=JSON.parse(localStorage.getItem('meumapa_log')||'[]').slice(-4);if(lg.length)L.push('Rota (log):\n'+lg.join('\n'))}catch{}
+  return L.join('\n');
+}
+function openReport(){
+  let p=$('repPanel');
+  if(!p){p=document.createElement('div');p.id='repPanel';p.innerHTML=`<div class="rp-box">
+    <div class="rp-t">🐞 Reportar bug / sugestão</div>
+    <div class="rp-s">Conte o que aconteceu ou o que sentiu falta. As informações técnicas vão junto automaticamente.</div>
+    <div class="acw"><textarea id="repTxt" rows="4" placeholder="Ex.: o recálculo demorou na Av. Washington Soares…"></textarea><button id="repMic" title="Falar">🎙️</button></div>
+    <div class="rp-tipo"><button data-k="🐞 Bug" class="on">🐞 Bug</button><button data-k="💡 Sugestão">💡 Sugestão</button></div>
+    <details><summary>Ver o que será enviado</summary><pre id="repInfo"></pre></details>
+    <div class="opt"><button id="repCancel">Cancelar</button><button id="repSend" class="prim">Enviar no WhatsApp</button></div></div>`;
+    document.body.appendChild(p);
+    p.querySelectorAll('.rp-tipo button').forEach(b=>b.onclick=()=>{p.querySelectorAll('.rp-tipo button').forEach(x=>x.classList.toggle('on',x===b))});
+    $('repCancel').onclick=()=>p.classList.remove('on');
+    $('repMic').onclick=()=>listenOnce(t=>{const a=$('repTxt');a.value=(a.value?a.value+' ':'')+t});
+    $('repSend').onclick=sendReport;
+  }
+  $('repInfo').textContent=reportInfo();$('repTxt').value='';p.classList.add('on');
+}
+function reportText(){
+  const tipo=document.querySelector('#repPanel .rp-tipo .on')?.dataset.k||'🐞 Bug';
+  return `${tipo} — Ranvus Maps\n${$('repTxt').value.trim()||'(sem descrição)'}\n\n— info técnica —\n${reportInfo()}`.slice(0,3500);
+}
+function sendReport(){
+  if(!$('repTxt').value.trim())return toast('Escreva ou fale o que aconteceu');
+  const url=`https://wa.me/${REPORT_TO}?text=`+encodeURIComponent(reportText());
+  $('repPanel').classList.remove('on');window.__lastReport=url;
+  if(NATIVE)location.href=url;else window.open(url,'_blank');
+}
+window.openReport=openReport;
+// reconhecimento de voz reutilizável (nativo no APK, do navegador no site)
+async function listenOnce(cb){
+  if(NATIVE&&NAT.speech){try{await NAT.speech.requestPermissions();const r=await NAT.speech.start({language:'pt-BR',maxResults:1,partialResults:false,popup:true});if(r?.matches?.[0])cb(r.matches[0])}catch(e){toast('Não consegui ouvir')}return}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return toast('Voz não disponível aqui');
+  const rec=new SR();rec.lang='pt-BR';rec.onresult=e=>{const t=e.results?.[0]?.[0]?.transcript;if(t)cb(t)};rec.start();toast('🎙️ Pode falar…',3000);
+}

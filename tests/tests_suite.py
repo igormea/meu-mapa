@@ -557,3 +557,29 @@ def t44_busca_texto_primeiro_e_nominatim_so_no_enter(c):
     assert c.js("()=>__nomCalls") == 1
     c.js("async()=>{await searchPlaces('rua um')}")   # menos de 1 s depois: respeita o limite
     assert c.js("()=>__nomCalls") == 1
+
+@test
+def t45_reportar_bug(c):
+    c.open(); c.hero(); c.route_to()
+    c.js("()=>{startNav(true)}"); c.wait("isNav && R.prog>0", 6000)
+    c.js("()=>{setTimeout(()=>{throw new Error('erro de teste 123')},0)}"); c.page.wait_for_timeout(200)
+    assert c.js("()=>__errLog.some(e=>e.includes('erro de teste 123'))")
+    # o botão do quadro de erro abre o relatório
+    c.page.click("#errBox button")
+    c.wait("document.getElementById('repPanel').classList.contains('on')", 3000)
+    info = c.js("()=>document.getElementById('repInfo').textContent")
+    if os.environ.get("SHOT"):
+        c.js("()=>{document.querySelector('#repPanel details').open=true;}"); c.page.screenshot(path="/tmp/report.png")
+    for k in ["Ranvus Maps v", "Aparelho:", "Rota: indo p/", "erro de teste 123", "Herói: Teste · Cavaleiro nv"]:
+        assert k in info, (k, info)
+    c.js("()=>{window.open=u=>{window.__opened=u}}")
+    c.page.click("#repSend")   # sem descrição → não envia
+    assert c.js("()=>!window.__opened")
+    c.page.fill("#repTxt", "recalculo demorou")
+    c.page.click("#repSend")
+    u = c.js("()=>window.__opened")
+    assert u.startswith("https://wa.me/") and "recalculo%20demorou" in u and "erro%20de%20teste" in u, u[:200]
+    assert not c.js("()=>document.getElementById('repPanel').classList.contains('on')")
+    # também está nos Ajustes
+    c.js("()=>{openSheet();setTab('cfg')}")
+    assert "Reportar bug" in c.js("()=>document.getElementById('sheetBody').textContent")

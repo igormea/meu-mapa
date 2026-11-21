@@ -98,7 +98,7 @@ def run(filt=None):
             globals()['OSM_FIXTURE'] = getattr(fn, 'osm', None)
             try:
                 fn(c)
-                bad = [e for e in c.errors if "favicon" not in e]
+                bad = [e for e in c.errors if "favicon" not in e and "erro de teste" not in e]
                 assert not bad, "erros no console: " + " | ".join(bad[:3])
                 passed += 1; print(f"  ✅ {fn.__name__} ({time.time()-t0:.1f}s)")
             except Exception as e:

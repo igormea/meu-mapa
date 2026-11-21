@@ -5,12 +5,16 @@
 <script>
 // Mostra qualquer erro na tela (pra diagnosticar no app Android)
 (function(){
+  window.__errLog=[];
   function show(msg){
+    try{window.__errLog.push(new Date().toTimeString().slice(0,8)+' '+String(msg).slice(0,200));if(window.__errLog.length>15)window.__errLog.shift()}catch(e){}
     var d=document.getElementById('errBox');
     if(!d){d=document.createElement('div');d.id='errBox';
       d.style.cssText='position:fixed;left:8px;right:8px;top:40%;z-index:99999;background:#7f1d1d;color:#fff;font:12px monospace;padding:10px;border-radius:8px;white-space:pre-wrap;max-height:45vh;overflow:auto';
-      (document.body||document.documentElement).appendChild(d);d.onclick=function(){d.remove()}}
-    d.textContent+=msg+'\n';
+      (document.body||document.documentElement).appendChild(d);d.onclick=function(){d.remove()};
+      var b=document.createElement('button');b.textContent='🐞 Reportar este erro';b.style.cssText='display:block;margin:0 0 8px;padding:6px 12px;border-radius:8px;border:none;background:#fde68a;color:#3b0a0a;font:700 12px sans-serif';
+      b.onclick=function(e){e.stopPropagation();d.remove();window.openReport&&window.openReport()};d.appendChild(b);d.appendChild(document.createElement('div'))}
+    d.lastChild.textContent+=msg+'\n';
   }
   window.__showErr=show;
   window.addEventListener('error',function(e){show('ERRO: '+(e.message||e)+' @'+(e.lineno||'?')+(e.filename?' '+String(e.filename).split('/').pop():''))});
