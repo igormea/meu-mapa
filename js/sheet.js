@@ -19,6 +19,10 @@ function renderSheet(){
         <div class="st"><span>💥 Crítico</span><b>${Math.round(critChance()*100)}%</b></div><div class="st"><span>🪙 Ouro</span><b>${fmtN(S.gold)}</b></div>
         <div class="st"><span>✨ Bônus XP</span><b>+${Math.round(((c.xp-1)+amu()/100+bonus('xp'))*100)}%</b></div><div class="st"><span>🏹 Alcance</span><b>${c.reach} m</b></div>
       </div>
+      <div class="stats">
+        <div class="st"><span>⚖️ Honra</span><b>${S.honor||0} · ${honorRank()}</b></div><div class="st"><span>🏰 Reinos</span><b>${(S.realms||[]).length} bairros</b></div>
+      </div>
+      <div class="r2" style="color:#837aa8;font-size:11.5px;margin:4px 2px 0">Honra: respeite os limites de velocidade (+1% XP e ouro por patente). Reinos: bairros que você já atravessou.</div>
       <div class="sect">Habilidade da classe</div>
       <div class="row"><div class="r1"><span>${SKILL[S.cls||'cavaleiro'].ic} ${SKILL[S.cls||'cavaleiro'].n}</span><b>automática</b></div><div class="r2">${SKILL[S.cls||'cavaleiro'].d}${S.talents?.dominio?` · +${S.talents.dominio*25}% (Domínio)`:''}</div></div>
       <div class="sect">Companheiro</div>

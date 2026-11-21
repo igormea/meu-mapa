@@ -87,6 +87,7 @@ function bonus(k){
   const e=envNow();
   if(k==='xp'){if(e.rain)b+=.10;if(e.moon)b+=.25}
   if(k==='gold'&&e.hot)b+=.10;
+  if((k==='xp'||k==='gold')&&typeof honorBonus==='function')b+=honorBonus()*.01;
   return b;
 }
 
@@ -134,17 +135,21 @@ function regionAt(lat,lon){
   return'cidade';
 }
 // sorteio de monstro considerando região, noite, chuva, lua cheia e calor
-function rollMonster(lat,lon){
-  if(S.lvl>=5&&Math.random()<.015)return mkMon(MONS.find(m=>m.t===6),{dragon:true});
-  const mt=Math.min(5,1+Math.floor((S.lvl-1)/3)),night=isNight(),e=envNow();
+// km = quanto já se andou nesta viagem: quanto mais longe de casa, mais raros e fortes os monstros
+function rollMonster(lat,lon,km=0){
+  const deep=Math.max(0,km);
+  if(S.lvl>=5&&Math.random()<.015+Math.min(.04,deep/2500))return mkMon(MONS.find(m=>m.t===6),{dragon:true,depth:deep});
+  const mt=Math.min(5,1+Math.floor((S.lvl-1)/3)+Math.floor(deep/45)),night=isNight(),e=envNow();
   const reg=lat!=null?regionAt(lat,lon):null;
   const ok=m=>m.t<=mt&&m.t<6&&(!m.night||night)&&(!m.moonOnly||e.moon);
-  let pool=MONS.filter(m=>ok(m)&&(!reg||!m.r||m.r.includes(reg)));
+  // longe de casa os monstros fracos somem do sorteio
+  const minT=deep>=120?3:deep>=60?2:1;
+  let pool=MONS.filter(m=>ok(m)&&m.t>=Math.min(minT,mt)&&(!reg||!m.r||m.r.includes(reg)));
   if(!pool.length)pool=MONS.filter(ok);
   const w=pool.map(m=>Math.pow(m.t,1.5)*(e.rain&&m.aq?3:1)*(e.moon&&(m.moon||m.moonOnly)?3:1)*(e.hot&&m.hot?2:1));
   let r=Math.random()*w.reduce((a,b)=>a+b,0),p=pool[0];
   for(let i=0;i<pool.length;i++){r-=w[i];if(r<=0){p=pool[i];break}}
-  const mon=mkMon(p,{elite:Math.random()<.1});mon.reg=reg;return mon;
+  const mon=mkMon(p,{elite:Math.random()<.1+Math.min(.25,deep/300),depth:deep});mon.reg=reg;return mon;
 }
 let regionShown=null;
 function regionTick(lat,lon){

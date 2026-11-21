@@ -600,3 +600,76 @@ def t46_indice_local_fortaleza(c):
     # na tela: aparece na hora, sem esperar a internet
     c.page.click("#inpD"); c.page.type("#inpD", "ibur")
     c.wait("document.querySelector('#ac-d .aci') && document.querySelector('#ac-d').textContent.includes('Tibúrcio')", 1500)
+
+@test
+def t47_honra_no_volante(c):
+    c.open(); c.hero(); c.route_to()
+    c.js("()=>{startNav(true);sim.mult=0}")
+    c.js("()=>{for(let i=0;i<20;i++)honorTick(55,60,100)}")          # 2 km dentro do limite
+    r = c.js("()=>honorResult()"); assert r["pct"] == 1 and r["pts"] == 2, r
+    c.js("()=>{T.hOk=0;T.hOver=0;for(let i=0;i<10;i++)honorTick(90,60,100);for(let i=0;i<10;i++)honorTick(50,60,100)}")
+    r = c.js("()=>honorResult()"); assert r["pts"] < 0 and "manchada" in r["txt"], r
+    c.js("()=>{T.hOk=0;T.hOver=0;honorTick(90,0,100);honorTick(10,60,100)}")   # sem limite ou parado: não conta
+    assert c.js("()=>honorResult()") is None
+    assert c.js("()=>honorRank(0)") == "Escudeiro" and c.js("()=>honorRank(60)") == "Guardião da Estrada"
+    c.js("()=>{S.honor=60}"); assert c.js("()=>honorBonus()") == 2
+
+@test
+def t48_bardo_reinos(c):
+    c.open(); c.hero(); c.route_to()
+    c.js("async()=>{await loadPlaces();startNav(true);sim.mult=0;simSnap=null}")   # como jornada real (treino não salva reinos)
+    assert c.js("()=>bairroAt(-3.7381,-38.5001)") == "Aldeota"
+    assert c.js("()=>bairroAt(-3.95,-38.70)") is None
+    c.js("()=>{for(let i=0;i<3;i++)bardTick(-3.7381,-38.5001)}")
+    assert c.js("()=>S.realms") == ["Aldeota"] and c.js("()=>T.realms") == ["Aldeota"]
+    c.js("()=>{bardTick(-3.7271,-38.4951);bardTick(-3.7381,-38.5001);bardTick(-3.7271,-38.4951)}")   # pisca na divisa: não troca
+    assert c.js("()=>realmCur") == "Aldeota"
+    c.js("()=>{for(let i=0;i<3;i++)bardTick(-3.7271,-38.4951)}")
+    assert c.js("()=>S.realms.length") == 2 and c.js("()=>realmCur") == "Meireles"
+
+@test
+def t49_cerco_no_engarrafamento(c):
+    c.open(); c.hero(); c.route_to()
+    c.js("()=>{startNav(true);sim.mult=0;S.hp=maxHP()}")
+    k0 = c.js("()=>T.kills")
+    # 2 min andando só 100 m → engarrafamento
+    c.js("""()=>{const n=Date.now();jamHist=[];for(let i=0;i<8;i++)jamHist.push([n-125000+i*15000,-3.7300+i*0.0001,-38.52]);
+      siegeTick({lat:-3.7292,lon:-38.52,spd:1},5000)}""")
+    assert c.js("()=>jamActive") and c.js("()=>T.siege") == 1
+    c.js("()=>siegeTick({lat:-3.7292,lon:-38.52,spd:1},5000)")      # menos de 45 s depois: sem nova onda
+    assert c.js("()=>T.siege") == 1
+    # semáforo: parado mas andou bastante nos últimos 2 min → não é cerco
+    c.js("""()=>{jamActive=false;const n=Date.now();jamHist=[];for(let i=0;i<8;i++)jamHist.push([n-125000+i*15000,-3.7300+i*0.003,-38.52]);
+      siegeTick({lat:-3.709,lon:-38.52,spd:0},5000)}""")
+    assert not c.js("()=>jamActive")
+
+@test
+def t50_cronica_e_patrulha(c):
+    c.open(); c.hero(); c.route_to()
+    c.js("()=>{startNav(true);sim.mult=4}")
+    c.wait("T && T.kills>=1", 20000); c.js("()=>{sim.prog=R.total-15}")
+    c.wait("document.getElementById('arrivePanel').style.display==='block'", 10000)
+    if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/arrive.png")
+    txt = c.js("()=>document.querySelector('.ar-chron').textContent")
+    assert "Praia do Futuro" in txt and "guardião" in txt.lower(), txt
+    # patrulha: 3 viagens da mesma origem pro mesmo destino, em dia útil, ~8h
+    r = c.js("""()=>{const t=Date.now(),o={ola:-3.73,olo:-38.52,la:-3.75,lo:-38.45,n:'Trabalho',wd:1,h:8};
+      S.tripsLog=[{...o,t},{...o,h:8.3,t},{...o,h:7.6,t}];
+      const seg=new Date(2026,10,23,8,10);   // uma segunda 8h10
+      return [patrolFor(-3.7302,-38.5201,seg),patrolFor(-3.7302,-38.5201,new Date(2026,10,23,15,0)),patrolFor(-3.7302,-38.5201,new Date(2026,10,22,8,0))]}""")
+    assert r[0] and r[0]["n"] == 3 and r[0]["name"] == "Trabalho", r
+    assert r[1] is None and r[2] is None, r      # outro horário / fim de semana
+    c.js("()=>{closeArrive();showPatrol('Trabalho',{lat:-3.75,lon:-38.45,n:3})}")
+    c.page.click("#patrolCard .pc-go")
+    c.wait("PR.length>0", 10000)
+
+@test
+def t51_raridade_pela_distancia(c):
+    c.open(); c.hero(); c.js("()=>{S.lvl=6}")
+    r = c.js("""()=>{let perto=[],longe=[];for(let i=0;i<300;i++){perto.push(rollMonster(null,null,2));longe.push(rollMonster(null,null,150))}
+      const avg=a=>a.reduce((s,m)=>s+m.xp,0)/a.length;
+      return {tp:Math.min(...perto.map(m=>m.t)),tl:Math.min(...longe.filter(m=>!m.dragon).map(m=>m.t)),
+        el:longe.filter(m=>m.elite).length/300,ep:perto.filter(m=>m.elite).length/300,
+        xr:avg(longe)/avg(perto),anc:longe.every(m=>m.anc),ancp:perto.some(m=>m.anc)}}""")
+    assert r["tl"] >= 3 and r["tp"] == 1, r
+    assert r["el"] > r["ep"] + .1 and r["xr"] > 2 and r["anc"] and not r["ancp"], r

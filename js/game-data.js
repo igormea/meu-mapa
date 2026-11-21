@@ -107,4 +107,8 @@ const ACH=[
   {id:'set',n:'Conjunto Completo',d:'Equipe as 3 peças de um conjunto',f:()=>!!activeSet()},
   {id:'chuva',n:'Caçador da Chuva',d:'Derrote um monstro aquático na chuva',f:()=>(S.stats.aqKills||0)>=1},
   {id:'tal',n:'Mestre dos Talentos',d:'Distribua 10 pontos de talento',f:()=>talentSpent()>=10},
+  {id:'reinos5',n:'Explorador de Reinos',d:'Descubra 5 bairros',f:()=>(S.realms||[]).length>=5},
+  {id:'reinos30',n:'Cartógrafo do Reino',d:'Descubra 30 bairros',f:()=>(S.realms||[]).length>=30},
+  {id:'honra',n:'Cavaleiro Honrado',d:'Junte 20 pontos de honra respeitando os limites',f:()=>(S.honor||0)>=20},
+  {id:'ancestral',n:'Além das Fronteiras',d:'Derrote um monstro ancestral (viagem de 60+ km)',f:()=>(S.stats.anc||0)>=1},
 ];

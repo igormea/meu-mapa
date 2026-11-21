@@ -45,7 +45,10 @@ function mkMon(b,o={}){
   const hp=(20+lvl*9)*(1+.25*(t-1)),at=(6+lvl*2.8)*(1+.12*(t-1));
   const xp=(8+lvl*3)*(1+.3*(t-1)),gold=(2+lvl*1.5)*(1+.2*t);
   const k=o.dragon?{hp:1.6,at:1.5,r:5}:o.elite?{hp:2.2,at:1.45,r:2}:{hp:1,at:1,r:1};
-  return{...b,lvl,hp:Math.round(hp*k.hp),atk:at*k.at,xp:Math.round(xp*k.r),gold:Math.round(gold*k.r*rnd(.7,1.3)),elite:!!o.elite,dragon:!!o.dragon};
+  // viagem longa: monstros "ancestrais" (a partir de 60 km) — mais fortes, mas valem bem mais
+  const dp=o.depth||0,ds=1+Math.min(.5,dp/300),dr=1+Math.min(1.5,dp/120),anc=dp>=60;
+  return{...b,n:anc?b.n+' Ancestral':b.n,lvl,hp:Math.round(hp*k.hp*ds),atk:at*k.at*ds,xp:Math.round(xp*k.r*dr),gold:Math.round(gold*k.r*dr*rnd(.7,1.3)),
+    elite:!!o.elite,dragon:!!o.dragon,depth:dp,anc};
 }
 function rollRar(bonus=0){
   const w=RAR.map((x,i)=>x.w*(1+bonus*i*2));let r=Math.random()*w.reduce((a,b)=>a+b,0);
@@ -87,8 +90,9 @@ function battle(s){
     card(m.m3d?monPic(m.m3d):m.e,`${m.n}${m.elite?' ★':''} <span style="color:#b59f7b">Nv ${m.lvl}</span> derrotado!`,
       `<b>+${x} XP</b> · <b>+${g} 🪙</b>${res.taken?` · −${res.taken} ❤️`:''}${res.crit?' · <b>CRÍTICO!</b>':''}${res.skills.length?' · '+res.skills.join(' · '):''}${res.steal?' · 💰 roubo!':''}`,m.dragon?'epic':'');
     if(m.reg==='costa'||m.aq)S.stats.aqKills=(S.stats.aqKills||0)+(envNow().rain&&m.aq?1:0);
-    const ch=(m.dragon?1:m.elite?.5:.16)*cls().loot*(1+bonus('loot'));
-    if(Math.random()<ch)handleItem(makeItem(Math.max(rollRar(),m.dragon?3:m.elite?1:0)));
+    if(m.anc){if(T)T.deep=(T.deep||0)+1;S.stats.anc=(S.stats.anc||0)+1}
+    const ch=(m.dragon?1:m.elite?.5:.16)*cls().loot*(1+bonus('loot'))*(1+Math.min(1.5,(m.depth||0)/80));
+    if(Math.random()<ch)handleItem(makeItem(Math.max(rollRar(Math.min(.6,(m.depth||0)/200)),m.dragon?3:m.elite||m.anc?1:0)));
   }else{
     S.hp=Math.round(maxHP()*.35);const lost=Math.floor(S.gold*.08);S.gold-=lost;
     floatTxt('Recuou!','hp');hero3d('act','hit');

@@ -15,7 +15,7 @@ function startNav(simulate){
   isNav=true;document.body.classList.add('nav');panel('none');
   $('navTop').classList.add('on');$('navBottom').classList.add('on');$('hud').style.display='none';
   $('navInst').textContent='Aguardando GPS…';$('navRoad').textContent='';
-  T={start:Date.now(),m:0,kills:0,xp:0,gold:0,items:[]};
+  T={start:Date.now(),m:0,kills:0,xp:0,gold:0,items:[]};journeyStart();
   followPaused=false;offSince=0;offStart=null;lastRecalc=0;recalcFails=0;logEv('jornada iniciada → '+short(dest.name));
   { const s0=simulate||!lastFix?R.coords[0]:[lastFix.lat,lastFix.lon];
     enterNavCamera(s0[0],s0[1],bearing(R.coords[0],pointAt(R,Math.min(R.total,40)))); }
@@ -37,8 +37,9 @@ function navUpdate(sn,f){
   else{$('navDistVal').textContent=(dn/1000).toFixed(1).replace('.',',');$('navDistUnit').textContent='km'}
   const rem=Math.max(0,R.total-sn.prog),remT=R.duration*rem/R.total;
   $('navRem').textContent=fmtD(rem)+' · '+fmtT(remT);$('navETA').textContent='Chegada '+etaHM(remT);
-  const kmh=f.spd>0?Math.round(f.spd*3.6):0;
-  updSpeedo(kmh,limitAt(R,sn.prog));
+  const kmh=f.spd>0?Math.round(f.spd*3.6):0,lim=limitAt(R,sn.prog);
+  updSpeedo(kmh,lim);
+  journeyTick(f,sn,kmh,lim);
   $('navMount').textContent=kmh<3?'🧍 Parado':kmh<12?'🚶 A pé':S.vehicle==='moto'?(kmh<60?'🏍️ Na moto':'🏍️ Acelerando'):kmh<40?'🐴 Trotando':kmh<80?'🐎 A galope':'🦅 Voando de grifo';
   announce(k,st,dn,inst,f.spd||0);
   alertTick(sn.prog,f.spd||0);
@@ -131,7 +132,9 @@ function arrive(){
   if(res.win){S.hp=Math.max(1,Math.round(res.php));const x=gainXP(boss.xp),g=gainGold(boss.gold);S.stats.kills++;S.daily.kills++;T.kills++;
     bossTxt=`🗿 Guardião derrotado (+${x} XP, +${g} 🪙)`}
   else{S.hp=Math.round(maxHP()*.35);bossTxt='🗿 O guardião resistiu, mas o baú é seu'}
-  const bonus=rawXP(Math.round((30+km*25)*(1+.1*(S.lvl-1))*cls().xp*(1+amu()/100)));
+  const bonus=rawXP(Math.round((30+km*25)*(1+.1*(S.lvl-1))*cls().xp*(1+amu()/100)*(window.__patrol?1.2:1)));
+  const hon=honorResult();if(hon&&!simSnap){S.honor=Math.max(0,(S.honor||0)+hon.pts)}
+  if(!simSnap){S.stats.realms=(S.realms||[]).length;tripLog()}
   const loot=handleItem(makeItem(rollRar(Math.min(.6,km/40))));
   S.stats.trips++;ensureDaily();S.daily.trips++;if(isNight())S.stats.nightTrips++;
   checkQuests();checkAch();
@@ -140,9 +143,11 @@ function arrive(){
   $('arGrid').innerHTML=[[fmtD(Math.max(T.m,R.total)),'Distância'],[mins+' min','Tempo'],[T.kills,'Monstros'],
     ['+'+fmtN(T.xp),'XP'],['+'+fmtN(T.gold),'Ouro'],['Nv '+S.lvl,'Nível']]
     .map(([v,k])=>`<div class="ar-c"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
-  $('arLoot').innerHTML=`<div style="color:#9b93c4;margin-bottom:5px">${bossTxt} · bônus da jornada <b style="color:#e8c86a">+${bonus} XP</b></div>
+  const chron=chronicle(km,res.win,hon);
+  $('arLoot').innerHTML=`<div class="ar-chron">📜 ${esc(chron)}</div>${hon?`<div class="ar-hon">${hon.txt} · ${honorRank()}</div>`:''}${window.__patrol?'<div class="ar-hon">⚔️ Patrulha cumprida: +20% no bônus da jornada</div>':''}<div style="color:#9b93c4;margin-bottom:5px">${bossTxt} · bônus da jornada <b style="color:#e8c86a">+${bonus} XP</b></div>
     🎁 Baú: <span class="r-${loot.it.r}"><b>${esc(loot.it.name)}</b></span> (${RAR[loot.it.r].n}, ${statTxt(loot.it)}) — ${loot.act==='equipado'?'equipado!':'vendido por '+loot.g+' 🪙'}`;
-  hero3d('act','cheer');
+  hero3d('act','cheer');window.__patrol=0;
+  setTimeout(()=>speak(chron.split('. ').slice(0,2).join('. '),'fun'),2600);
   setTimeout(()=>dungeonTick(dest.lat,dest.lon,0,true),2500);
   const pk=drawParking();
   if(pk?.length)$('arLoot').innerHTML+=`<div style="margin-top:6px;color:#9b93c4">🅿️ ${pk.length} estacionamento(s) perto · o mais próximo a ${fmtD(pk[0].d)}</div>`;
