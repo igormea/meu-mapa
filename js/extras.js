@@ -56,8 +56,8 @@ async function voiceSearch(){
 /* ── PARADAS NO CAMINHO ──────────────────────────────────── */
 let stops=[],stopMks=[];
 const STOP_KIND={fuel:{ic:'⛽',n:'posto'},pharm:{ic:'💊',n:'farmácia'},park:{ic:'🅿️',n:'estacionamento'}};
-function openStops(){if(!isNav)return;$('stopPanel').classList.add('on');$('inpS').value='';$('ac-s').style.display='none'}
-function closeStops(){$('stopPanel').classList.remove('on')}
+function openStops(){if(!isNav)return;$('stopPanel').classList.add('on');$('inpS').value='';$('ac-s').style.display='none';layerPush('stops',()=>closeStops(true))}
+function closeStops(fromBack){if(!$('stopPanel').classList.contains('on'))return;$('stopPanel').classList.remove('on');if(!fromBack)layerPop('stops')}
 // lugar do tipo pedido mais conveniente: perto da rota e à frente de você
 function bestAlong(kind){
   const list=OSM?.[kind];if(!list?.length||!R)return null;
@@ -141,12 +141,14 @@ function openReport(){
     <div class="opt"><button id="repCancel">Cancelar</button><button id="repSend" class="prim">Enviar no WhatsApp</button></div></div>`;
     document.body.appendChild(p);
     p.querySelectorAll('.rp-tipo button').forEach(b=>b.onclick=()=>{p.querySelectorAll('.rp-tipo button').forEach(x=>x.classList.toggle('on',x===b))});
-    $('repCancel').onclick=()=>p.classList.remove('on');
+    $('repCancel').onclick=()=>closeReport();
     $('repMic').onclick=()=>listenOnce(t=>{const a=$('repTxt');a.value=(a.value?a.value+' ':'')+t});
     $('repSend').onclick=sendReport;
   }
-  $('repInfo').textContent=reportInfo();$('repTxt').value='';p.classList.add('on');
+  $('repInfo').textContent=reportInfo();$('repTxt').value='';p.classList.add('on');layerPush('report',()=>closeReport(true));
+  if(!p.dataset.drag){p.dataset.drag=1;dragToClose(p.querySelector('.rp-box'),()=>closeReport())}
 }
+function closeReport(fromBack){$('repPanel').classList.remove('on');if(!fromBack)layerPop('report')}
 function reportText(){
   const tipo=document.querySelector('#repPanel .rp-tipo .on')?.dataset.k||'🐞 Bug';
   return `${tipo} — Ranvus Maps\n${$('repTxt').value.trim()||'(sem descrição)'}\n\n— info técnica —\n${reportInfo()}`.slice(0,3500);
@@ -154,7 +156,7 @@ function reportText(){
 function sendReport(){
   if(!$('repTxt').value.trim())return toast('Escreva ou fale o que aconteceu');
   const url=`https://wa.me/${REPORT_TO}?text=`+encodeURIComponent(reportText());
-  $('repPanel').classList.remove('on');window.__lastReport=url;
+  closeReport();window.__lastReport=url;
   if(NATIVE)location.href=url;else window.open(url,'_blank');
 }
 window.openReport=openReport;

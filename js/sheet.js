@@ -1,12 +1,12 @@
 'use strict';
 /* ── FICHA DO HERÓI ──────────────────────────────────── */
 let sheetTab='heroi',resetArm=0;
-const TABS=[['heroi','🧙 Herói'],['tal','✨ Talentos'],['equip','🎒 Equipamento'],['quests','📜 Missões'],['ach','🏅 Conquistas'],['cfg','⚙️ Ajustes']];
-function openSheet(){regen();renderSheet();$('sheet').classList.add('on')}
-function closeSheet(){$('sheet').classList.remove('on')}
+const TABS=[['heroi','🧙','Herói'],['tal','✨','Talentos'],['equip','🎒','Equipar'],['quests','📜','Missões'],['ach','🏅','Troféus'],['stats','📊','Números'],['cfg','⚙️','Ajustes']];
+function openSheet(){regen();renderSheet();$('sheet').classList.add('on');layerPush('sheet',()=>closeSheet(true))}
+function closeSheet(fromBack){$('sheet').classList.remove('on');if(!fromBack)layerPop('sheet')}
 function setTab(t){sheetTab=t;renderSheet()}
 function renderSheet(){
-  $('tabs').innerHTML=TABS.map(([k,n])=>`<div class="tab ${k===sheetTab?'on':''}" onclick="setTab('${k}')">${n}</div>`).join('');
+  $('tabs').innerHTML=TABS.map(([k,ic,n])=>`<div class="tab ${k===sheetTab?'on':''}" onclick="setTab('${k}')"><i>${ic}</i><span>${n}</span></div>`).join('');
   const c=cls(),mx=maxHP();let h='';
   if(sheetTab==='heroi'){
     h=`<div class="hero"><div class="big">${heroPic(S.cls)}</div><div>
@@ -38,6 +38,8 @@ function renderSheet(){
         <div class="st"><span>🏰 Jornadas</span><b>${S.stats.trips}</b></div><div class="st"><span>🐉 Dragões</span><b>${S.stats.dragons}</b></div>
       </div>
       <div class="r2" style="font-size:11.5px;color:#837aa8;margin-top:10px">${esc(c.desc)}</div>`;
+  }else if(sheetTab==='stats'){
+    h=statsHTML();
   }else if(sheetTab==='tal'){
     const pts=talentPoints();
     h=`<div class="row"><div class="r1"><span>✨ Pontos disponíveis</span><b style="color:${pts?'#e8c86a':'inherit'}">${pts}</b></div><div class="r2">Você ganha 1 ponto a cada nível. Distribua com o carro parado.</div></div>`+

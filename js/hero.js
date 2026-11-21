@@ -27,7 +27,7 @@ function hud(){
   const mx=maxHP();if(S.hp==null)S.hp=mx;
   const hpP=Math.min(100,S.hp/mx*100)+'%',xpP=Math.min(100,S.xp/needXP(S.lvl)*100)+'%';
   $('hudName').textContent=S.name;$('hudSub').textContent=`Nv ${S.lvl} · ${cls().nome}`;
-  $('hudHp').style.width=hpP;$('hudXp').style.width=xpP;$('hudGold').textContent='🪙 '+fmtN(S.gold);
+  $('hudHp').style.width=hpP;$('hudXp').style.width=xpP;$('hudXpTx').textContent=`XP ${fmtN(S.xp)} / ${fmtN(needXP(S.lvl))}`;$('hudGold').textContent='🪙 '+fmtN(S.gold);
   $('nbXpBar').style.width=xpP;$('nbHpBar').style.width=hpP;$('nbLv').textContent='Nv '+S.lvl;
   $('nbKills').textContent='⚔️ '+(T?T.kills:0);
   const lv=$('plLv');if(lv)lv.textContent='Nv '+S.lvl;

@@ -91,12 +91,11 @@ map.on('contextmenu',e=>{if(isNav||PR.length)return;goTo({name:'Ponto marcado no
 
 /* ── BUSCA EM TELA CHEIA (igual o Waze) ── tocou no campo, a busca ocupa a tela; nada fica por cima da lista */
 function srchTyping(on){$('searchPanel').classList.toggle('typing',!!on)}
-function srchFull(on){
+function srchFull(on,fromBack){
   const p=$('searchPanel');if(p.classList.contains('full')===on)return;
   p.classList.toggle('full',on);document.body.classList.toggle('searching',on);
-  if(on){try{history.pushState({srch:1},'')}catch{}}
-  else{srchTyping(false);$('ac-d').style.display='none';if(history.state?.srch)try{history.back()}catch{}}
+  if(on)layerPush('search',()=>{$('inpD').blur();srchFull(false,true)});
+  else{srchTyping(false);$('ac-d').style.display='none';if(!fromBack)layerPop('search')}
 }
 $('inpD').addEventListener('focus',()=>srchFull(true));
 $('srchBack').onclick=()=>{$('inpD').blur();srchFull(false)};
-addEventListener('popstate',()=>{if($('searchPanel').classList.contains('full')){$('searchPanel').classList.remove('full');document.body.classList.remove('searching');srchTyping(false);$('ac-d').style.display='none';$('inpD').blur()}});

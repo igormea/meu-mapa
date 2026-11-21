@@ -673,3 +673,72 @@ def t51_raridade_pela_distancia(c):
         xr:avg(longe)/avg(perto),anc:longe.every(m=>m.anc),ancp:perto.some(m=>m.anc)}}""")
     assert r["tl"] >= 3 and r["tp"] == 1, r
     assert r["el"] > r["ep"] + .1 and r["xr"] > 2 and r["anc"] and not r["ancp"], r
+
+@test
+def t52_botoes_acima_do_painel_e_abas(c):
+    c.open(); c.hero(); c.page.wait_for_timeout(400)
+    def gap():
+        return c.js("""()=>{const f=document.getElementById('fabs').getBoundingClientRect();
+          const p=[...['searchPanel','routePanel'].map(i=>document.getElementById(i))].find(e=>getComputedStyle(e).display!=='none').getBoundingClientRect();return p.top-f.bottom}""")
+    g = gap(); assert 6 <= g <= 30, g                      # busca: logo acima, sem encostar
+    c.route_to(); c.page.wait_for_timeout(300)
+    g = gap(); assert 6 <= g <= 30, g                      # prévia da rota (painel mais alto)
+    # abas da ficha: todas visíveis, sem corte
+    c.js("()=>{cancelRoute();openSheet();setTab('ach')}")
+    r = c.js("""()=>[...document.querySelectorAll('#tabs .tab')].map(t=>{const b=t.getBoundingClientRect(),s=t.querySelector('span');
+      return [b.left>=0&&b.right<=innerWidth, b.height>=38, s.scrollWidth<=s.clientWidth+1]})""")
+    assert len(r) == 7 and all(all(x) for x in r), r
+    c.js("()=>setTab('stats')")
+    assert "Últimos 7 dias" in c.js("()=>document.getElementById('sheetBody').textContent")
+    if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/s_stats.png")
+
+@test
+def t53_historico_e_recordes(c):
+    c.open(); c.hero(); c.route_to()
+    c.js("()=>{startNav(true);sim.mult=4;simSnap=null}")    # como jornada real
+    c.wait("T && T.kills>=1", 20000); c.js("()=>{sim.prog=R.total-15}")
+    c.wait("document.getElementById('arrivePanel').style.display==='block'", 10000)
+    h = c.js("()=>S.hist[histDay()]")
+    assert h["tr"] == 1 and h["km"] > 0 and h["k"] >= 1 and h["min"] >= 1, h
+    assert c.js("()=>S.rec.km") > 0 and c.js("()=>Object.values(S.best).reduce((a,b)=>a+b,0)") >= 1
+
+@test
+def t54_voltar_e_arrastar(c):
+    c.open(); c.hero(); c.page.wait_for_timeout(300)
+    back = lambda: (c.page.go_back(), c.page.wait_for_timeout(250))
+    # ficha: voltar fecha
+    c.js("()=>openSheet()"); assert c.js("()=>$('sheet').classList.contains('on')")
+    back(); assert not c.js("()=>$('sheet').classList.contains('on')")
+    # no mapa: voltar pergunta se quer sair (e o app continua aberto)
+    back(); assert c.js("()=>$('exitAsk').classList.contains('on')")
+    assert c.page.url.startswith("http")
+    back(); assert not c.js("()=>$('exitAsk').classList.contains('on')")   # voltar de novo fecha o aviso
+    back(); assert c.js("()=>$('exitAsk').classList.contains('on')"); c.page.click("#exStay")
+    # busca em tela cheia → voltar sai da busca
+    c.page.click("#inpD"); c.wait("$('searchPanel').classList.contains('full')", 2000)
+    back(); assert not c.js("()=>$('searchPanel').classList.contains('full')")
+    # prévia da rota → voltar cancela; fechar pelo ✕ não deixa "voltar" sobrando
+    c.route_to(); back(); c.wait("PR.length===0 && $('searchPanel').style.display==='block'", 3000)
+    c.js("()=>{openSheet()}"); c.js("()=>closeSheet()"); c.page.wait_for_timeout(250)
+    back(); assert c.js("()=>$('exitAsk').classList.contains('on')"), "fechar pela tela deveria limpar o histórico"
+    c.page.click("#exStay")
+    # arrastar a ficha pra baixo pela barrinha
+    c.js("()=>openSheet()"); c.page.wait_for_timeout(200)
+    b = c.js("()=>{const r=document.querySelector('#sheetBox .handle').getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2]}")
+    c.page.mouse.move(b[0], b[1]); c.page.mouse.down(); c.page.mouse.move(b[0], b[1]+60, steps=4); c.page.mouse.move(b[0], b[1]+160, steps=4); c.page.mouse.up()
+    c.wait("!$('sheet').classList.contains('on')", 2000)
+    # arrastar pouco não fecha
+    c.js("()=>openSheet()"); c.page.wait_for_timeout(200)
+    c.page.mouse.move(b[0], b[1]); c.page.mouse.down(); c.page.mouse.move(b[0], b[1]+30, steps=6); c.page.wait_for_timeout(300); c.page.mouse.up(); c.page.wait_for_timeout(300)
+    assert c.js("()=>$('sheet').classList.contains('on')")
+
+@test
+def t55_hud_cidade_e_xp(c):
+    c.open(); c.hero()
+    c.js("async()=>{await cityTick(-3.73,-38.52)}")
+    c.wait("document.getElementById('hudEnv').textContent.includes('📍 Fortaleza')", 3000)
+    assert "XP 0 / 100" in c.js("()=>document.getElementById('hudXpTx').textContent")
+    # não consulta de novo andando pouco
+    c.js("()=>{window.__rev=0;const f=window.fetch;window.fetch=(u,...a)=>{if(String(u).includes('/reverse'))__rev++;return f(u,...a)}}")
+    c.js("async()=>{await cityTick(-3.731,-38.521)}"); assert c.js("()=>__rev") == 0
+    c.js("async()=>{await cityTick(-3.80,-38.52)}"); assert c.js("()=>__rev") == 1

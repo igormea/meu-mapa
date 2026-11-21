@@ -166,4 +166,7 @@ function panel(w){
   ['searchPanel','routePanel','arrivePanel'].forEach(id=>$(id).style.display='none');
   if(w!=='none')$(w+'Panel').style.display='block';
   document.body.classList.toggle('preview',w==='route');document.body.classList.toggle('arrive',w==='arrive');
+  // botão voltar: na prévia cancela a rota; no fim da jornada fecha o resumo
+  if(w==='route')layerPush('route',()=>cancelRoute());else layerPop('route');
+  if(w==='arrive')layerPush('arrive',()=>closeArrive());else layerPop('arrive');
 }

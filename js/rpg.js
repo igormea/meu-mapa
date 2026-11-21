@@ -122,7 +122,7 @@ function fight(m){
 const critChance=()=>cls().crit+bonus('crit');
 
 /* ═════ REGIÕES DE FORTALEZA ═════ (aproximadas) */
-const REGION={costa:{n:'Costa',ic:'🌊'},centro:{n:'Centro Antigo',ic:'🏛️'},mata:{n:'Mata',ic:'🌳'},sertao:{n:'Sertão',ic:'🌵'},cidade:{n:'Cidade',ic:'🏙️'}};
+const REGION={costa:{n:'Costa',ic:'🌊'},centro:{n:'Centro Antigo',ic:'🏛️'},mata:{n:'Mata',ic:'🌳'},sertao:{n:'Sertão',ic:'🌵'},cidade:{n:'Zona Urbana',ic:'🏙️'}};
 const COAST=[[-3.6930,-38.6000],[-3.7050,-38.5700],[-3.7120,-38.5450],[-3.7180,-38.5250],[-3.7200,-38.5050],[-3.7225,-38.4900],
   [-3.7160,-38.4780],[-3.7290,-38.4660],[-3.7470,-38.4540],[-3.7750,-38.4420],[-3.8050,-38.4180],[-3.8400,-38.3900]];
 const PARKS=[[-3.7455,-38.4870,1600],[-3.7880,-38.4350,1500],[-3.7950,-38.5050,700]];
@@ -174,10 +174,22 @@ async function weatherTick(lat,lon){
     renderEnv();
   }catch{ENV.t=Date.now()-25*60000}   // falhou: tenta de novo em ~5 min
 }
+// município onde você está (Caucaia, Fortaleza, Aquiraz...) — Photon reverso, só quando anda mais de ~1,5 km
+let cityAt=null;
+async function cityTick(lat,lon){
+  if(cityAt&&hav(cityAt[0],cityAt[1],lat,lon)<1500&&Date.now()-cityAt[2]<20*60000)return;
+  cityAt=[lat,lon,Date.now()];
+  try{
+    const j=await(await fetch(`https://photon.komoot.io/reverse?lat=${lat.toFixed(4)}&lon=${lon.toFixed(4)}&limit=1&lang=default`)).json();
+    const p=j.features?.[0]?.properties||{},c=p.city||p.town||p.village||p.county||p.municipality;
+    if(c&&c!==ENV.city){ENV.city=c;renderEnv()}
+  }catch{cityAt[2]=Date.now()-17*60000}
+}
 function moonIllum(d=new Date()){const syn=29.530588853,ref=Date.UTC(2000,0,6,18,14);const a=(((d-ref)/864e5)%syn+syn)%syn;return(1-Math.cos(2*Math.PI*a/syn))/2}
 function envNow(){return{rain:ENV.rain,hot:ENV.hot,moon:moonIllum()>.95&&isNight()}}
 function renderEnv(){
   const el=$('hudEnv');if(!el)return;const e=envNow(),r=REGION[S.curRegion||regionShown];const parts=[];
+  if(ENV.city)parts.push(`📍 ${ENV.city}`);
   if(r)parts.push(`${r.ic} ${r.n}`);
   if(e.rain)parts.push('🌧️ Chuva');else if(e.hot)parts.push(`☀️ ${Math.round(ENV.temp)}°`);else if(ENV.temp!=null)parts.push(`${isNight()?'🌙':'⛅'} ${Math.round(ENV.temp)}°`);
   if(e.moon)parts.push('🌕 Lua cheia');
@@ -244,6 +256,6 @@ function runDungeon(d){
 /* ═════ ganchos chamados a cada posição do GPS ═════ */
 function rpgTick(lat,lon,spd,real){
   regionTick(lat,lon);
-  if(real)weatherTick(lat,lon);
+  if(real){weatherTick(lat,lon);cityTick(lat,lon)}
   dungeonTick(lat,lon,spd,false);
 }

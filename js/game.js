@@ -21,7 +21,7 @@ let lastRegen=Date.now();
 function regen(){const now=Date.now(),dt=(now-lastRegen)/60000;lastRegen=now;const mx=maxHP();if(S.hp==null)S.hp=mx;S.hp=Math.min(mx,S.hp+mx*.06*(1+bonus('regen'))*dt)}
 let xpFrac=0;
 function addDistance(m){
-  S.stats.km+=m/1000;ensureDaily();S.daily.km+=m/1000;if(T)T.m+=m;weekAdd('km',m/1000);
+  S.stats.km+=m/1000;histAdd('km',m/1000);ensureDaily();S.daily.km+=m/1000;if(T)T.m+=m;weekAdd('km',m/1000);
   xpFrac+=m/20*cls().xp*(1+amu()/100+bonus('xp'));
   if(!simSnap)petAddKm(m/1000);
   if(xpFrac>=1){const n=Math.floor(xpFrac);xpFrac-=n;rawXP(n)}
@@ -85,7 +85,7 @@ function battle(s){
   if(res.win){
     S.hp=Math.max(1,Math.round(res.php));
     const x=gainXP(m.xp),g=gainGold(m.gold*(res.steal?1.5:1));
-    S.stats.kills++;ensureDaily();S.daily.kills++;if(T)T.kills++;if(!simSnap)weekAdd('kills',1);if(m.dragon){S.stats.dragons++;speak('Você derrotou um Dragão Ancião!','fun')}
+    S.stats.kills++;histAdd('k',1);bestAdd(m.n);ensureDaily();S.daily.kills++;if(T)T.kills++;if(!simSnap)weekAdd('kills',1);if(m.dragon){S.stats.dragons++;speak('Você derrotou um Dragão Ancião!','fun')}
     floatTxt(`+${x} XP`,'xp');hero3d('act','attack');
     card(m.m3d?monPic(m.m3d):m.e,`${m.n}${m.elite?' ★':''} <span style="color:#b59f7b">Nv ${m.lvl}</span> derrotado!`,
       `<b>+${x} XP</b> · <b>+${g} 🪙</b>${res.taken?` · −${res.taken} ❤️`:''}${res.crit?' · <b>CRÍTICO!</b>':''}${res.skills.length?' · '+res.skills.join(' · '):''}${res.steal?' · 💰 roubo!':''}`,m.dragon?'epic':'');

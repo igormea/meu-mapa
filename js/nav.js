@@ -136,7 +136,7 @@ function arrive(){
   const hon=honorResult();if(hon&&!simSnap){S.honor=Math.max(0,(S.honor||0)+hon.pts)}
   if(!simSnap){S.stats.realms=(S.realms||[]).length;tripLog()}
   const loot=handleItem(makeItem(rollRar(Math.min(.6,km/40))));
-  S.stats.trips++;ensureDaily();S.daily.trips++;if(isNight())S.stats.nightTrips++;
+  S.stats.trips++;histAdd('tr',1);histAdd('min',Math.max(1,Math.round((Date.now()-T.start)/60000)));tripRecord(km,T.kills,Math.round((Date.now()-T.start)/60000));ensureDaily();S.daily.trips++;if(isNight())S.stats.nightTrips++;
   checkQuests();checkAch();
   const mins=Math.max(1,Math.round((Date.now()-T.start)/60000));
   $('arDest').textContent=short(dest.name)+(simSnap?' · modo treino (não salvo)':'');
