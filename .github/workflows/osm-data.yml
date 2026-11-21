@@ -6,7 +6,7 @@ on:
     - cron: '17 6 * * 1'   # toda segunda, 03:17 de Fortaleza
   push:
     branches: [main]
-    paths: ['tools/osm_extract.py', 'tools/places_overpass.py', '.github/workflows/osm-data.yml']
+    paths: ['tools/osm_extract.py', 'tools/places_overpass.py', 'tools/terrain_overpass.py', '.github/workflows/osm-data.yml']
 
 permissions:
   contents: write
@@ -48,13 +48,20 @@ jobs:
           set -o pipefail
           python3 tools/places_overpass.py 2>&1 | tee -a osm.log
 
+      - name: Terrenos (praia, água, mangue, mata, indústria, comércio, rural)
+        if: always()
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/terrain_overpass.py 2>&1 | tee -a osm.log
+
       - name: Salvar no repositório
         if: always()
         shell: bash
         run: |
           git config user.name "meu-mapa-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add data/osm-ce.json data/places.json 2>/dev/null || git add data/osm-ce.json
+          for f in data/osm-ce.json data/places.json data/terrain.json; do [ -f "$f" ] && git add "$f"; done
           git diff --cached --quiet || (git commit -m "Dados OSM atualizados" && git pull --rebase && git push) 2>&1 | tee -a osm.log
 
       - name: Publicar registro (para diagnóstico)
