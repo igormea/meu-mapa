@@ -21,7 +21,7 @@ let lastRegen=Date.now();
 function regen(){const now=Date.now(),dt=(now-lastRegen)/60000;lastRegen=now;const mx=maxHP();if(S.hp==null)S.hp=mx;S.hp=Math.min(mx,S.hp+mx*.06*(1+bonus('regen'))*dt)}
 let xpFrac=0;
 function addDistance(m){
-  S.stats.km+=m/1000;histAdd('km',m/1000);ensureDaily();S.daily.km+=m/1000;if(T)T.m+=m;weekAdd('km',m/1000);
+  S.stats.km+=m/1000;histAdd('km',m/1000);scrollDamage(m/1000);ensureDaily();S.daily.km+=m/1000;if(T)T.m+=m;weekAdd('km',m/1000);
   xpFrac+=m/20*cls().xp*(1+amu()/100+bonus('xp'));
   if(!simSnap)petAddKm(m/1000);
   if(xpFrac>=1){const n=Math.floor(xpFrac);xpFrac-=n;rawXP(n)}
@@ -68,7 +68,7 @@ function handleItem(it){
   // conjuntos: aceita peça um pouco mais fraca se completar o conjunto; não quebra conjunto completo por pouco
   const before=activeSet();S.equip[it.slot]=it;const after=activeSet();S.equip[it.slot]=cur;
   const better=!cur||it.pow>cur.pow*(before&&!after?1.25:after&&!before?.8:1);
-  if(better){S.equip[it.slot]=it;act='equipado';if(after&&!before)setTimeout(()=>card('💠',`Conjunto completo: ${after}!`,SETS[after].d,'epic'),900)}
+  if(better){S.equip[it.slot]=it;act='equipado';heroGear();if(after&&!before)setTimeout(()=>card('💠',`Conjunto completo: ${after}!`,SETS[after].d,'epic'),900)}
   else{g=gainGold(it.pow*2*RAR[it.r].m);act='vendido'}
   S.stats.items++;if(it.r===4)S.stats.legend++;
   S.loot.unshift({...it,act,g});S.loot=S.loot.slice(0,15);if(T)T.items.push(it);
@@ -91,6 +91,7 @@ function battle(s){
       `<b>+${x} XP</b> · <b>+${g} 🪙</b>${res.taken?` · −${res.taken} ❤️`:''}${res.crit?' · <b>CRÍTICO!</b>':''}${res.skills.length?' · '+res.skills.join(' · '):''}${res.steal?' · 💰 roubo!':''}`,m.dragon?'epic':'');
     if(m.aq)S.stats.aqKills=(S.stats.aqKills||0)+(envNow().rain&&m.aq?1:0);
     if(m.anc){if(T)T.deep=(T.deep||0)+1;S.stats.anc=(S.stats.anc||0)+1}
+    scrollDamage(.3);scrollDrop(m.anc?'ancient':m.elite||m.dragon?'elite':'');
     const ch=(m.dragon?1:m.elite?.5:.16)*cls().loot*(1+bonus('loot'))*(1+Math.min(1.5,(m.depth||0)/80));
     if(Math.random()<ch)handleItem(makeItem(Math.max(rollRar(Math.min(.6,(m.depth||0)/200)),m.dragon?3:m.elite||m.anc?1:0)));
   }else{

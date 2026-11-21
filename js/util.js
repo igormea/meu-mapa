@@ -1,5 +1,5 @@
 'use strict';
-const APPV='5.9.0';
+const APPV='6.0.0';
 /* ═══════════════════════════════════════════════════════
    MEU MAPA RPG — v4
    Tiles OSM (estilizados) · Nominatim · OSRM · GPS

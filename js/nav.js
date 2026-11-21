@@ -133,6 +133,8 @@ function arrive(){
     bossTxt=`🗿 Guardião derrotado (+${x} XP, +${g} 🪙)`}
   else{S.hp=Math.round(maxHP()*.35);bossTxt='🗿 O guardião resistiu, mas o baú é seu'}
   const bonus=rawXP(Math.round((30+km*25)*(1+.1*(S.lvl-1))*cls().xp*(1+amu()/100)*(window.__patrol?1.2:1)));
+  if(km>=5&&res.win)scrollDrop('guardian');
+  if(eventOn('natal')&&km>=2&&!simSnap){const gg=gainGold(20+S.lvl*5);setTimeout(()=>card('🎁','Presente de Natal!',`+${gg} 🪙 deixados na sua bota`,'gold'),1800)}
   const hon=honorResult();if(hon&&!simSnap){S.honor=Math.max(0,(S.honor||0)+hon.pts)}
   if(!simSnap){S.stats.realms=(S.realms||[]).length;tripLog()}
   const loot=handleItem(makeItem(rollRar(Math.min(.6,km/40))));

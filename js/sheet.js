@@ -63,7 +63,7 @@ function renderSheet(){
         :'<div class="r2" style="color:#6f679a">Nada ainda. Faça uma jornada!</div>');
   }else if(sheetTab==='quests'){
     ensureDaily();
-    h='<div class="r2" style="color:#837aa8;margin-bottom:9px">Renovam todo dia. Recompensas entregues automaticamente.</div>'+
+    h=scrollsHTML()+'<div class="sect">Diárias</div><div class="r2" style="color:#837aa8;margin-bottom:9px">Renovam todo dia. Recompensas entregues automaticamente.</div>'+
       DQ.map(q=>{const v=S.daily[q.id],done=S.daily.claimed.includes(q.id),k=1+.15*(S.lvl-1);
         return `<div class="row"><div class="r1"><span>${done?'✅':'📜'} ${q.t}</span><b>${q.u==='km'?v.toFixed(1).replace('.',','):v} / ${q.goal}</b></div>
           <div class="r2">Recompensa: ${Math.round(q.xp*k)} XP · ${Math.round(q.gold*k)} 🪙</div><div class="qbar"><i style="width:${Math.min(100,v/q.goal*100)}%"></i></div></div>`}).join('');

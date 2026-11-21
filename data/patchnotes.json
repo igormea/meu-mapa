@@ -1,5 +1,16 @@
 [
  {
+  "v": "6.0",
+  "d": "21/11/2026",
+  "t": "Pergaminhos, equipamento e Natal",
+  "i": [
+   "📜 Pergaminhos de chefe: monstros fortes, guardiões e masmorras podem deixar um pergaminho. Em casa, você invoca o chefe na aba Missões, e ele perde vida conforme você dirige (1 de dano por km). Recompensa grande, com item épico ou lendário.",
+   "🛡️ Equipamento visível: o herói 3D só mostra arma, escudo, elmo e capa que você realmente tem, brilhando na cor da raridade.",
+   "🎄 Evento de Natal (1º de dezembro a 6 de janeiro): Duende Travesso, Boneco de Neve Raivoso, Rena Sombria e o temido Krampus. +10% de XP e presente de Natal no fim das viagens.",
+   "Novas conquistas: Invocador, Caçador de Lendas e Mito Vivo."
+  ]
+ },
+ {
   "v": "5.9",
   "d": "21/11/2026",
   "t": "Bestiário e terrenos",

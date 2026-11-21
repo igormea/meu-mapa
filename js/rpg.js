@@ -88,6 +88,7 @@ function bonus(k){
   if(k==='xp'){if(e.rain)b+=.10;if(e.moon)b+=.25}
   if(k==='gold'&&e.hot)b+=.10;
   if((k==='xp'||k==='gold')&&typeof honorBonus==='function')b+=honorBonus()*.01;
+  if(k==='xp')for(const ev in EVENTS)if(EVENTS[ev].on())b+=EVENTS[ev].xp;
   return b;
 }
 
@@ -136,7 +137,7 @@ function regionAtOld(lat,lon){
 }
 const regionAt=(lat,lon)=>terrainAt(lat,lon);
 // condições do monstro (noite, lua, chuva, distância) — usado no sorteio e no bestiário
-function monOk(m,c){return(!m.night||c.night)&&(!m.moonOnly||c.moon)&&(!m.rain||c.rain)&&(!m.deep||c.deep>=m.deep)}
+function monOk(m,c){return(!m.ev||eventOn(m.ev))&&(!m.night||c.night)&&(!m.moonOnly||c.moon)&&(!m.rain||c.rain)&&(!m.deep||c.deep>=m.deep)}
 // sorteio: terreno onde o monstro nasce + raridade + noite/chuva/lua/calor + distância da viagem
 // km = quanto já se andou nesta viagem: quanto mais longe de casa, mais raros e fortes os monstros
 function rollMonster(lat,lon,km=0){
@@ -150,7 +151,7 @@ function rollMonster(lat,lon,km=0){
   let pool=MONS.filter(m=>ok(m)&&here(m)&&m.t>=Math.min(minT,mt));
   if(pool.length<2)pool=MONS.filter(m=>ok(m)&&here(m));
   if(!pool.length)pool=MONS.filter(m=>ok(m)&&m.ter.includes('u'));
-  const w=pool.map(m=>RARW[m.rar||1]*(e.rain&&m.aq?3:1)*(e.moon&&m.moon?3:1)*(e.hot&&m.hot?2:1));
+  const w=pool.map(m=>RARW[m.rar||1]*Math.pow(m.t,1.5)*(e.rain&&m.aq?3:1)*(e.moon&&m.moon?3:1)*(e.hot&&m.hot?2:1));
   let r=Math.random()*w.reduce((a,b)=>a+b,0),p=pool[0];
   for(let i=0;i<pool.length;i++){r-=w[i];if(r<=0){p=pool[i];break}}
   const mon=mkMon(p,{elite:Math.random()<.1+Math.min(.25,deep/300),depth:deep});mon.reg=ter;return mon;
@@ -197,6 +198,7 @@ function envNow(){return{rain:ENV.rain,hot:ENV.hot,moon:moonIllum()>.95&&isNight
 function renderEnv(){
   const el=$('hudEnv');if(!el)return;const e=envNow(),r=REGION[S.curRegion||regionShown];const parts=[];
   if(ENV.city)parts.push(`📍 ${ENV.city}`);
+  for(const ev in EVENTS)if(EVENTS[ev].on())parts.push(`${EVENTS[ev].ic} ${EVENTS[ev].n}`);
   if(r)parts.push(`${r.ic} ${r.n}`);
   if(e.rain)parts.push('🌧️ Chuva');else if(e.hot)parts.push(`☀️ ${Math.round(ENV.temp)}°`);else if(ENV.temp!=null)parts.push(`${isNight()?'🌙':'⛅'} ${Math.round(ENV.temp)}°`);
   if(e.moon)parts.push('🌕 Lua cheia');
@@ -253,7 +255,7 @@ function runDungeon(d){
     if(f<floors)setTimeout(step,1600);else finish(true);
   };
   const finish=ok=>{
-    if(ok){handleItem(makeItem(Math.max(2,rollRar(.4))));S.stats.dungeons=(S.stats.dungeons||0)+1;speak('Masmorra concluída!','fun');
+    if(ok){handleItem(makeItem(Math.max(2,rollRar(.4))));scrollDrop('dungeon');S.stats.dungeons=(S.stats.dungeons||0)+1;speak('Masmorra concluída!','fun');
       card('🏆',`${d.n} concluída!`,`<b>+${totXP} XP</b> · <b>+${totGold} 🪙</b> · baú raro`,'epic')}
     dunRunning=false;checkAch();drawDungeons();hud();save();
   };

@@ -34,8 +34,9 @@ function hud(){
   $('muteBtn').textContent=S.mute?'🔇':S.less?'🔉':'🔊';
   const tp=talentPoints(),hp=$('hudPts');if(hp){hp.textContent=tp;hp.style.display=tp?'flex':'none'}
 }
+function heroGear(){hero3d('gear',{w:S.equip.weapon?S.equip.weapon.r:null,a:S.equip.armor?S.equip.armor.r:null})}
 function refreshAll(){
-  hud();$('hudAva').innerHTML=heroPic(S.cls);
+  hud();heroGear();$('hudAva').innerHTML=heroPic(S.cls);
   const p=$('plSpr');if(p)p.innerHTML=spriteSVG(S.cls);
   renderRecents();applyTheme();
   hero3d('setClass',S.cls);

@@ -61,7 +61,7 @@ function monHint(m){
   const t=m.ter==='*'?['🗺️ Qualquer lugar']:[...m.ter].map(k=>`${TER[k].ic} ${TER[k].n}`);
   if(m.night)t.push('🌙 noite');if(m.moonOnly)t.push('🌕 lua cheia');else if(m.moon)t.push('🌕 + na lua cheia');
   if(m.rain)t.push('🌧️ só na chuva');else if(m.aq)t.push('🌧️ + na chuva');if(m.hot)t.push('☀️ + no calor');
-  if(m.deep)t.push(`📏 viagem de ${m.deep}+ km`);if(m.t===6)t.push('📏 raro em qualquer viagem (nível 5+)');
+  if(m.deep)t.push(`📏 viagem de ${m.deep}+ km`);if(m.ev)t.push(`${EVENTS[m.ev].ic} só no evento de ${EVENTS[m.ev].n} (1º/dez a 6/jan)`);if(m.t===6)t.push('📏 raro em qualquer viagem (nível 5+)');
   const lv=Math.max(1,(m.t-1)*3+1);if(lv>1&&m.t<6)t.push(`⭐ nível ${lv}+`);
   return t.join(' · ');
 }
@@ -78,6 +78,7 @@ function bestHTML(){
       <div class="bpic">${pic(m)}</div><div class="bn">${s?esc(m.n):'???'}</div><div class="br" style="color:${RARC[m.rar]}">${RARN[m.rar]}${s?` · ${s}×`:''}</div>
       <div class="bh">${monHint(m)}</div></div>`}).join('')}</div>
     <div class="sect">Chefes de Fortaleza</div>
+    ${Object.entries(SCROLLS).map(([id,b])=>`<div class="row ${bossW['sc_'+id]?'':'lock'}"><div class="r1"><span>📜 ${b.e} ${bossW['sc_'+id]?b.n:'??? (pergaminho)'}</span><b>${bossW['sc_'+id]?bossW['sc_'+id]+'× derrotado':'nunca invocado'}</b></div></div>`).join('')}
     ${BOSSES.map(b=>`<div class="row ${bossW[b.id]?'':'lock'}"><div class="r1"><span>${b.e} ${bossW[b.id]?b.n:'??? (chefe lendário)'}</span><b>${bossW[b.id]?bossW[b.id]+'× derrotado':'à espreita'}</b></div></div>`).join('')}
     <div class="r2" style="font-size:11px;color:#837aa8;margin-top:8px">Cada terreno tem seus monstros. Alguns só aparecem à noite, na chuva, na lua cheia ou em viagens longas: não dá pra completar tudo andando só no bairro.</div>`;
 }

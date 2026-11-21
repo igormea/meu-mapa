@@ -444,3 +444,5 @@ body.searching #hud,body.searching #fabs,body.searching #recenterBtn,body.search
 .bn{font:700 13px var(--px);color:var(--parch);margin-top:4px}
 .br{font-size:11px;margin-top:1px}
 .bh{font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.35}
+button.mini{padding:6px 12px;border-radius:9px;border:2px solid var(--gold);background:#8f1d2c;color:#fff;font:700 12px var(--px)}
+button.mini:disabled{opacity:.4}

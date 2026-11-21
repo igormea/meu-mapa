@@ -146,7 +146,27 @@ async function setClass(cls) {
   H.mixer.addEventListener('finished', () => { H.oneShot = null; locomotion(); });
   locomotion();
   H.ready = true; document.body.classList.add('has3d');
+  try { if (typeof S === 'object') GEAR = { w: S.equip.weapon ? S.equip.weapon.r : null, a: S.equip.armor ? S.equip.armor.r : null }; } catch {}
+  applyGear();
   window.__map.triggerRepaint();
+}
+/* equipamento visível: arma/escudo só com arma equipada, elmo/capa só com armadura; brilho na cor da raridade */
+let GEAR = { w: null, a: null };
+const RCOL = ['#000000', '#3f8f4f', '#3b6fd1', '#9b4fe0', '#e0a020'];   // incomum, raro, épico, lendário
+function applyGear() {
+  if (!H.model) return;
+  H.model.traverse(o => {
+    if (!o.isMesh) return;
+    const nm = o.name || '';
+    const isW = /Sword|Axe|Staff|Knife|Crossbow|Shield/i.test(nm), isA = /Helmet|Hat|Cape/i.test(nm);
+    if (!isW && !isA) return;
+    const r = isW ? GEAR.w : GEAR.a;
+    o.visible = r != null;
+    if (!o.userData.mat0) o.userData.mat0 = o.material;
+    if (r >= 1) { o.material = o.userData.mat0.clone(); o.material.emissive?.set(RCOL[Math.min(4, r)]).multiplyScalar(r >= 3 ? .55 : .35); }
+    else o.material = o.userData.mat0;
+  });
+  window.__map?.triggerRepaint();
 }
 function fail() { H.failed = true; document.body.classList.remove('has3d'); }
 
@@ -162,6 +182,8 @@ window.Hero3D = {
     for (const id of [...MON.keys()]) if (!want.has(id) && !MON.get(id).dying) monRemove(id);
     for (const x of list) monAdd(x.id, x.kind, x.lat, x.lon, x.px, x.tint);
   },
+  get __model() { return H.model; },
+  gear(g) { GEAR = { w: g?.w ?? null, a: g?.a ?? null }; applyGear(); },
   monKill, monAttack(id) { const m = MON.get(id); (m?.actions?.attack || m?.actions?.hit)?.reset().play(); },
   get mons() { return [...MON.values()].map(m => ({ id: m.id, kind: m.kind, ready: !!m.obj, dying: !!m.dying })); },
   get state() { return { ready: H.ready, cls: H.cls, anim: Object.keys(H.actions).find(k => H.actions[k] === H.current) || null, heading: H.heading, failed: H.failed }; },

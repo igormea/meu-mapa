@@ -131,7 +131,15 @@ const MONS=[
   {n:'Diabrete do Farol',e:'😈',t:5,ter:'ph',rar:4,night:1,m3d:'q_demon'},
   {n:'Espírito da Chuva',e:'🌧️',t:3,ter:'*',rar:4,rain:1,m3d:'q_ghost',tint:'#7fb2ff'},
   {n:'Dragão Ancião',e:'🐉',t:6,ter:'*',rar:5,m3d:'q_dragon'},
+  // ── evento de Natal (1º/dez a 6/jan)
+  {n:'Duende Travesso',e:'🧝',t:1,ter:'*',rar:1,ev:'natal',m3d:'q_alien',tint:'#7fe08a'},
+  {n:'Boneco de Neve Raivoso',e:'⛄',t:2,ter:'*',rar:2,ev:'natal',m3d:'q_yeti',tint:'#f4f8ff'},
+  {n:'Rena Sombria',e:'🦌',t:3,ter:'vre',rar:3,ev:'natal',night:1,m3d:'q_deer',tint:'#ff6a6a'},
+  {n:'Krampus',e:'👹',t:5,ter:'*',rar:5,ev:'natal',night:1,m3d:'q_demon',tint:'#5a1a2a'},
 ];
+// eventos sazonais (datas fixas do ano)
+const EVENTS={natal:{n:'Natal',ic:'🎄',on:(d=new Date())=>(d.getMonth()===11)||(d.getMonth()===0&&d.getDate()<=6),xp:.10}};
+const eventOn=k=>!!EVENTS[k]?.on();
 const RARW=[0,60,25,9,3,.7];
 const RARN=['','Comum','Incomum','Raro','Épico','Lendário'];
 const RARC=['','#c8c3e0','#7fd18f','#6fa8ff','#c98bff','#ffc94a'];
@@ -161,6 +169,7 @@ const ACH=[
   {id:'pet',n:'Melhor Amigo',d:'Choque o ovo do seu companheiro',f:()=>!!S.pet?.type},
   {id:'dun',n:'Explorador de Masmorras',d:'Conclua uma masmorra',f:()=>(S.stats.dungeons||0)>=1},
   {id:'reg',n:'Andarilho de Fortaleza',d:'Visite 5 tipos de terreno',f:()=>(S.regions||[]).length>=5},
+  {id:'pergaminho',n:'Invocador',d:'Derrote um chefe de pergaminho',f:()=>(S.stats.scrollWins||0)>=1},
   {id:'best25',n:'Caçador de Lendas',d:'Registre 25 monstros no bestiário',f:()=>Object.keys(S.best||{}).length>=25},
   {id:'bestlend',n:'Mito Vivo',d:'Derrote um monstro lendário',f:()=>MONS.some(m=>m.rar===5&&S.best?.[m.n])},
   {id:'set',n:'Conjunto Completo',d:'Equipe as 3 peças de um conjunto',f:()=>!!activeSet()},

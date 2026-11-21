@@ -779,3 +779,35 @@ def t57_terrenos_e_bestiario(c):
     c.js("()=>{bestFilter='p';renderSheet()}")
     n = c.js("()=>document.querySelectorAll('.bc').length"); assert 6 <= n < 30, n
     if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/best.png")
+
+@test
+def t58_pergaminho_de_chefe(c):
+    c.open(); c.hero()
+    c.js("()=>{S.scrolls=['hidra'];openSheet();setTab('quests')}")
+    assert "Hidra do Cocó" in c.js("()=>$('sheetBody').textContent")
+    c.page.click("button.mini")
+    assert c.js("()=>S.scrollBoss.id") == "hidra" and c.js("()=>S.scrolls.length") == 0
+    xp0 = c.js("()=>S.stats.km")
+    c.js("()=>{addDistance(10000)}")                       # 10 km
+    assert abs(c.js("()=>S.scrollBoss.hp") - 5) < .01
+    c.js("()=>{for(let i=0;i<5;i++)scrollDamage(.3)}")
+    c.js("()=>addDistance(4000)")
+    assert c.js("()=>S.scrollBoss") is None and c.js("()=>S.bossEver.sc_hidra") == 1 and c.js("()=>S.stats.scrollWins") == 1
+    # equipamento visível
+    c.wait("window.Hero3D && Hero3D.state.ready && Hero3D.__model", 20000)
+    vis = "()=>{let v=[];Hero3D.__model.traverse(o=>{if(o.isMesh&&/Sword|Shield|Helmet|Cape/.test(o.name))v.push(o.name+':'+o.visible)});return v.sort().join(',')}"
+    c.js("()=>Hero3D.gear({w:null,a:null})"); assert "true" not in c.js(vis), c.js(vis)
+    c.js("()=>Hero3D.gear({w:3,a:null})"); v = c.js(vis); assert "1H_Sword:true" in v and "Knight_Helmet:false" in v, v
+    c.js("()=>Hero3D.gear({w:3,a:0})"); assert "false" not in c.js(vis)
+
+@test
+def t59_evento_natal(c):
+    c.open(); c.hero()
+    r = c.js("""()=>[EVENTS.natal.on(new Date(2026,11,10)),EVENTS.natal.on(new Date(2027,0,5)),EVENTS.natal.on(new Date(2027,0,7)),EVENTS.natal.on(new Date(2026,10,21))]""")
+    assert r == [True, True, False, False], r
+    # fora do evento, monstros de Natal nunca aparecem
+    c.js("()=>{EVENTS.natal.on=()=>false}")
+    assert c.js("()=>{S.lvl=20;for(let i=0;i<400;i++){const m=rollMonster(-3.70,-38.40,0);if(MONS.find(x=>x.n===m.n)?.ev)return m.n}return 'ok'}") == "ok"
+    c.js("()=>{EVENTS.natal.on=()=>true;renderEnv()}")
+    assert c.js("()=>{for(let i=0;i<600;i++){const m=rollMonster(-3.70,-38.40,0);if(MONS.find(x=>x.n===m.n)?.ev)return 'ok'}return 'nenhum'}") == "ok"
+    assert "🎄 Natal" in c.js("()=>$('hudEnv').textContent")
