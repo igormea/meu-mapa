@@ -1,5 +1,6 @@
 'use strict';
-const APPV='6.0.3';
+const /* versão: MAIOR.MENOR.CORREÇÃO — correção 6.0.3→6.0.4 · novidade →6.1.0 · incompatível com a anterior →7.0.0 */
+APPV='6.0.3';
 /* ═══════════════════════════════════════════════════════
    MEU MAPA RPG — v4
    Tiles OSM (estilizados) · Nominatim · OSRM · GPS
