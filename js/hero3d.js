@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from '../vendor/three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from '../vendor/three/addons/libs/meshopt_decoder.module.js';
+import { clone as cloneSkinned } from '../vendor/three/addons/utils/SkeletonUtils.js';
 
 const PX_TALL = 44;            // altura do herói na tela (pixels)
 const H = { ready: false, cls: null, heading: 0, shownHeading: 0, speed: 0, model: null, height: 1,
@@ -27,34 +28,85 @@ const layer = {
     loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder);
   },
   render(gl, matrix) {
-    if (!H.model || !window.__heroPos) return;
-    const ll = window.__heroPos(); if (!ll) return;
     const now = performance.now(), dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
-    H.mixer?.update(dt);
-    // gira suavemente até a direção de movimento
-    let d = ((H.heading - H.shownHeading + 540) % 360) - 180;
-    H.shownHeading = (H.shownHeading + d * Math.min(1, dt * 6) + 360) % 360;
-
-    const mc = maplibregl.MercatorCoordinate.fromLngLat([ll.lng, ll.lat], 0);
-    const z = window.__map.getZoom();
-    const mpp = 2 * Math.PI * 6378137 * Math.cos(ll.lat * Math.PI / 180) / (512 * Math.pow(2, z));
-    const s = mc.meterInMercatorCoordinateUnits() * (PX_TALL * mpp) / H.height;
-    const rotX = new THREE.Matrix4().makeRotationX(Math.PI / 2);
-    const rotY = new THREE.Matrix4().makeRotationY(-H.shownHeading * Math.PI / 180 + Math.PI);
-    // com o mapa pouco inclinado, o herói "se levanta" em direção à câmera (senão só se vê o topo da cabeça)
-    const pitch = window.__map.getPitch(), tilt = Math.max(0, 58 - pitch) * Math.PI / 180;
-    const b = window.__map.getBearing() * Math.PI / 180;
-    const tiltM = new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(Math.cos(b), -Math.sin(b), 0), -tilt);
-    const l = new THREE.Matrix4().makeTranslation(mc.x, mc.y, mc.z).scale(new THREE.Vector3(s, -s, s)).multiply(tiltM).multiply(rotX).multiply(rotY);
-    camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix).multiply(l);
+    const map = window.__map;
+    camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
+    let any = false;
+    // herói
+    const ll = H.model && window.__heroPos ? window.__heroPos() : null;
+    if (ll) {
+      H.mixer?.update(dt);
+      let d = ((H.heading - H.shownHeading + 540) % 360) - 180;   // gira suavemente até a direção de movimento
+      H.shownHeading = (H.shownHeading + d * Math.min(1, dt * 6) + 360) % 360;
+      placeAt(H.model, ll.lat, ll.lng, H.shownHeading, PX_TALL, H.height, map); any = true;
+    }
+    // monstros 3D próximos
+    for (const m of MON.values()) {
+      if (!m.obj) continue;
+      m.mixer.update(dt);
+      const face = ll ? bearingTo(m.lat, m.lon, ll.lat, ll.lng) : 0;      // olha para o herói
+      placeAt(m.obj, m.lat, m.lon, face, m.px, m.height, map); any = true;
+    }
+    if (!any) return;
     renderer.resetState();
-    renderer.clearDepth();           // herói sempre visível (por cima de prédios 3D)
+    renderer.clearDepth();           // personagens sempre visíveis (por cima de prédios 3D)
     renderer.render(scene, camera);
     // animação a ~30 fps; parado e sem navegar, ~12 fps (economiza bateria)
-    const fps = H.speed > 0.5 || window.__heroBusy?.() || H.oneShot ? 30 : 12;
-    if (now >= nextFrame) { nextFrame = now + 1000 / fps; setTimeout(() => window.__map.triggerRepaint(), 1000 / fps); }
+    const fps = H.speed > 0.5 || window.__heroBusy?.() || H.oneShot || MON.size ? 30 : 12;
+    if (now >= nextFrame) { nextFrame = now + 1000 / fps; setTimeout(() => map.triggerRepaint(), 1000 / fps); }
   },
 };
+const _v = new THREE.Vector3(), _rx = new THREE.Matrix4().makeRotationX(Math.PI / 2);
+// posiciona um modelo de pé no chão do mapa, com tamanho fixo em pixels e voltado para "heading"
+function placeAt(obj, lat, lon, heading, px, height, map) {
+  const mc = maplibregl.MercatorCoordinate.fromLngLat([lon, lat], 0);
+  const mpp = 2 * Math.PI * 6378137 * Math.cos(lat * Math.PI / 180) / (512 * Math.pow(2, map.getZoom()));
+  const s = mc.meterInMercatorCoordinateUnits() * (px * mpp) / height;
+  const rotY = new THREE.Matrix4().makeRotationY(-heading * Math.PI / 180 + Math.PI);
+  // com o mapa pouco inclinado, o personagem "se levanta" em direção à câmera (senão só se vê o topo da cabeça)
+  const tilt = Math.max(0, 58 - map.getPitch()) * Math.PI / 180, b = map.getBearing() * Math.PI / 180;
+  const tiltM = new THREE.Matrix4().makeRotationAxis(_v.set(Math.cos(b), -Math.sin(b), 0), -tilt);
+  obj.matrixAutoUpdate = false;
+  obj.matrix.makeTranslation(mc.x, mc.y, mc.z).scale(_v.set(s, -s, s)).multiply(tiltM).multiply(_rx).multiply(rotY);
+  obj.matrixWorldNeedsUpdate = true;
+}
+function bearingTo(la1, lo1, la2, lo2) {
+  const r = Math.PI / 180, y = Math.sin((lo2 - lo1) * r) * Math.cos(la2 * r),
+    x = Math.cos(la1 * r) * Math.sin(la2 * r) - Math.sin(la1 * r) * Math.cos(la2 * r) * Math.cos((lo2 - lo1) * r);
+  return (Math.atan2(y, x) / r + 360) % 360;
+}
+
+/* ── MONSTROS 3D ── modelos carregados uma vez por tipo e clonados por monstro */
+const MON = new Map(), TPL = {};
+async function template(kind) {
+  if (!TPL[kind]) TPL[kind] = loader.loadAsync(`models/mon/${kind}.glb?v=1`).then(g => {
+    g.scene.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
+    const box = new THREE.Box3().setFromObject(g.scene); return { g, height: Math.max(.5, box.max.y - box.min.y) };
+  });
+  return TPL[kind];
+}
+async function monAdd(id, kind, lat, lon, px = 36) {
+  if (MON.has(id) || H.failed) return;
+  const m = { id, kind, lat, lon, px, obj: null }; MON.set(id, m);
+  try {
+    const t = await template(kind); if (!MON.has(id)) return;
+    const obj = cloneSkinned(t.g.scene); m.obj = obj; m.height = t.height; scene.add(obj);
+    m.mixer = new THREE.AnimationMixer(obj); m.actions = {};
+    for (const c of t.g.animations) m.actions[c.name] = m.mixer.clipAction(c);
+    for (const k of ['spawn', 'attack', 'hit', 'death']) if (m.actions[k]) { m.actions[k].setLoop(THREE.LoopOnce, 1); m.actions[k].clampWhenFinished = true; }
+    const idle = () => { if (m.dying) return; m.actions.idle?.reset().fadeIn(.3).play(); };
+    m.mixer.addEventListener('finished', e => { if (e.action === m.actions.spawn) { m.actions.spawn.fadeOut(.3); idle(); } });
+    if (m.actions.spawn) m.actions.spawn.play(); else idle();
+    window.__onMon3D?.(id, true);
+    window.__map.triggerRepaint();
+  } catch (e) { MON.delete(id); window.__onMon3D?.(id, false); }
+}
+function monRemove(id) { const m = MON.get(id); if (!m) return; if (m.obj) scene.remove(m.obj); MON.delete(id); }
+function monKill(id) {
+  const m = MON.get(id); if (!m || !m.obj || m.dying) return monRemove(id);
+  m.dying = true; m.mixer.stopAllAction(); m.actions.death?.reset().play();
+  setTimeout(() => monRemove(id), 1600);
+}
 
 function play(name, fade = 0.25) {
   const a = H.actions[name]; if (!a || H.current === a) return;
@@ -78,7 +130,7 @@ async function setClass(cls) {
   try { gltf = await job; } catch (e) { console.warn('herói 3D:', e); return fail(); }
   if (H.loading !== job) return;           // trocou de classe no meio
   if (H.model) scene.remove(H.model);
-  const m = gltf.scene;
+  const m = gltf.scene; m.matrixAutoUpdate = false;
   m.traverse(o => { if (o.isMesh) { o.frustumCulled = false; if (o.material) o.material.side = THREE.FrontSide; } });
   const box = new THREE.Box3().setFromObject(m); H.height = Math.max(0.5, box.max.y - box.min.y);
   scene.add(m); H.model = m;
@@ -97,6 +149,15 @@ window.Hero3D = {
   setClass,
   setMotion(heading, speed) { if (heading != null && !isNaN(heading)) H.heading = heading; H.speed = speed || 0; locomotion(); },
   act(name) { if (!H.actions[name]) return; H.oneShot = name; H.current?.fadeOut(0.1); const a = H.actions[name]; a.reset().fadeIn(0.1).play(); H.current = a; window.__map.triggerRepaint(); },
+  // monstros 3D: sync(lista desejada [{id,kind,lat,lon,px}]) adiciona/remove; kill(id) toca a morte e some
+  monSync(list) {
+    if (!H.ready) return;
+    const want = new Set(list.map(x => x.id));
+    for (const id of [...MON.keys()]) if (!want.has(id) && !MON.get(id).dying) monRemove(id);
+    for (const x of list) monAdd(x.id, x.kind, x.lat, x.lon, x.px);
+  },
+  monKill, monAttack(id) { const m = MON.get(id); m?.actions?.attack?.reset().play(); },
+  get mons() { return [...MON.values()].map(m => ({ id: m.id, kind: m.kind, ready: !!m.obj, dying: !!m.dying })); },
   get state() { return { ready: H.ready, cls: H.cls, anim: Object.keys(H.actions).find(k => H.actions[k] === H.current) || null, heading: H.heading, failed: H.failed }; },
 };
 

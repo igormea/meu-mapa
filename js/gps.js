@@ -124,5 +124,6 @@ function onFix(f){
   if(!f.dr&&!sim)visitCell(f.lat,f.lon,f.acc);
   bossCheck(lat,lon);
   rpgTick(lat,lon,f.spd,!f.dr&&!sim);
+  mon3dTick(lat,lon);
   hud();if(!isNav)save();
 }

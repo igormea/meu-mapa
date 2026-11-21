@@ -347,3 +347,14 @@ body.night #map,body.castle #map{background:#0a0716}
 .mon{background:radial-gradient(circle at 50% 40%,#2a1f4a,#0b0918)!important;border-color:#6b5f9e!important}
 .mon.elite{border-color:var(--gold)!important}
 #feed{top:calc(108px + env(safe-area-inset-top))}
+
+/* retratos 3D */
+.ptr{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+.ptr+.ptr-fb{display:none}
+.ptr-fb svg{width:100%;height:100%;image-rendering:pixelated;shape-rendering:crispEdges}
+#hudAva{overflow:hidden;padding:0!important}
+#hudAva .ptr{object-fit:cover;object-position:50% 8%;transform:scale(1.5) translateY(10%)}
+.cc .cv{width:96px!important;height:96px!important}
+.cc.sel .cv .ptr{animation:petB 1.4s ease-in-out infinite}
+.hero .big{padding:2px!important}
+.card .ce .ci{width:34px;height:34px;object-fit:cover;object-position:50% 10%;border-radius:8px;display:block}

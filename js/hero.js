@@ -35,7 +35,7 @@ function hud(){
   const tp=talentPoints(),hp=$('hudPts');if(hp){hp.textContent=tp;hp.style.display=tp?'flex':'none'}
 }
 function refreshAll(){
-  hud();$('hudAva').innerHTML=spriteSVG(S.cls);
+  hud();$('hudAva').innerHTML=heroPic(S.cls);
   const p=$('plSpr');if(p)p.innerHTML=spriteSVG(S.cls);
   renderRecents();applyTheme();
   hero3d('setClass',S.cls);

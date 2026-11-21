@@ -9,7 +9,7 @@ function renderSheet(){
   $('tabs').innerHTML=TABS.map(([k,n])=>`<div class="tab ${k===sheetTab?'on':''}" onclick="setTab('${k}')">${n}</div>`).join('');
   const c=cls(),mx=maxHP();let h='';
   if(sheetTab==='heroi'){
-    h=`<div class="hero"><div class="big sp walk">${spriteSVG(S.cls)}</div><div>
+    h=`<div class="hero"><div class="big">${heroPic(S.cls)}</div><div>
         <div class="hn">${esc(S.name)}</div><div class="hc">${c.nome} · Nível ${S.lvl}</div>
         ${S.title?`<div class="htitle">« ${esc(S.title)} »</div>`:''}</div></div>
       <div class="row"><div class="r1"><span>✨ Experiência</span><b>${fmtN(S.xp)} / ${fmtN(needXP(S.lvl))}</b></div><div class="qbar"><i style="width:${S.xp/needXP(S.lvl)*100}%;background:linear-gradient(90deg,#2f4fc9,#8fb0ff)"></i></div></div>
@@ -121,7 +121,7 @@ function openClassSel(){
 }
 function renderClassGrid(){
   $('clsGrid').innerHTML=Object.entries(CLASSES).map(([k,c])=>`<div class="cc ${k===selCls?'sel':''}" onclick="selCls='${k}';renderClassGrid()">
-    <div class="cv sp ${k===selCls?'walk':''}">${spriteSVG(k)}</div><div class="cn">${c.nome}</div><div class="cdx">${c.desc}</div></div>`).join('');
+    <div class="cv">${heroPic(k)}</div><div class="cn">${c.nome}</div><div class="cdx">${c.desc}</div></div>`).join('');
 }
 function confirmClass(){
   const first=!S.cls;S.cls=selCls;S.name=$('heroName').value.trim()||S.name||'Aventureiro';

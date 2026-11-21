@@ -14,13 +14,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Baixar do OpenGameArt (Quaternius, CC0)
-        shell: bash
+        shell: bash {0}
         run: |
           mkdir -p out && cd out
           get(){ curl -sSfL --retry 3 --retry-all-errors -A "Mozilla/5.0" -o "$2" "$1" && echo "ok $2 $(stat -c%s "$2")" || echo "FALHOU $1"; }
           get "https://opengameart.org/sites/default/files/Animated%20Monster%20Pack%20by%20%40Quaternius.zip" quaternius_monsters_2018.zip
           get "https://opengameart.org/sites/default/files/cute_animated_monsters_-_aug_2020.zip" quaternius_cute_monsters.zip
-          for z in *.zip; do echo "== $z"; unzip -l "$z" | awk '{print $4}' | grep -iE "\.(fbx|glb|gltf|blend|obj|png)$" | head -80; done | tee inventario.txt
+          ( for u in "https://opengameart.org/content/lowpoly-animated-monsters" "https://opengameart.org/content/textured-cute-monster-pack"; do
+              echo "== página $u"; curl -sSL -A "Mozilla/5.0" "$u" | grep -oE 'https://opengameart.org/sites/default/files/[^"]+\.zip' | sort -u; done ) | tee paginas.txt
+          for link in $(grep -oE 'https://opengameart.org/sites/default/files/[^ ]+\.zip' paginas.txt | sort -u); do get "$link" "$(basename "$link" | sed 's/%20/_/g;s/%40//g')"; done
+          ( cat paginas.txt; ls -la; for z in *.zip; do [ -f "$z" ] || continue; echo "== $z"; unzip -l "$z" | awk '{print $4}' | grep -iE "\.(fbx|glb|gltf|blend|obj|png)$" | head -120; done ) > inventario.txt 2>&1
+          cat inventario.txt; exit 0
       - name: Publicar para uso no app
         uses: softprops/action-gh-release@v2
         with:
@@ -30,5 +34,6 @@ jobs:
           files: |
             out/*.zip
             out/inventario.txt
+          fail_on_unmatched_files: false
           prerelease: true
           make_latest: false

@@ -60,9 +60,18 @@ function snap(la,lo){
   return{dist:best.d,i:best.i,lat:a[0]+(b[0]-a[0])*best.t,lon:a[1]+(b[1]-a[1])*best.t,
     prog:R.cum[best.i]+((R.cum[best.i+1]??R.cum[best.i])-R.cum[best.i])*best.t,brg:bearing(a,b)};
 }
+let spawnSeq=0;
+/* monstros 3D: os que têm modelo e estão a até 700 m do herói (máx. 6) aparecem em 3D; o resto fica no ícone */
+function mon3dTick(lat,lon){
+  if(!window.Hero3D?.state.ready)return;
+  const Rt=isNav?R:PR[selIdx];const list=[];
+  if(Rt)for(const s of Rt.spawns){if(s.done||!s.m.m3d)continue;const d=hav(lat,lon,s.lat,s.lon);if(d<700)list.push({id:s.id,kind:s.m.m3d,lat:s.lat,lon:s.lon,px:s.m.elite?40:34,d})}
+  list.sort((a,b)=>a.d-b.d);window.Hero3D.monSync(list.slice(0,6));
+}
+window.__onMon3D=(id,ok)=>{for(const Rt of [R,...PR])for(const s of Rt?.spawns||[])if(s.id===id&&s.mk)s.mk.getElement().style.visibility=ok?'hidden':''};
 function genSpawns(Rt,from=250){
   const sp=Math.max(380,Rt.total/60);let d=from+rnd(0,200);
-  while(d<Rt.total-180){const p=pointAt(Rt,d);Rt.spawns.push({cum:d,lat:p[0],lon:p[1],m:rollMonster(p[0],p[1]),done:false,mk:null});d+=sp+rnd(0,sp*.9)}
+  while(d<Rt.total-180){const p=pointAt(Rt,d);Rt.spawns.push({id:++spawnSeq,cum:d,lat:p[0],lon:p[1],m:rollMonster(p[0],p[1]),done:false,mk:null});d+=sp+rnd(0,sp*.9)}
 }
 function drawSpawns(Rt){Rt.spawns.forEach(s=>{if(s.done||s.mk)return;
   s.mk=addMk(`<div class="mon ${s.m.dragon?'dragon':s.m.elite?'elite':''}">${s.m.e}</div>`,s.lat,s.lon,'bottom')})}
@@ -86,7 +95,7 @@ function drawParking(){
   return near;
 }
 function clearRouteLayers(){
-  setSrc('alts',EMPTY);setSrc('route',EMPTY);
+  setSrc('alts',EMPTY);setSrc('route',EMPTY);try{window.Hero3D?.monSync([])}catch{}
   PR.forEach(x=>{clearSpawns(x);clearFeats(x)});if(R){clearSpawns(R);clearFeats(R)}
   if(castleMk){castleMk.remove();castleMk=null}
   parkMks.forEach(m=>m.remove());parkMks=[];stopMks.forEach(m=>m.remove());stopMks=[];
@@ -133,7 +142,7 @@ function fillPreview(){
   }else ar.innerHTML='';
 }
 function showPreview(){
-  followIdle=false;drawRoutes();drawSpawns(PR[selIdx]);drawFeats(PR[selIdx]);drawCastle();drawParking();fillPreview();panel('route');scheduleFog();
+  followIdle=false;drawRoutes();drawSpawns(PR[selIdx]);if(lastFix)setTimeout(()=>mon3dTick(lastFix.lat,lastFix.lon),300);drawFeats(PR[selIdx]);drawCastle();drawParking();fillPreview();panel('route');scheduleFog();
   const b=new maplibregl.LngLatBounds();PR[selIdx].coords.forEach(c=>b.extend([c[1],c[0]]));
   map.fitBounds(b,{padding:{top:90,bottom:330,left:40,right:70},pitch:0,bearing:0,duration:900});
   startCountdown();

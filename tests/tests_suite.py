@@ -473,3 +473,27 @@ def t39_balanceamento(c):
     altos = [v for k, v in r.items() if not k.endswith('nv1')]
     assert sum(v[2] for v in altos) / len(altos) >= 8, "fácil demais: quase não perde vida"
     assert sum(v[1] for v in altos) / len(altos) <= 95, "fácil demais: elites quase nunca vencem"
+
+@test
+def t40_retratos_3d(c):
+    c.open()
+    c.wait("[...document.querySelectorAll('#clsGrid .ptr')].length===5 && [...document.querySelectorAll('#clsGrid .ptr')].every(i=>i.complete&&i.naturalWidth>0)", 10000)
+    c.hero("arqueiro")
+    c.wait("document.querySelector('#hudAva .ptr') && document.querySelector('#hudAva .ptr').naturalWidth>0", 8000)
+    assert c.js("()=>getComputedStyle(document.querySelector('#hudAva .ptr-fb')).display") == "none"
+    c.js("()=>{openSheet();setTab('heroi')}")
+    c.wait("document.querySelector('.hero .big .ptr').naturalWidth>0", 5000)
+
+@test
+def t41_monstros_3d_aparecem_e_morrem(c):
+    c.open(); c.hero(); c.route_to()
+    c.wait("window.Hero3D && Hero3D.state.ready", 20000)
+    c.js("""()=>{const s=PR[0].spawns[0];const b=MONS.find(m=>m.m3d==='esq_guerreiro');s.m=mkMon(b,{});
+      const p=pointAt(PR[0],120);s.lat=p[0];s.lon=p[1];mon3dTick(%s,%s)}""" % (ORIGIN["lat"], ORIGIN["lon"]))
+    c.wait("Hero3D.mons.some(m=>m.kind==='esq_guerreiro'&&m.ready)", 15000)
+    sid = c.js("()=>PR[0].spawns[0].id")
+    c.wait(f"PR[0].spawns[0].mk && PR[0].spawns[0].mk.getElement().style.visibility==='hidden'", 5000)   # ícone some quando o 3D aparece
+    c.js("()=>{S.hp=maxHP();battle(PR[0].spawns[0])}")
+    assert c.js(f"()=>Hero3D.mons.find(m=>m.id==={sid})?.dying") is True
+    c.wait(f"!Hero3D.mons.some(m=>m.id==={sid})", 5000)
+    c.js("()=>cancelRoute()"); assert c.js("()=>Hero3D.mons.length") == 0

@@ -15,6 +15,9 @@ function fmtSpeech(m){return m<1000?`${Math.round(m/50)*50} metros`:`${(m/1000).
 const short=n=>String(n||'').split(',')[0];
 function today(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
 let _tt;function toast(msg,ms=2600){const el=$('toast');el.textContent=msg;el.classList.add('on');clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('on'),ms)}
+// retrato 3D (PNG) com o boneco pixelado de reserva se a imagem não carregar
+function heroPic(cls,cl='ptr'){return `<img class="${cl}" src="models/portraits/${cls||'cavaleiro'}.png" alt="" onerror="this.remove()"><span class="ptr-fb">${spriteSVG(cls)}</span>`}
+const monPic=k=>`<img class="ci" src="models/portraits/${k}.png" alt="">`;
 function card(e,t,s='',k=''){
   const f=$('feed');const el=document.createElement('div');el.className='card '+k;
   el.innerHTML=`<div class="ce">${e}</div><div><div class="ct">${t}</div>${s?`<div class="cs">${s}</div>`:''}</div>`;
