@@ -3,27 +3,42 @@
 let dest=null,PR=[],selIdx=0,R=null,isNav=false,T=null,sim=null;
 let castleMk=null,cdTimer=null;
 
-// o.hdg (opcional): direção em que você está indo → a rota sai no sentido certo da via
-async function osrm(o,d,alt){
-  const b=o.hdg!=null?`&bearings=${Math.round(o.hdg)%360},60;&radiuses=${Math.round(Math.min(60,Math.max(25,o.acc||25)))};unlimited`:'';
-  const url=`https://router.project-osrm.org/route/v1/driving/${o.lon},${o.lat};${d.lon},${d.lat}?overview=full&geometries=geojson&steps=true&alternatives=${alt}${b}`;
-  const j=await(await fetch(url)).json();
-  if(j.code!=='Ok'||!j.routes?.length){
-    if(b)return osrm({lat:o.lat,lon:o.lon},d,alt);   // sem via no sentido informado → tenta sem direção
-    throw new Error('Não encontrei caminho até lá');
+/* Rotas (OSRM). o.hdg (opcional) = direção em que você está indo, pra rota sair no
+   sentido certo da via. via = paradas no caminho. Se uma restrição (direção /
+   evitar pedágio) impedir achar rota, tenta de novo sem ela. */
+let tollAvoidOk=true;
+async function osrm(o,d,alt,via=[]){
+  const pts=[o,...via,d],n=pts.length;
+  const coords=pts.map(p=>`${(+p.lon).toFixed(6)},${(+p.lat).toFixed(6)}`).join(';');
+  const rad=Math.round(Math.min(60,Math.max(25,o.acc||25)));
+  const tries=[];
+  for(const useX of S.avoidToll?[true,false]:[false])for(const useB of o.hdg!=null?[true,false]:[false])tries.push({useB,useX});
+  let lastErr;
+  for(const t of tries){
+    let q=`?overview=full&geometries=geojson&steps=true&alternatives=${alt&&n===2}`;
+    if(t.useB)q+=`&bearings=${Math.round(o.hdg)%360},60${';'.repeat(n-1)}&radiuses=${rad}${';unlimited'.repeat(n-1)}`;
+    if(t.useX)q+='&exclude=toll';
+    try{
+      const j=await(await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}${q}`)).json();
+      if(j.code==='Ok'&&j.routes?.length){tollAvoidOk=!S.avoidToll||t.useX;return j.routes}
+      lastErr=j.message||j.code;
+    }catch(e){lastErr=e.message}
   }
-  return j.routes;
+  throw new Error(lastErr&&/fetch|network/i.test(lastErr)?'Sem conexão com o servidor de rotas':'Não encontrei caminho até lá');
 }
 function buildRoute(r){
   const coords=r.geometry.coordinates.map(c=>[c[1],c[0]]);
   const cum=[0];for(let i=1;i<coords.length;i++)cum.push(cum[i-1]+hav(coords[i-1][0],coords[i-1][1],coords[i][0],coords[i][1]));
-  let j=0;
-  const steps=r.legs.flatMap(l=>l.steps).map(s=>{
+  let j=0;const nl=r.legs.length;
+  const steps=r.legs.flatMap((l,li)=>l.steps.map(s=>({s,last:li===nl-1}))).map(({s,last})=>{
     const[lo,la]=s.maneuver.location;let bi=j,bd=Infinity;
     for(let i=j;i<coords.length&&i-j<4000;i++){const d=hav(la,lo,coords[i][0],coords[i][1]);if(d<bd){bd=d;bi=i}if(bd<1)break}
-    j=bi;return{type:s.maneuver.type,mod:s.maneuver.modifier,exit:s.maneuver.exit,name:s.name,ref:s.ref,cum:cum[bi]};
+    j=bi;
+    const lanes=(s.intersections?.[0]?.lanes||[]).map(x=>({ind:x.indications||[],ok:!!x.valid}));
+    return{type:s.maneuver.type,mod:s.maneuver.modifier,exit:s.maneuver.exit,name:s.name,ref:s.ref,cum:cum[bi],last,lanes:lanes.length>1?lanes:null};
   });
-  return{coords,cum,total:cum[cum.length-1]||1,duration:r.duration,steps,seg:0,spawns:[],ann:{}};
+  const Rt={coords,cum,total:cum[cum.length-1]||1,duration:r.duration*(S.vehicle==='moto'?.85:1),steps,seg:0,spawns:[],ann:{},prog:0};
+  attachFeats(Rt);return Rt;
 }
 function pointAt(Rt,d){
   const c=Rt.coords,cm=Rt.cum;if(d<=0)return c[0];if(d>=Rt.total)return c[c.length-1];
@@ -62,14 +77,23 @@ function drawCastle(){
   if(castleMk)castleMk.remove();
   castleMk=addMk('<div class="castle">🏰</div>',dest.lat,dest.lon,'bottom');
 }
+let parkMks=[];
+function drawParking(){
+  parkMks.forEach(m=>m.remove());parkMks=[];
+  if(!OSM?.park||!dest)return;
+  const near=OSM.park.map(p=>({p,d:hav(dest.lat,dest.lon,p[0],p[1])})).filter(x=>x.d<450).sort((a,b)=>a.d-b.d).slice(0,6);
+  parkMks=near.map(x=>addMk(`<div class="feat f-park" title="${esc(x.p[2]||'Estacionamento')}">🅿️</div>`,x.p[0],x.p[1],'center'));
+  return near;
+}
 function clearRouteLayers(){
   setSrc('alts',EMPTY);setSrc('route',EMPTY);
-  PR.forEach(clearSpawns);if(R)clearSpawns(R);
+  PR.forEach(x=>{clearSpawns(x);clearFeats(x)});if(R){clearSpawns(R);clearFeats(R)}
   if(castleMk){castleMk.remove();castleMk=null}
+  parkMks.forEach(m=>m.remove());parkMks=[];stopMks.forEach(m=>m.remove());stopMks=[];
 }
 
 async function goTo(d,noRecent){
-  dest=d;if(!noRecent)addRecent(d);
+  dest=d;stops=[];if(!noRecent)addRecent(d);
   setStatus('🧭 Procurando sua posição…');
   let o;
   try{o=await getOrigin()}catch{setStatus('Não achei sua localização — digite a partida abaixo.','err');showOriginInput();return}
@@ -98,7 +122,10 @@ function fillPreview(){
   const Rt=PR[selIdx],est=estimate(Rt),eli=Rt.spawns.filter(s=>s.m.elite||s.m.dragon).length;
   $('questName').textContent='📜 Missão: '+short(dest.name);
   $('rhTime').textContent=fmtT(Rt.duration);$('rhDist').textContent=fmtD(Rt.total);$('rhETA').textContent='· chegada '+etaHM(Rt.duration);
-  $('rewards').innerHTML=`⚔️ <b>${est.n}</b> monstros${eli?` (<b>${eli}</b> ★ fortes)`:''} · ✨ ~<b>${fmtN(est.xp)}</b> XP · 🎁 baú no destino`;
+  const cnt=t=>(Rt.feats||[]).filter(f=>f.t===t).length,cams=cnt('cam'),bumps=cnt('bump'),tolls=cnt('toll');
+  $('rewards').innerHTML=`⚔️ <b>${est.n}</b> monstros${eli?` (<b>${eli}</b> ★ fortes)`:''} · ✨ ~<b>${fmtN(est.xp)}</b> XP · 🎁 baú no destino`+
+    (cams||bumps||tolls?`<br>🗼 <b>${cams}</b> radares · ⚠️ <b>${bumps}</b> lombadas${tolls?` · 💰 <b>${tolls}</b> pedágio(s)`:''}`:'')+
+    (S.avoidToll&&!tollAvoidOk?'<br><span style="color:#ff8a7a">Não deu para evitar pedágio nesta rota</span>':'');
   const ar=$('altsRow');
   if(PR.length>1){
     ar.innerHTML=PR.map((x,i)=>`<div class="altc ${i===selIdx?'sel':''}" data-i="${i}"><div class="at">${fmtT(x.duration)}</div><div class="ad">${fmtD(x.total)}</div></div>`).join('');
@@ -106,15 +133,15 @@ function fillPreview(){
   }else ar.innerHTML='';
 }
 function showPreview(){
-  followIdle=false;drawRoutes();drawSpawns(PR[selIdx]);drawCastle();fillPreview();panel('route');
+  followIdle=false;drawRoutes();drawSpawns(PR[selIdx]);drawFeats(PR[selIdx]);drawCastle();drawParking();fillPreview();panel('route');scheduleFog();
   const b=new maplibregl.LngLatBounds();PR[selIdx].coords.forEach(c=>b.extend([c[1],c[0]]));
   map.fitBounds(b,{padding:{top:90,bottom:330,left:40,right:70},pitch:0,bearing:0,duration:900});
   startCountdown();
 }
 function selectAlt(i){
-  if(i===selIdx||isNav)return;stopCountdown();clearSpawns(PR[selIdx]);selIdx=i;
+  if(i===selIdx||isNav)return;stopCountdown();clearSpawns(PR[selIdx]);clearFeats(PR[selIdx]);selIdx=i;
   if(!PR[i].spawns.length)genSpawns(PR[i]);
-  drawRoutes();drawSpawns(PR[i]);fillPreview();
+  drawRoutes();drawSpawns(PR[i]);drawFeats(PR[i]);fillPreview();
 }
 function startCountdown(){
   stopCountdown();const b=$('cdBar');void b.offsetWidth;b.style.transition='width 8s linear';b.style.width='100%';

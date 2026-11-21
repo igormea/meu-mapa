@@ -39,6 +39,15 @@ function renderSheet(){
       DQ.map(q=>{const v=S.daily[q.id],done=S.daily.claimed.includes(q.id),k=1+.15*(S.lvl-1);
         return `<div class="row"><div class="r1"><span>${done?'✅':'📜'} ${q.t}</span><b>${q.u==='km'?v.toFixed(1).replace('.',','):v} / ${q.goal}</b></div>
           <div class="r2">Recompensa: ${Math.round(q.xp*k)} XP · ${Math.round(q.gold*k)} 🪙</div><div class="qbar"><i style="width:${Math.min(100,v/q.goal*100)}%"></i></div></div>`}).join('');
+    ensureWeek();
+    h+='<div class="sect">Semanais</div><div class="r2" style="color:#8a7658;margin-bottom:9px">Renovam toda segunda-feira.</div>'+
+      WQ.map(q=>{const v=S.week[q.id]||0,done=S.week.claimed.includes(q.id),k=1+.15*(S.lvl-1);
+        return `<div class="row"><div class="r1"><span>${done?'✅':'🏆'} ${q.t}</span><b>${q.u==='km'?v.toFixed(1).replace('.',','):v} / ${q.goal}</b></div>
+          <div class="r2">Recompensa: ${Math.round(q.xp*k)} XP · ${Math.round(q.gold*k)} 🪙</div><div class="qbar"><i style="width:${Math.min(100,v/q.goal*100)}%"></i></div></div>`}).join('');
+    const wk=weekKey();
+    h+='<div class="sect">Chefes lendários de Fortaleza</div><div class="r2" style="color:#8a7658;margin-bottom:9px">Passe perto deles para lutar. Voltam toda semana.</div>'+
+      BOSSES.map(b=>`<div class="row ${S.bosses?.[b.id]===wk?'':'lock'}"><div class="r1"><span>${b.e} ${b.n}</span><b>${S.bosses?.[b.id]===wk?'derrotado ✔':'à solta'}</b></div></div>`).join('')+
+      `<div class="r2" style="color:#8a7658;margin-top:8px">🗺️ Áreas exploradas: <b style="color:#f6d77e">${fmtN(S.stats.cells||0)}</b></div>`;
   }else if(sheetTab==='ach'){
     h=`<div class="r2" style="color:#8a7658;margin-bottom:9px">${S.ach.length} de ${ACH.length} desbloqueadas. A última vira seu título.</div>`+
       ACH.map(a=>`<div class="row ${S.ach.includes(a.id)?'':'lock'}"><div class="r1"><span>${S.ach.includes(a.id)?'🏅':'🔒'} ${a.n}</span></div><div class="r2">${a.d}</div></div>`).join('');
@@ -46,12 +55,29 @@ function renderSheet(){
     const th=S.theme||'auto';
     h=`<div class="row"><div class="r1"><span>🗺️ Visual do mapa</span></div><div class="opt">
         ${[['auto','Automático'],['dia','Pergaminho'],['noite','Masmorra']].map(([k,n])=>`<button class="${th===k?'on':''}" onclick="setTheme('${k}')">${n}</button>`).join('')}</div></div>
-      <div class="row"><div class="r1"><span>🔊 Voz de navegação</span></div><div class="opt">
-        <button class="${!S.mute?'on':''}" onclick="S.mute=false;hud();save();renderSheet()">Ligada</button><button class="${S.mute?'on':''}" onclick="S.mute=true;hud();save();renderSheet()">Desligada</button></div></div>
+      <div class="row"><div class="r1"><span>🔊 Voz</span></div><div class="opt">
+        <button class="${!S.mute&&!S.less?'on':''}" onclick="setVoice('full')">Completa</button><button class="${!S.mute&&S.less?'on':''}" onclick="setVoice('less')">Menos falante</button><button class="${S.mute?'on':''}" onclick="setVoice('off')">Desligada</button></div>
+        <div class="r2">"Menos falante": só as curvas na hora e os alertas de segurança.</div></div>
+      <div class="row"><div class="r1"><span>🚗 Veículo</span></div><div class="opt">
+        <button class="${S.vehicle!=='moto'?'on':''}" onclick="S.vehicle='car';save();renderSheet()">Carro</button><button class="${S.vehicle==='moto'?'on':''}" onclick="S.vehicle='moto';save();renderSheet()">Moto</button></div>
+        <div class="r2">Moto: tempo estimado menor e aviso de lombada em qualquer velocidade.</div></div>
+      <div class="row"><div class="r1"><span>💰 Evitar pedágio</span></div><div class="opt">
+        <button class="${S.avoidToll?'on':''}" onclick="S.avoidToll=true;save();renderSheet()">Sim</button><button class="${!S.avoidToll?'on':''}" onclick="S.avoidToll=false;save();renderSheet()">Não</button></div></div>
+      <div class="row"><div class="r1"><span>🌫️ Névoa de exploração</span></div><div class="opt">
+        <button class="${S.fog!==false?'on':''}" onclick="S.fog=true;save();scheduleFog();renderSheet()">Ligada</button><button class="${S.fog===false?'on':''}" onclick="S.fog=false;save();scheduleFog();renderSheet()">Desligada</button></div>
+        <div class="r2">Áreas onde você ainda não passou ficam escurecidas (só fora da navegação).</div></div>
+      <div class="row"><div class="r1"><span>🏠 Casa / 💼 Trabalho</span></div><div class="opt">
+        <button onclick="favClear('home');renderSheet()">${S.fav?.home?'Apagar casa':'Casa não definida'}</button><button onclick="favClear('work');renderSheet()">${S.fav?.work?'Apagar trabalho':'Trabalho não definido'}</button></div>
+        <div class="r2">Para definir, use os botões na tela de busca.</div></div>
       <div class="row"><div class="r1"><span>🏙️ Prédios em 3D</span></div><div class="opt">
         <button class="${S.b3d!==false?'on':''}" onclick="S.b3d=true;applyTheme();save();renderSheet()">Ligado</button><button class="${S.b3d===false?'on':''}" onclick="S.b3d=false;applyTheme();save();renderSheet()">Desligado</button></div></div>
       <button class="btn prim" style="margin-top:6px" onclick="closeSheet();openClassSel(false)">Trocar classe / nome</button>
       <div class="r2" style="color:#8a7658;margin:6px 2px 14px;font-size:11.5px">Trocar de classe mantém nível, ouro e conquistas.</div>
+      <div class="sect">Backup do progresso</div>
+      <div class="r2" style="color:#8a7658;margin-bottom:7px">Gera um código com todo o seu progresso. Guarde no WhatsApp/Keep e cole em outro aparelho (ou no app) para continuar de onde parou.</div>
+      <div class="opt"><button onclick="exportSave()">📤 Exportar</button><button onclick="importSave()">📥 Importar</button></div>
+      <textarea id="bkText" rows="3" style="display:none"></textarea>
+      <div style="height:12px"></div>
       <button class="btn sec" id="resetBtn" onclick="resetTap()">Apagar todo o progresso</button>
       <div class="sect">Diagnóstico de rota</div>
       <div class="r2" style="color:#8a7658;font-size:11.5px;line-height:1.5">${(()=>{try{const a=JSON.parse(localStorage.getItem('meumapa_log')||'[]');return a.length?a.map(esc).join('<br>'):'Nenhum registro ainda.'}catch{return ''}})()}</div>`;
@@ -59,6 +85,7 @@ function renderSheet(){
   $('sheetBody').innerHTML=h;
 }
 function setTheme(t){S.theme=t;applyTheme();save();renderSheet()}
+function setVoice(v){S.mute=v==='off';S.less=v==='less';if(S.mute)try{speechSynthesis.cancel()}catch{};hud();save();renderSheet()}
 function resetTap(){
   if(Date.now()-resetArm<4000){try{localStorage.removeItem(SAVE_KEY)}catch{}location.reload();return}
   resetArm=Date.now();$('resetBtn').textContent='Toque de novo para apagar TUDO';

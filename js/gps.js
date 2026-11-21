@@ -120,5 +120,7 @@ function onFix(f){
   if(isNav)follow(lat,lon,brg,f.spd,dur);
   else if(followIdle&&Date.now()>camBusyUntil){if(first)map.jumpTo({center:[lon,lat],zoom:16});else map.easeTo({center:[lon,lat],duration:dur,easing:t=>t})}
   prevDraw=[lat,lon];
+  if(!f.dr&&!sim)visitCell(f.lat,f.lon,f.acc);
+  bossCheck(lat,lon);
   hud();if(!isNav)save();
 }

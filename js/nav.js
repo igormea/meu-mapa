@@ -11,7 +11,7 @@ function startNav(simulate){
   try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume()}catch{}
   updSpeedo(0,0);
   PR.forEach((x,i)=>{if(i!==selIdx)clearSpawns(x)});
-  R=PR[selIdx];PR=[R];selIdx=0;drawRoutes();
+  R=PR[selIdx];PR=[R];selIdx=0;drawRoutes();drawFeats(R);drawStops();alertShown=null;renderAlert(null);complexNear=false;
   isNav=true;document.body.classList.add('nav');panel('none');
   $('navTop').classList.add('on');$('navBottom').classList.add('on');$('hud').style.display='none';
   $('navInst').textContent='Aguardando GPS…';$('navRoad').textContent='';
@@ -20,7 +20,7 @@ function startNav(simulate){
   { const s0=simulate||!lastFix?R.coords[0]:[lastFix.lat,lastFix.lon];
     enterNavCamera(s0[0],s0[1],bearing(R.coords[0],pointAt(R,Math.min(R.total,40)))); }
   grabWake();
-  speak(`Jornada iniciada rumo a ${short(dest.name)}. ${fmtSpeech(R.total)} pela frente.`);
+  speak(`Jornada iniciada rumo a ${short(dest.name)}. ${fmtSpeech(R.total)} pela frente.`,'nav');
   if(simulate){simSnap=JSON.stringify(S);startSim()}
   else{startGPS();startBgGPS();if(lastFix)onFix({...lastFix,t:Date.now()})}
   hud();
@@ -29,26 +29,41 @@ function navUpdate(sn,f){
   R.prog=sn.prog;
   if(sn.dist<50)trimRoute(sn);
   let k=R.steps.findIndex(s=>s.cum>sn.prog+8&&s.type!=='depart');if(k<0)k=R.steps.length-1;
-  const st=R.steps[k],dn=Math.max(0,st.cum-sn.prog),[ic,inst]=manobra(st.type,st.mod,st.exit);
+  const st=R.steps[k],dn=Math.max(0,st.cum-sn.prog),[ic,inst]=manobra(st.type,st.mod,st.exit,st.last);
   $('navIconBox').textContent=ic;$('navInst').textContent=inst;$('navRoad').textContent=st.name||st.ref||'';
+  renderLanes(st,dn);
+  complexNear=dn<180&&(COMPLEX.has(st.type)||(st.lanes&&st.lanes.length>=3));
   if(dn<950){$('navDistVal').textContent=Math.round(dn/10)*10;$('navDistUnit').textContent='m'}
   else{$('navDistVal').textContent=(dn/1000).toFixed(1).replace('.',',');$('navDistUnit').textContent='km'}
   const rem=Math.max(0,R.total-sn.prog),remT=R.duration*rem/R.total;
   $('navRem').textContent=fmtD(rem)+' · '+fmtT(remT);$('navETA').textContent='Chegada '+etaHM(remT);
   const kmh=f.spd>0?Math.round(f.spd*3.6):0;
   updSpeedo(kmh,limitAt(R,sn.prog));
-  $('navMount').textContent=kmh<3?'🧍 Parado':kmh<12?'🚶 A pé':kmh<40?'🐴 Trotando':kmh<80?'🐎 A galope':'🦅 Voando de grifo';
+  $('navMount').textContent=kmh<3?'🧍 Parado':kmh<12?'🚶 A pé':S.vehicle==='moto'?(kmh<60?'🏍️ Na moto':'🏍️ Acelerando'):kmh<40?'🐴 Trotando':kmh<80?'🐎 A galope':'🦅 Voando de grifo';
   announce(k,st,dn,inst,f.spd||0);
+  alertTick(sn.prog,f.spd||0);
+  stopCheck(f.lat,f.lon);
+  if(rem<700&&!R.parkShown){R.parkShown=true;const near=drawParking();if(near?.length)card('🅿️','Estacionamentos perto do destino',`${near.length} opções · a mais perto a ${fmtD(near[0].d)}`,'gold')}
   if(sn.dist<80){const reach=cls().reach;R.spawns.forEach(s=>{if(!s.done&&s.cum<=sn.prog+reach&&s.cum>=sn.prog-400)battle(s)})}
   if(!sim&&!f.dr)offRouteCheck(sn,f);
   if(rem<35||hav(f.lat,f.lon,dest.lat,dest.lon)<30)arrive();
 }
 function announce(k,st,dn,inst,spd){
   const a=R.ann[k]||(R.ann[k]={}),road=st.name?` na ${st.name}`:'';
-  if(st.type==='arrive'){if(!a.n&&dn<250){a.n=1;speak('Seu destino está logo à frente')}return}
+  if(st.type==='arrive'){if(!a.n&&dn<250){a.n=1;speak(st.last===false?'Sua parada está logo à frente':'Seu destino está logo à frente','nav')}return}
   const fMax=spd>20?800:450,fMin=spd>20?350:180,near=Math.max(60,spd*5);
-  if(!a.f&&dn<=fMax&&dn>=fMin){a.f=1;speak(`Em ${Math.round(dn/50)*50} metros, ${inst.toLowerCase()}${road}`)}
-  else if(!a.n&&dn<near){a.n=1;a.f=1;speak(inst+road)}
+  if(!a.f&&dn<=fMax&&dn>=fMin){a.f=1;if(!S.less)speak(`Em ${Math.round(dn/50)*50} metros, ${inst.toLowerCase()}${road}`,'nav')}
+  else if(!a.n&&dn<near){a.n=1;a.f=1;speak(inst+road,'nav')}
+}
+/* faixas: mostra quais faixas servem para a próxima manobra */
+const COMPLEX=new Set(['roundabout','rotary','fork','off ramp','on ramp','merge','exit roundabout','exit rotary']);
+let complexNear=false;
+const LANE_IC={left:'⬅',right:'➡',straight:'⬆','slight left':'↖','slight right':'↗','sharp left':'↩','sharp right':'↪',uturn:'↶',none:'⬆'};
+function renderLanes(st,dn){
+  const el=$('laneBar');
+  if(!st.lanes||dn>600){el.classList.remove('on');return}
+  el.innerHTML=st.lanes.map(l=>`<span class="ln ${l.ok?'ok':''}">${(l.ind.length?l.ind:['none']).map(i=>LANE_IC[i]||'⬆').join('')}</span>`).join('');
+  el.classList.add('on');
 }
 /* Fora da rota só quando é desvio de verdade:
    longe da linha por 8 s seguidos, andando, tendo percorrido 60 m fora,
@@ -73,15 +88,31 @@ async function recalc(f,dist){
   const hdg=curHeading(f);
   logEv(`recálculo · ${Math.round(dist)} m fora · prec. ${Math.round(f.acc||0)} m · ${Math.round((f.spd||0)*3.6)} km/h · direção ${hdg==null?'?':Math.round(hdg)+'°'}`);
   try{
-    const rs=await osrm({lat:f.lat,lon:f.lon,hdg,acc:f.acc},dest,false);
+    const rs=await osrm({lat:f.lat,lon:f.lon,hdg,acc:f.acc},dest,false,stops);
     if(!isNav)return;
     const nr=buildRoute(rs[0]);
     // se a "nova" rota é praticamente a mesma, não troca nem anuncia
     if(Math.abs(nr.total-(R.total-(R.prog||0)))<40&&hav(nr.coords[0][0],nr.coords[0][1],f.lat,f.lon)<40){logEv('rota igual, mantida');return}
-    clearSpawns(R);R=nr;PR=[R];selIdx=0;genSpawns(R,200);fetchLimits(R);drawRoutes();drawSpawns(R);
-    card('🧭','Novo caminho traçado','Você saiu da rota');speak('Rota recalculada');recalcFails=0;
+    swapRoute(nr);
+    card('🧭','Novo caminho traçado','Você saiu da rota');speak('Rota recalculada','nav');recalcFails=0;
   }catch{recalcFails++;logEv('recálculo falhou')}
   finally{recalcBusy=false;offSince=0;offStart=null}
+}
+// troca a rota ativa mantendo a jornada (monstros novos à frente, alertas, limites)
+function swapRoute(nr){
+  clearSpawns(R);clearFeats(R);R=nr;PR=[R];selIdx=0;genSpawns(R,200);fetchLimits(R);
+  drawRoutes();drawSpawns(R);drawFeats(R);drawStops();renderAlert(null);
+}
+// recalcula agora (ex.: parada adicionada) a partir da posição atual
+async function reroute(why){
+  const here=lastFix&&!sim?{lat:lastFix.lat,lon:lastFix.lon,hdg:bestHeading(lastFix),acc:lastFix.acc}:(prevDraw?{lat:prevDraw[0],lon:prevDraw[1]}:null);
+  if(!here||!isNav)return;
+  try{
+    const rs=await osrm(here,dest,false,stops);if(!isNav)return;
+    const nr=buildRoute(rs[0]);swapRoute(nr);lastRecalc=Date.now();
+    if(sim)sim.prog=0;
+    card('🧭','Rota atualizada',why==='parada'?'Passando pela parada':'');
+  }catch(e){toast('Não consegui atualizar a rota: '+e.message);stops.pop();drawStops()}
 }
 // diário simples de recálculos (Ajustes → Diagnóstico), guarda os últimos 30
 function logEv(t){try{const k='meumapa_log',a=JSON.parse(localStorage.getItem(k)||'[]');const d=new Date();
@@ -106,11 +137,14 @@ function arrive(){
     .map(([v,k])=>`<div class="ar-c"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
   $('arLoot').innerHTML=`<div style="color:#b59f7b;margin-bottom:5px">${bossTxt} · bônus da jornada <b style="color:#f6d77e">+${bonus} XP</b></div>
     🎁 Baú: <span class="r-${loot.it.r}"><b>${esc(loot.it.name)}</b></span> (${RAR[loot.it.r].n}, ${statTxt(loot.it)}) — ${loot.act==='equipado'?'equipado!':'vendido por '+loot.g+' 🪙'}`;
-  save();endNav(true);panel('arrive');
+  const pk=drawParking();
+  if(pk?.length)$('arLoot').innerHTML+=`<div style="margin-top:6px;color:#b59f7b">🅿️ ${pk.length} estacionamento(s) perto · o mais próximo a ${fmtD(pk[0].d)}</div>`;
+  save();endNav(true);panel('arrive');if(pk?.length)setTimeout(drawParking,50);
 }
 function endNav(arrived){
   isNav=false;stopSim();releaseWake();stopBgGPS();drProg=null;$('drBadge').style.display='none';try{speechSynthesis.cancel()}catch{}
-  if(arrived)setTimeout(()=>speak('Você chegou! Missão concluída.'),50);
+  renderAlert(null);$('laneBar').classList.remove('on');closeStops();stops=[];complexNear=false;
+  if(arrived)setTimeout(()=>speak('Você chegou! Missão concluída.','nav'),50);
   document.body.classList.remove('nav');$('navTop').classList.remove('on');$('navBottom').classList.remove('on');
   $('hud').style.display='';$('recenterBtn').style.display='none';
   clearRouteLayers();R=null;PR=[];T=arrived?T:null;
@@ -118,7 +152,7 @@ function endNav(arrived){
   if(!arrived)panel('search');
   followIdle=true;
   if(lastFix){player?.setLngLat([lastFix.lon,lastFix.lat]);exitNavCamera(lastFix.lat,lastFix.lon)}else exitNavCamera();
-  hud();
+  setTimeout(scheduleFog,1500);hud();
 }
 function closeArrive(){T=null;panel('search');$('inpD').value='';hud()}
 function stopTap(){
@@ -188,9 +222,9 @@ function simBadge(){$('simBadge').textContent=`🧪 TREINO ×${sim.mult} · toqu
 function simSpeed(){if(!sim)return;sim.mult=sim.mult>=8?1:sim.mult*2;simBadge()}
 
 /* ── MANOBRAS ────────────────────────────────────────── */
-function manobra(type,mod,exit){
+function manobra(type,mod,exit,last=true){
   if(type==='depart')return['⬆️','Siga em frente'];
-  if(type==='arrive')return['🏰','Destino à frente'];
+  if(type==='arrive')return last===false?['🏕️','Parada à frente']:['🏰','Destino à frente'];
   if(type==='roundabout'||type==='rotary')return['🔄',exit?`Na rotatória, pegue a ${exit}ª saída`:'Entre na rotatória'];
   if(type==='exit roundabout'||type==='exit rotary')return['↗️','Saia da rotatória'];
   if(type==='on ramp')return['↗️','Entre na pista'];

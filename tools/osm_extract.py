@@ -1,66 +1,60 @@
-"""Extrai do OpenStreetMap (Overpass) os pontos usados nos alertas do Meu Mapa RPG.
+"""Gera data/osm-ce.json (pontos usados nos alertas do Meu Mapa RPG).
 
-Gera data/osm-ce.json, compacto:
-  cam  : radares            [lat, lon, limite_kmh|0]
-  bump : lombadas/redutores [lat, lon]
-  toll : pedágios           [lat, lon]
-  rail : passagens de trem  [lat, lon]
-  sig  : semáforos (Grande Fortaleza) [lat, lon]
-  park : estacionamentos (Grande Fortaleza) [lat, lon, nome]
-  fuel : postos (Ceará)     [lat, lon, nome]
-  pharm: farmácias (Grande Fortaleza) [lat, lon, nome]
+Entrada: GeoJSON-seq produzido pelo osmium a partir do extrato da Geofabrik
+(veja .github/workflows/osm-data.yml). Uso: python3 tools/osm_extract.py filtrado.geojsonseq
+
+Saída compacta:
+  cam  : radares            [lat, lon, limite_kmh|0]   (Ceará)
+  bump : lombadas/redutores [lat, lon]                 (Ceará)
+  toll : pedágios           [lat, lon]                 (Ceará)
+  rail : passagens de trem  [lat, lon]                 (Ceará)
+  sig  : semáforos          [lat, lon]                 (Grande Fortaleza)
+  park : estacionamentos    [lat, lon, nome]           (Grande Fortaleza)
+  fuel : postos             [lat, lon, nome]           (Ceará)
+  pharm: farmácias          [lat, lon, nome]           (Grande Fortaleza)
 """
-import json, re, sys, time, urllib.request, urllib.parse, datetime
+import json, re, sys, datetime
 
-CE  = "-7.95,-41.45,-2.70,-37.20"   # Ceará (sul,oeste,norte,leste)
-FOR = "-4.10,-38.80,-3.62,-38.30"   # Grande Fortaleza
-HOSTS = ["https://overpass-api.de/api/interpreter",
-         "https://overpass.kumi.systems/api/interpreter",
-         "https://overpass.private.coffee/api/interpreter"]
+CE  = (-7.95, -41.45, -2.70, -37.20)   # sul, oeste, norte, leste
+FOR = (-4.10, -38.80, -3.62, -38.30)
+inside = lambda b, la, lo: b[0] <= la <= b[2] and b[1] <= lo <= b[3]
 
-def q(body):
-    query = f"[out:json][timeout:180];({body});out center tags;"
-    data = urllib.parse.urlencode({"data": query}).encode()
-    for attempt in range(3):
-        for h in HOSTS:
-            try:
-                req = urllib.request.Request(h, data=data, headers={"User-Agent": "meu-mapa-rpg/1.0 (github.com/igormea/meu-mapa)"})
-                with urllib.request.urlopen(req, timeout=200) as r:
-                    return json.load(r)["elements"]
-            except Exception as e:
-                print("falhou", h, e, file=sys.stderr)
-        time.sleep(20)
-    raise SystemExit("Overpass indisponível")
-
-def ll(e):
-    if "lat" in e: return round(e["lat"], 5), round(e["lon"], 5)
-    c = e.get("center") or {}
-    return (round(c["lat"], 5), round(c["lon"], 5)) if c else None
+def centroid(g):
+    t, c = g["type"], g["coordinates"]
+    if t == "Point": return c[1], c[0]
+    pts = []
+    def walk(x):
+        if isinstance(x[0], (int, float)): pts.append(x)
+        else:
+            for y in x: walk(y)
+    walk(c)
+    return sum(p[1] for p in pts) / len(pts), sum(p[0] for p in pts) / len(pts)
 
 def speed(tags):
     m = re.match(r"\s*(\d+)", tags.get("maxspeed", "") or "")
     return int(m.group(1)) if m else 0
 
-def pts(els, name=False, spd=False):
-    out = []
-    for e in els:
-        p = ll(e)
-        if not p: continue
-        row = list(p)
-        if spd:  row.append(speed(e.get("tags", {})))
-        if name: row.append((e.get("tags", {}).get("name") or e.get("tags", {}).get("brand") or "")[:40])
-        out.append(row)
-    return sorted(set(map(tuple, out)))
+res = {k: set() for k in ["cam", "bump", "toll", "rail", "sig", "park", "fuel", "pharm"]}
+for line in open(sys.argv[1], encoding="utf-8"):
+    line = line.strip().lstrip("\x1e")
+    if not line: continue
+    f = json.loads(line); t = f.get("properties", {})
+    try: la, lo = centroid(f["geometry"])
+    except Exception: continue
+    la, lo = round(la, 5), round(lo, 5)
+    if not inside(CE, la, lo): continue
+    nome = (t.get("name") or t.get("brand") or "")[:40]
+    if t.get("highway") == "speed_camera" or t.get("enforcement") == "maxspeed": res["cam"].add((la, lo, speed(t)))
+    if t.get("traffic_calming") in ("bump", "hump", "table", "cushion", "yes", "rumble_strip"): res["bump"].add((la, lo))
+    if t.get("barrier") == "toll_booth": res["toll"].add((la, lo))
+    if t.get("railway") == "level_crossing": res["rail"].add((la, lo))
+    if t.get("highway") == "traffic_signals" and inside(FOR, la, lo): res["sig"].add((la, lo))
+    a = t.get("amenity")
+    if a == "parking" and inside(FOR, la, lo) and t.get("access") not in ("private", "no"): res["park"].add((la, lo, nome))
+    if a == "fuel": res["fuel"].add((la, lo, nome))
+    if a == "pharmacy" and inside(FOR, la, lo): res["pharm"].add((la, lo, nome))
 
-res = {"gen": datetime.datetime.utcnow().strftime("%Y-%m-%d")}
-res["cam"]   = pts(q(f'node["highway"="speed_camera"]({CE});node["enforcement"="maxspeed"]({CE});'), spd=True)
-res["bump"]  = pts(q(f'node["traffic_calming"~"^(bump|hump|table|cushion|yes|rumble_strip)$"]({CE});'))
-res["toll"]  = pts(q(f'node["barrier"="toll_booth"]({CE});'))
-res["rail"]  = pts(q(f'node["railway"="level_crossing"]({CE});'))
-res["sig"]   = pts(q(f'node["highway"="traffic_signals"]({FOR});'))
-res["park"]  = pts(q(f'nwr["amenity"="parking"]["access"!~"private|no"]({FOR});'), name=True)
-res["fuel"]  = pts(q(f'nwr["amenity"="fuel"]({CE});'), name=True)
-res["pharm"] = pts(q(f'nwr["amenity"="pharmacy"]({FOR});'), name=True)
+out = {"gen": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")}
 for k, v in res.items():
-    if isinstance(v, list): print(k, len(v))
-json.dump(res, open("data/osm-ce.json", "w"), separators=(",", ":"), ensure_ascii=False)
+    out[k] = sorted(list(x) for x in v); print(k, len(v))
+json.dump(out, open("data/osm-ce.json", "w"), separators=(",", ":"), ensure_ascii=False)

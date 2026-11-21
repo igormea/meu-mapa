@@ -1,6 +1,6 @@
 {
   "name": "meu-mapa-rpg",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Meu Mapa RPG — app Android (Capacitor) que carrega o site e adiciona GPS em segundo plano, voz nativa e tela sempre ligada",
   "dependencies": {
@@ -11,7 +11,8 @@
     "@capacitor-community/keep-awake": "^8.0.0",
     "@capacitor-community/text-to-speech": "^8.0.0",
     "@capacitor/geolocation": "^8.2.5",
-    "@capacitor/local-notifications": "^8.3.1"
+    "@capacitor/local-notifications": "^8.3.1",
+    "@capacitor-community/speech-recognition": "^7.0.1"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5"

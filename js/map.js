@@ -43,6 +43,8 @@ const mapReady=new Promise(res=>map.on('load',()=>{
   map.addSource('alts',{type:'geojson',data:EMPTY});
   map.addSource('route',{type:'geojson',data:EMPTY});
   map.addLayer({id:'alts',type:'line',source:'alts',layout:lay,paint:{'line-color':'#8a7350','line-width':w(3,7,14),'line-opacity':.8}},sym);
+  map.addSource('fog',{type:'geojson',data:EMPTY});
+  map.addLayer({id:'fog',type:'fill',source:'fog',paint:{'fill-color':'#1a120b','fill-opacity':.3,'fill-antialias':false}},'alts');
   map.addLayer({id:'route-glow',type:'line',source:'route',layout:lay,paint:{'line-color':'#ffcc33','line-width':w(10,26,48),'line-blur':w(6,14,26),'line-opacity':.55}},sym);
   map.addLayer({id:'route-case',type:'line',source:'route',layout:lay,paint:{'line-color':'#4a2c08','line-width':w(5,14,28)}},sym);
   map.addLayer({id:'route-main',type:'line',source:'route',layout:lay,paint:{'line-color':'#ffd54f','line-width':w(3.5,10,21)}},sym);

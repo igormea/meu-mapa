@@ -25,7 +25,7 @@ function hud(){
   $('nbXpBar').style.width=xpP;$('nbHpBar').style.width=hpP;$('nbLv').textContent='Nv '+S.lvl;
   $('nbKills').textContent='⚔️ '+(T?T.kills:0);
   const lv=$('plLv');if(lv)lv.textContent='Nv '+S.lvl;
-  $('muteBtn').textContent=S.mute?'🔇':'🔊';
+  $('muteBtn').textContent=S.mute?'🔇':S.less?'🔉':'🔊';
 }
 function refreshAll(){
   hud();$('hudAva').innerHTML=spriteSVG(S.cls);

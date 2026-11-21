@@ -9,7 +9,7 @@ function angDiff(a,b){return((b-a+540)%360)-180}
 function follow(lat,lon,brg,spd,dur=1000){
   if(followPaused||Date.now()<camBusyUntil)return;
   if(brg!=null)camBrg=camBrg==null?brg:(camBrg+angDiff(camBrg,brg)*.55+360)%360;
-  camZoom+=(navZoom(spd)-camZoom)*.15;
+  camZoom+=(navZoom(spd)+(complexNear?.8:0)-camZoom)*.15;
   map.easeTo({center:[lon,lat],zoom:camZoom,pitch:NAV_PITCH,bearing:camBrg??map.getBearing(),
     offset:[0,map.getContainer().clientHeight*.2],duration:dur,easing:t=>t});
 }
@@ -37,4 +37,5 @@ function locateMe(){
   if(!navigator.geolocation)return toast('GPS indisponível');
   startGPS();toast('📍 Procurando você…');
 }
-function toggleMute(){S.mute=!S.mute;if(S.mute)try{speechSynthesis.cancel()}catch{};hud();save();toast(S.mute?'🔇 Voz desligada':'🔊 Voz ligada')}
+// botão de voz alterna: completa → menos falante → desligada
+function toggleMute(){const v=S.mute?'full':S.less?'off':'less';S.mute=v==='off';S.less=v==='less';if(S.mute)try{speechSynthesis.cancel()}catch{};hud();save();toast(S.mute?'🔇 Voz desligada':S.less?'🔉 Menos falante: só curvas e alertas':'🔊 Voz completa')}

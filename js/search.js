@@ -41,12 +41,14 @@ function setupAC(inpId,listId,onPick){
   });
   inp.addEventListener('blur',()=>setTimeout(()=>lst.style.display='none',220));
 }
-setupAC('inpD','ac-d',d=>{$('inpD').value=d.name;goTo(d)});
+setupAC('inpD','ac-d',d=>{if(favConsume(d))return;$('inpD').value=d.name;goTo(d)});
+setupAC('inpS','ac-s',d=>addStop(d));
 setupAC('inpO','ac-o',d=>{originOverride={lat:d.lat,lon:d.lon};$('originLbl').textContent=d.name;$('inpO').value='';$('originBox').style.display='none'});
 $('inpD').addEventListener('keydown',async e=>{
   if(e.key!=='Enter')return;const q=$('inpD').value.trim();if(q.length<2)return;
   $('ac-d').style.display='none';$('inpD').blur();setStatus('🔎 Procurando…');
   const d=await searchPlaces(q);if(!d.length)return setStatus('Não encontrei esse lugar','err');
+  if(favConsume(d[0]))return;
   goTo(d[0]);
 });
 let originOverride=null;

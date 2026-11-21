@@ -8,7 +8,7 @@ try{
   NATIVE=!!(C&&C.isNativePlatform&&C.isNativePlatform());
   if(NATIVE){
     const reg=n=>C.registerPlugin?C.registerPlugin(n):(C.Plugins&&C.Plugins[n]);
-    NAT={bg:reg('BackgroundGeolocation'),tts:reg('TextToSpeech'),awake:reg('KeepAwake'),geo:reg('Geolocation'),notif:reg('LocalNotifications')};
+    NAT={bg:reg('BackgroundGeolocation'),tts:reg('TextToSpeech'),awake:reg('KeepAwake'),geo:reg('Geolocation'),notif:reg('LocalNotifications'),speech:reg('SpeechRecognition')};
     if(!NAT.bg||!NAT.tts||!NAT.awake){NATIVE=false;NAT=null}
   }
 }catch(e){NATIVE=false;NAT=null;window.__showErr&&window.__showErr('Capacitor: '+e.message)}

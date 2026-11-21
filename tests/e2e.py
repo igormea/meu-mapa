@@ -2,6 +2,7 @@
 Uso: python3 tests/e2e.py [filtro]
 """
 import sys, os, io, json, threading, time, http.server, functools, traceback
+sys.modules.setdefault("e2e", sys.modules[__name__])
 from playwright.sync_api import sync_playwright
 sys.path.insert(0, os.path.dirname(__file__))
 import mocks
@@ -15,6 +16,7 @@ DEST = {"name": "Praia do Futuro, Fortaleza", "sub": "", "lat": -3.7434, "lon": 
 
 buf = io.BytesIO(); Image.new("RGB", (256, 256), (230, 215, 180)).save(buf, "PNG"); TILE = buf.getvalue()
 OSM_FIXTURE = None   # definido por teste quando quiser injetar dados OSM
+REQS = []            # URLs pedidas aos serviços externos (para conferir parâmetros)
 
 class Quiet(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a): pass
@@ -39,7 +41,7 @@ def router(route):
         if "tiles.openfreemap.org/planet" in url and url.rstrip('/').endswith('planet'):
             return j({"tilejson": "2.2.0", "tiles": ["https://tiles.openfreemap.org/t/{z}/{x}/{y}.pbf"], "minzoom": 0, "maxzoom": 14})
         if "tiles.openfreemap.org" in url: return route.fulfill(status=204, body=b"", headers={"Access-Control-Allow-Origin": "*"})
-        if "router.project-osrm.org" in url: return j(mocks.osrm(url))
+        if "router.project-osrm.org" in url: REQS.append(url); return j(mocks.osrm(url))
         if "valhalla" in url: return j(mocks.valhalla(route.request.post_data))
         if "photon.komoot.io" in url: return j(mocks.photon(url))
         if "nominatim" in url: return j([])
@@ -47,6 +49,7 @@ def router(route):
     except Exception as e:
         print("mock erro", url, e); return route.abort()
 
+READY = "(()=>{try{return typeof map==='object'&&map.loaded&&map.loaded()&&typeof S==='object'}catch(e){return false}})()"
 RESULTS = []
 def test(fn):
     RESULTS.append(fn); return fn
@@ -64,7 +67,7 @@ class Ctx:
         self.page = self.ctx.new_page()
         self.page.on("pageerror", lambda e: self.errors.append(f"pageerror: {e}"))
         self.page.on("console", lambda m: m.type == "error" and self.errors.append(f"console: {m.text}"))
-        self.page.goto(BASE); self.page.wait_for_function("window.map && map.loaded && map.loaded()", timeout=20000)
+        self.page.goto(BASE); self.page.wait_for_function(READY, timeout=20000)
         return self
     def js(self, code, arg=None):
         return self.page.evaluate(code, arg)
@@ -86,7 +89,8 @@ def run(filt=None):
                                     args=["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"])
         for fn in RESULTS:
             if filt and filt not in fn.__name__: continue
-            c = Ctx(browser); t0 = time.time()
+            c = Ctx(browser); t0 = time.time(); REQS.clear()
+            globals()['OSM_FIXTURE'] = getattr(fn, 'osm', None)
             try:
                 fn(c)
                 bad = [e for e in c.errors if "favicon" not in e]
@@ -104,6 +108,6 @@ def run(filt=None):
     print(f"\n{passed} passaram, {failed} falharam")
     return failed
 
-import tests_suite  # noqa: registra os testes
 if __name__ == "__main__":
+    import tests_suite  # noqa: registra os testes
     sys.exit(1 if run(sys.argv[1] if len(sys.argv) > 1 else None) else 0)

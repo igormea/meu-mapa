@@ -52,6 +52,8 @@
   <div id="navDistBox"><div id="navDistVal">–</div><div id="navDistUnit"></div></div>
 </div>
 
+<div id="laneBar"></div>
+<div id="alertBar"></div>
 <div id="feed"></div>
 <div id="lvlUp"><div class="l1">NÍVEL</div><div class="l2" id="lvNum">2</div><div class="l3">Vida restaurada · atributos aumentados</div></div>
 <div id="toast"></div>
@@ -76,8 +78,10 @@
   <div class="ttl">🗺️ Para onde, aventureiro?</div>
   <div class="acw">
     <input type="text" id="inpD" placeholder="Buscar destino…" autocomplete="off" enterkeyhint="go">
+    <button id="micBtn" onclick="voiceSearch()" title="Buscar por voz">🎙️</button>
     <div id="ac-d" class="acl"></div>
   </div>
+  <div id="favRow"></div>
   <div id="originRow">📍 Partida: <b id="originLbl">sua localização</b> · <a onclick="showOriginInput()">alterar</a></div>
   <div id="originBox" class="acw">
     <input type="text" id="inpO" placeholder="Endereço de partida…" autocomplete="off">
@@ -115,10 +119,21 @@
 <div id="navBottom">
   <div class="nb-row">
     <div id="navSt"><div id="navRem">–</div><div id="navETA">–</div><div id="navMount">–</div></div>
+    <button class="rbtn" onclick="openStops()" title="Adicionar parada">➕</button>
+    <button class="rbtn" onclick="shareTrip()" title="Compartilhar viagem">📤</button>
     <button class="rbtn" onclick="openSheet()">🎒</button>
     <button class="rbtn stop" onclick="stopTap()">✕</button>
   </div>
   <div id="nbXp"><span id="nbLv">Nv 1</span><div class="bar xp"><i id="nbXpBar"></i></div><div class="bar hp" style="max-width:70px"><i id="nbHpBar"></i></div><span id="nbKills">⚔️ 0</span></div>
+</div>
+
+<!-- PARADA NO CAMINHO -->
+<div id="stopPanel" class="bpanel">
+  <div class="handle"></div>
+  <div class="ttl">🏕️ Adicionar parada</div>
+  <div id="stopChips"><div class="chip" onclick="stopKind('fuel')">⛽ Posto</div><div class="chip" onclick="stopKind('pharm')">💊 Farmácia</div><div class="chip" onclick="stopKind('park')">🅿️ Estacionamento</div></div>
+  <div class="acw" style="margin-top:10px"><input type="text" id="inpS" placeholder="Ou busque um lugar…" autocomplete="off"><div id="ac-s" class="acl"></div></div>
+  <button class="btn sec" style="margin-top:10px" onclick="closeStops()">Cancelar</button>
 </div>
 
 <!-- FICHA -->
@@ -132,6 +147,7 @@
   <div class="cs-s">O app precisa de algumas permissões para te guiar.</div>
   <div class="row"><div class="r1"><span>📍 Localização</span><b id="pmLoc">—</b></div><div class="r2">Obrigatória. Escolha "Durante o uso do app" e deixe a <b>localização precisa</b> ligada.</div></div>
   <div class="row"><div class="r1"><span>🔔 Notificações</span><b id="pmNot">—</b></div><div class="r2">Mostra "jornada em andamento" e mantém o GPS funcionando com a tela apagada.</div></div>
+  <div class="row"><div class="r1"><span>🎙️ Microfone</span><b>opcional</b></div><div class="r2">Só para a busca por voz. É pedido na primeira vez que você usar.</div></div>
   <div class="row"><div class="r1"><span>🔋 Bateria</span><b>manual</b></div><div class="r2">No Xiaomi/Poco: segure o ícone do app → Informações → Economia de bateria → <b>Sem restrições</b>. Sem isso o sistema pode fechar o GPS em segundo plano.</div></div>
   <button class="btn prim" style="margin-top:8px" onclick="askPerms()">Permitir</button>
   <button class="btn sec" style="margin-top:8px" onclick="closePerms()">Agora não</button>
@@ -158,6 +174,9 @@
 <script src="js/search.js?v=5.0.0"></script>
 <script src="js/route.js?v=5.0.0"></script>
 <script src="js/nav.js?v=5.0.0"></script>
+<script src="js/osm.js?v=5.0.0"></script>
+<script src="js/world.js?v=5.0.0"></script>
+<script src="js/extras.js?v=5.0.0"></script>
 <script src="js/sheet.js?v=5.0.0"></script>
 <script src="js/main.js?v=5.0.0"></script>
 </body>

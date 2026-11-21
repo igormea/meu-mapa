@@ -16,11 +16,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Extrair do Overpass
-        run: python3 tools/osm_extract.py 2>&1 | tee osm.log
-      - name: Mostrar resumo
+      - name: Instalar osmium
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool
+      - name: Baixar extrato do Nordeste (Geofabrik) e filtrar o Ceará
+        run: |
+          curl -sSfL -o ne.osm.pbf https://download.geofabrik.de/south-america/brazil/nordeste-latest.osm.pbf
+          osmium extract -b -41.45,-7.95,-37.20,-2.70 ne.osm.pbf -o ce.osm.pbf --overwrite
+          osmium tags-filter ce.osm.pbf n/highway=speed_camera n/enforcement=maxspeed n/traffic_calming \
+            n/barrier=toll_booth n/railway=level_crossing n/highway=traffic_signals \
+            nwr/amenity=parking,fuel,pharmacy -o f.osm.pbf --overwrite
+          osmium export f.osm.pbf -f geojsonseq -o f.geojsonseq --overwrite
+      - name: Gerar data/osm-ce.json
+        run: python3 tools/osm_extract.py f.geojsonseq | tee osm.log
+      - name: Resumo
         if: always()
-        run: echo "::notice title=Dados OSM::$(grep -E '^[a-z]+ [0-9]+$' osm.log | tr '\n' ' ')"
+        run: echo "::notice title=Dados OSM::$(tr '\n' ' ' < osm.log 2>/dev/null)"
       - name: Salvar no repositório
         run: |
           git config user.name "meu-mapa-bot"

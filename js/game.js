@@ -13,13 +13,13 @@ function smith(){let c;while(S.gold>=(c=smithCost())){S.gold-=c;const w=S.smith.
   card('🔨','O ferreiro trabalhou!',w?`Sua arma agora é <b>+${S.smith.w}</b>`:`Sua armadura agora é <b>+${S.smith.a}</b>`,'gold')}}
 function levelUp(){
   $('lvNum').textContent=S.lvl;const o=$('lvlUp');o.classList.remove('on');void o.offsetWidth;o.classList.add('on');
-  speak(`Subiu para o nível ${S.lvl}!`);
+  speak(`Subiu para o nível ${S.lvl}!`,'fun');
 }
 let lastRegen=Date.now();
 function regen(){const now=Date.now(),dt=(now-lastRegen)/60000;lastRegen=now;const mx=maxHP();if(S.hp==null)S.hp=mx;S.hp=Math.min(mx,S.hp+mx*.06*dt)}
 let xpFrac=0;
 function addDistance(m){
-  S.stats.km+=m/1000;ensureDaily();S.daily.km+=m/1000;if(T)T.m+=m;
+  S.stats.km+=m/1000;ensureDaily();S.daily.km+=m/1000;if(T)T.m+=m;weekAdd('km',m/1000);
   xpFrac+=m/20*cls().xp*(1+amu()/100);
   if(xpFrac>=1){const n=Math.floor(xpFrac);xpFrac-=n;rawXP(n)}
   checkQuests();checkAch();
@@ -80,7 +80,7 @@ function handleItem(it){
   S.loot.unshift({...it,act,g});S.loot=S.loot.slice(0,15);if(T)T.items.push(it);
   const sub=`<span class="r-${it.r}">${RAR[it.r].n}</span> · ${statTxt(it)} · ${act==='equipado'?'<b>equipado!</b>':`vendido por ${g} 🪙`}`;
   card('🎁',`<span class="r-${it.r}">${esc(it.name)}</span>`,sub,it.r>=3?'epic':'gold');
-  if(it.r===4)speak('Item lendário encontrado!');
+  if(it.r===4)speak('Item lendário encontrado!','fun');
   return{it,act,g};
 }
 function battle(s){
@@ -90,7 +90,7 @@ function battle(s){
   if(res.win){
     S.hp=Math.max(1,Math.round(res.php));
     const x=gainXP(m.xp),g=gainGold(m.gold);
-    S.stats.kills++;ensureDaily();S.daily.kills++;if(T)T.kills++;if(m.dragon){S.stats.dragons++;speak('Você derrotou um Dragão Ancião!')}
+    S.stats.kills++;ensureDaily();S.daily.kills++;if(T)T.kills++;if(!simSnap)weekAdd('kills',1);if(m.dragon){S.stats.dragons++;speak('Você derrotou um Dragão Ancião!','fun')}
     floatTxt(`+${x} XP`,'xp');
     card(m.e,`${m.n}${m.elite?' ★':''} <span style="color:#b59f7b">Nv ${m.lvl}</span> derrotado!`,
       `<b>+${x} XP</b> · <b>+${g} 🪙</b>${res.taken?` · −${res.taken} ❤️`:''}${res.crit?' · <b>CRÍTICO!</b>':''}`,m.dragon?'epic':'');
