@@ -35,7 +35,7 @@ def code(t):
     lu, na, le = t.get("landuse", ""), t.get("natural", ""), t.get("leisure", "")
     if na == "water" or t.get("waterway") == "riverbank" or lu in ("reservoir", "basin"): return "a"
     if t.get("wetland") == "mangrove" or na == "wetland": return "m"
-    if na in ("beach", "sand", "dune"): return "p"
+    if na in ("beach", "dune"): return "p"           # "sand" solto (banco de rio, terreno) não é praia
     if lu in ("industrial", "port", "railway", "quarry", "landfill") or t.get("industrial"): return "i"
     if na in ("wood", "scrub") or lu == "forest" or le in ("park", "nature_reserve", "garden"): return "v"
     if lu in ("commercial", "retail") or t.get("shop") == "mall": return "c"

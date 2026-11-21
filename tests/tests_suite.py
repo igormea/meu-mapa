@@ -759,8 +759,10 @@ def t56_novidades(c):
 def t57_terrenos_e_bestiario(c):
     c.open(); c.hero(); c.js("async()=>{await loadTerrain()}")
     t = lambda la, lo, k=0: c.js(f"()=>terrainAt({la},{lo},{k})")
-    assert t(-3.725, -38.49) == "p" and t(-3.80, -38.60) == "i" and t(-3.76, -38.55) == "a" and t(-3.76, -38.48) == "m"
-    assert t(-3.754, -38.556) == "v" and t(-3.70, -38.40) == "u" and t(-3.75, -38.55, 90) == "e"
+    r = [t(-3.725, -38.49), t(-3.80, -38.60), t(-3.76, -38.55), t(-3.76, -38.48)]
+    assert r == ["p", "i", "a", "m"], r
+    r = [t(-3.754, -38.556), t(-3.70, -38.40), t(-3.75, -38.55, 90)]
+    assert r == ["v", "u", "e"], r
     assert t(-3.7275, -38.5275) == "h"                       # centro histórico
     assert c.js("()=>{isNav=true;const r=terrainAt(-5.5,-39.5);isNav=false;return r}") == "e"   # fora da Grande Fortaleza
     # cada terreno só sorteia os seus monstros
@@ -832,3 +834,14 @@ def t61_modelos_nao_ficam_do_avesso(c):
     c.js("()=>{startNav(true);sim.mult=0}"); c.wait("window.Hero3D && Hero3D.state.ready && Hero3D.__model", 20000)
     det = c.js("""()=>{let d=null;Hero3D.__model.traverse(o=>{if(o.isMesh&&d==null){o.updateMatrixWorld(true);d=o.matrixWorld.determinant()}});return d}""")
     assert det > 0, det     # sem espelho no modelo (o espelho do mapa fica na câmera)
+
+@test
+def t62_areia_isolada_nao_e_praia(c):
+    # mancha pequena de areia longe do litoral (banco de rio) não pode virar "Praia"
+    c.open(); c.hero()
+    c.js("""async()=>{TG=null;tgLoading=null;window.__origFetch=window.__origFetch||window.fetch;const rows=[];
+      for(let r=0;r<40;r++)rows.push(r===5?'u10p2u28':(r>=30?'p40':'u40'));
+      window.fetch=(u,...a)=>String(u).includes('terrain.json')?Promise.resolve(new Response(JSON.stringify({bb:[-3.80,-38.70,-3.72,-38.62],step:.002,rows}))):__origFetch(u,...a);
+      await loadTerrain()}""")
+    assert c.js("()=>terrainAt(-3.80+5.5*.002,-38.70+10.5*.002,0)") == "u"     # areia isolada
+    assert c.js("()=>terrainAt(-3.80+35.5*.002,-38.70+20.5*.002,0)") == "p"    # faixa grande de praia

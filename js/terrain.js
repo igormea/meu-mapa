@@ -15,6 +15,12 @@ function loadTerrain(){
     if(!j||!j.rows)return;
     const R=j.rows.length,C=Math.round((j.bb[3]-j.bb[1])/j.step),g=new Uint8Array(R*C);
     j.rows.forEach((row,r)=>{let c=0;for(const m of row.matchAll(/([a-z])(\d+)/g)){g.fill(m[1].charCodeAt(0),r*C+c,r*C+c+(+m[2]));c+=+m[2]}});
+    // praia de verdade é uma faixa comprida no litoral; manchas pequenas de areia (bancos de rio, terrenos) viram zona urbana
+    const P=112,U=117,seen=new Uint8Array(R*C);
+    for(let i=0;i<R*C;i++){if(g[i]!==P||seen[i])continue;const st=[i],comp=[];seen[i]=1;
+      while(st.length){const x=st.pop();comp.push(x);const r=(x/C)|0,c=x%C;
+        for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){const rr=r+dr,cc=c+dc;if(rr<0||cc<0||rr>=R||cc>=C)continue;const y=rr*C+cc;if(g[y]===P&&!seen[y]){seen[y]=1;st.push(y)}}}
+      if(comp.length<12)for(const x of comp)g[x]=U}
     TG={bb:j.bb,step:j.step,R,C,g,gen:j.gen};
   }).catch(()=>{});
   return tgLoading;
@@ -31,8 +37,8 @@ function terrainAt(lat,lon,kmh=curKmh){
     const k=tgCell(lat,lon);
     if(k===undefined)return isNav?'e':'r';             // fora da Grande Fortaleza
     if(kmh>=75)return'e';                              // rodovia
-    if(k==='u'||k==='c'){                              // faixa fina de praia ou rio a ~1 quadra também conta
-      for(const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]){const n=tgCell(lat+dr*TG.step,lon+dc*TG.step);if(n==='p'||n==='a')return n}
+    if(k==='u'||k==='c'){                              // faixa fina de praia a ~1 quadra também conta (rio não: ia virar "rio" a cidade toda)
+      for(const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]){const n=tgCell(lat+dr*TG.step,lon+dc*TG.step);if(n==='p')return n}
       if(inCentro)return'h';
     }
     return k||'u';

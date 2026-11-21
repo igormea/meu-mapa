@@ -1,5 +1,13 @@
 [
  {
+  "v": "6.0.3",
+  "d": "21/11/2026",
+  "t": "Terreno corrigido",
+  "i": [
+   "Corrigido: bairros perto de rio (como Tabapuá, em Caucaia) apareciam como 'Praia e Dunas'. Bancos de areia de rio não contam mais como praia, e morar perto de um rio não transforma o bairro em 'Lagoa e Rio'."
+  ]
+ },
+ {
   "v": "6.0.2",
   "d": "21/11/2026",
   "t": "Herói e monstros corrigidos",
