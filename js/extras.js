@@ -85,7 +85,7 @@ async function addStop(d){
 }
 function drawStops(){
   stopMks.forEach(m=>m.remove());
-  stopMks=stops.map(s=>addMk('<div class="castle small">🏕️</div>',s.lat,s.lon,'bottom'));
+  stopMks=stops.map(s=>addMk('<div class="mk-castle small">🏕️</div>',s.lat,s.lon,'bottom'));
 }
 function stopCheck(lat,lon){
   if(!stops.length)return;

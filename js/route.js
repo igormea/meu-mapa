@@ -84,7 +84,7 @@ function drawRoutes(){
 function trimRoute(sn){setSrc('route',lineF([[sn.lat,sn.lon],...R.coords.slice(sn.i+1)]))}
 function drawCastle(){
   if(castleMk)castleMk.remove();
-  castleMk=addMk('<div class="castle">🏰</div>',dest.lat,dest.lon,'bottom');
+  castleMk=addMk('<div class="mk-castle">🏰</div>',dest.lat,dest.lon,'bottom');
 }
 let parkMks=[];
 function drawParking(){

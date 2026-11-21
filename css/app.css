@@ -64,7 +64,7 @@ body.night #vignette{box-shadow:inset 0 0 110px 30px rgba(0,0,0,.7)}
 .mon.dead{animation:poof .6s forwards}
 @keyframes mBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 @keyframes poof{0%{transform:scale(1);opacity:1}40%{transform:scale(1.5);opacity:.8;filter:brightness(3)}100%{transform:scale(.2);opacity:0}}
-.castle{font-size:32px;filter:drop-shadow(0 0 6px var(--gold2)) drop-shadow(0 2px 2px #000);animation:mBob 2s infinite}
+.mk-castle{font-size:32px;filter:drop-shadow(0 0 6px var(--gold2)) drop-shadow(0 2px 2px #000);animation:mBob 2s infinite}
 
 /* ───── HUD ───── */
 .wood{background:linear-gradient(180deg,var(--wood2),var(--wood));border:2px solid var(--edge);box-shadow:0 4px 18px rgba(0,0,0,.6)}
@@ -268,8 +268,8 @@ body.nav #feed{top:calc(150px + env(safe-area-inset-top))}
 .boss i{font:600 10px var(--px);font-style:normal;color:#e8c86a;background:rgba(14,11,34,.85);border:1px solid #c9a24a;border-radius:6px;padding:1px 5px;margin-top:1px;white-space:nowrap}
 .boss.done span{filter:grayscale(1) opacity(.6)}
 .boss.done i{color:#837aa8}
-.castle.small{font-size:24px}
-#micBtn{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:none;border-radius:50%;background:transparent;font-size:19px;cursor:pointer}
+.mk-castle.small{font-size:24px}
+#micBtn{position:absolute;right:6px;top:4px;width:38px;height:38px;border:none;border-radius:50%;background:transparent;font-size:19px;cursor:pointer}
 #micBtn.on{background:#a52a1c;animation:lim .6s infinite alternate}
 #inpD{padding-right:48px}
 #favRow{display:flex;gap:7px;margin-top:10px}
@@ -358,3 +358,14 @@ body.night #map,body.castle #map{background:#0a0716}
 .cc.sel .cv .ptr{animation:petB 1.4s ease-in-out infinite}
 .hero .big{padding:2px!important}
 .card .ce .ci{width:34px;height:34px;object-fit:cover;object-position:50% 10%;border-radius:8px;display:block}
+
+/* busca em tela cheia */
+#srchBack{display:none;background:none;border:none;color:var(--gold);font-size:38px;line-height:1;padding:0 10px 0 2px;margin:-4px 0;cursor:pointer;vertical-align:middle}
+#searchPanel.full{top:0;border-radius:0;z-index:650;padding-top:calc(12px + env(safe-area-inset-top));overflow-y:auto;border-top:none}
+#searchPanel.full .handle{display:none}
+#searchPanel.full #srchBack{display:inline-block}
+#searchPanel.full .acl{position:static;max-height:none;margin-top:8px;box-shadow:none;border-radius:12px}
+#searchPanel.full .aci{padding:13px 14px}
+#searchPanel.full.typing #favRow,#searchPanel.full.typing #originRow,#searchPanel.full.typing #recents{display:none}
+body.searching #hud,body.searching #fabs,body.searching #recenterBtn,body.searching #feed{visibility:hidden}
+.acn{padding:12px 14px;color:var(--muted);font-size:13px}

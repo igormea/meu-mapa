@@ -179,7 +179,7 @@ def t14_parada_no_caminho(c):
     c.wait("stops.length===1 && R.steps.some(s=>s.type==='arrive'&&s.last===false)", 8000)
     assert "via" not in c.js("()=>JSON.stringify(stops)")
     assert any(u.count(";") >= 2 and "/driving/" in u for u in e2e.REQS), e2e.REQS[-2:]
-    assert c.js("()=>document.querySelectorAll('.castle.small').length") == 1
+    assert c.js("()=>document.querySelectorAll('.mk-castle.small').length") == 1
     s = c.js("()=>stops[0]"); c.js(f"()=>stopCheck({s['lat']},{s['lon']})")
     assert c.js("()=>stops.length") == 0
 
@@ -519,3 +519,41 @@ def t42_todos_monstros_3d(c):
     # quem não tem animação de morte encolhe e some
     c.js("()=>{Hero3D.monKill(9000+MONS.filter(m=>m.m3d&&m.m3d.startsWith('q_')).findIndex(m=>m.m3d==='q_mushroom'))}")
     c.wait("Hero3D.mons.length===15", 3000)
+
+@test
+def t43_busca_tela_cheia(c):
+    c.open(); c.hero()
+    c.js("()=>{lastFix={lat:%s,lon:%s,t:Date.now()}}" % (ORIGIN["lat"], ORIGIN["lon"]))
+    c.page.wait_for_timeout(300)
+    # a tela não pode "balançar" (bug antigo: animação do marcador de castelo vazava pro app todo)
+    assert c.js("()=>getComputedStyle(document.body).transform") == "none"
+    assert c.js("()=>getComputedStyle(document.body).filter") == "none"
+    c.page.click("#inpD", timeout=8000)
+    c.wait("document.getElementById('searchPanel').classList.contains('full')", 3000)
+    assert c.js("()=>getComputedStyle(document.getElementById('hud')).visibility") == "hidden"
+    c.page.type("#inpD", "rua um")
+    c.wait("document.getElementById('ac-d').style.display==='block' && document.querySelectorAll('#ac-d .aci').length===3", 6000)
+    # lista fica abaixo do campo, totalmente visível e clicável (nada por cima)
+    top = c.js("""()=>{const a=document.querySelector('#ac-d .aci').getBoundingClientRect(),i=document.getElementById('inpD').getBoundingClientRect();
+      const el=document.elementFromPoint(a.left+a.width/2,a.top+a.height/2);return [a.top>i.bottom, !!el.closest('#ac-d')]}""")
+    assert top == [True, True], top
+    if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/busca_full.png")
+    c.page.click("#ac-d .aci")
+    c.wait("!document.getElementById('searchPanel').classList.contains('full')", 3000)
+    c.wait("PR.length>0", 10000)
+
+@test
+def t44_busca_texto_primeiro_e_nominatim_so_no_enter(c):
+    c.open(); c.hero()
+    # abreviação e acento
+    assert c.js("()=>expandQ('Av. Beira-Mar Iracemá').join(' ')") == "avenida beira-mar iracema"
+    # bate com o texto ganha de "mais perto"
+    r = c.js("""()=>{const t=expandQ('rua um longe');return [textScore(t,{name:'Rua Um Longe',sub:''}),textScore(t,{name:'Rua Um',sub:''})]}""")
+    assert r[0] > r[1], r
+    c.js("()=>{window.__nomCalls=0;const f=window.fetch;window.fetch=(u,...a)=>{if(String(u).includes('nominatim'))__nomCalls++;return f(u,...a)}}")
+    c.js("async()=>{nomLast=0;await searchPlaces('rua um',true)}")
+    assert c.js("()=>__nomCalls") == 0
+    c.js("async()=>{nomLast=0;await searchPlaces('rua um')}")
+    assert c.js("()=>__nomCalls") == 1
+    c.js("async()=>{await searchPlaces('rua um')}")   # menos de 1 s depois: respeita o limite
+    assert c.js("()=>__nomCalls") == 1
