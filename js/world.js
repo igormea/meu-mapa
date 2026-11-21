@@ -63,7 +63,7 @@ function bossFight(b){
   const res=fight(m);
   if(res.win){
     S.hp=Math.max(1,Math.round(res.php));
-    S.bosses=S.bosses||{};S.bosses[b.id]=weekKey();S.stats.bosses=(S.stats.bosses||0)+1;
+    S.bosses=S.bosses||{};S.bosses[b.id]=weekKey();S.bossEver=S.bossEver||{};S.bossEver[b.id]=(S.bossEver[b.id]||0)+1;S.stats.bosses=(S.stats.bosses||0)+1;
     const x=gainXP(m.xp),g=gainGold(m.gold);
     card(b.e,`Chefe lendário derrotado: ${b.n}!`,`<b>+${x} XP</b> · <b>+${g} 🪙</b>`,'epic');
     speak(`Chefe lendário derrotado: ${b.n}!`,'fun');

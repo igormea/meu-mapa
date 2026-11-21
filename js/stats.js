@@ -51,6 +51,33 @@ function statsHTML(){
       <div class="st"><span>⌛ Viagem mais longa</span><b>${r.min?r.min+' min':'—'}</b></div><div class="st"><span>🏛️ Ancestrais</span><b>${S.stats.anc||0}</b></div>
     </div>
     <div class="sect">Bestiário (mais derrotados)</div>
-    ${best.length?best.map(([n,c])=>{const m=MONS.find(x=>x.n===n);return`<div class="row best"><div class="r1"><span>${m?.m3d?monPic(m.m3d):(m?.e||'👾')} ${esc(n)}</span><b>${c}×</b></div></div>`}).join(''):'<div class="r2">Nenhum monstro derrotado ainda.</div>'}
+    ${best.length?best.map(([n,c])=>{const m=MONS.find(x=>x.n===n);return`<div class="row best"><div class="r1"><span>${m?.m3d?monPic(monKey(m)):(m?.e||'👾')} ${esc(n)}</span><b>${c}×</b></div></div>`}).join(''):'<div class="r2">Nenhum monstro derrotado ainda.</div>'}
     <div class="r2" style="font-size:11px;color:#837aa8;margin-top:10px">O histórico por dia começa a contar a partir desta versão.</div>`;
+}
+
+/* ── BESTIÁRIO ── cada monstro: retrato (silhueta se nunca visto), raridade, onde vive e condições */
+let bestFilter='*';
+function monHint(m){
+  const t=m.ter==='*'?['🗺️ Qualquer lugar']:[...m.ter].map(k=>`${TER[k].ic} ${TER[k].n}`);
+  if(m.night)t.push('🌙 noite');if(m.moonOnly)t.push('🌕 lua cheia');else if(m.moon)t.push('🌕 + na lua cheia');
+  if(m.rain)t.push('🌧️ só na chuva');else if(m.aq)t.push('🌧️ + na chuva');if(m.hot)t.push('☀️ + no calor');
+  if(m.deep)t.push(`📏 viagem de ${m.deep}+ km`);if(m.t===6)t.push('📏 raro em qualquer viagem (nível 5+)');
+  const lv=Math.max(1,(m.t-1)*3+1);if(lv>1&&m.t<6)t.push(`⭐ nível ${lv}+`);
+  return t.join(' · ');
+}
+function bestHTML(){
+  const seen=S.best||{},tot=MONS.length,got=MONS.filter(m=>seen[m.n]).length;
+  const byR=[1,2,3,4,5].map(r=>[r,MONS.filter(m=>m.rar===r).length,MONS.filter(m=>m.rar===r&&seen[m.n]).length]);
+  const list=MONS.filter(m=>bestFilter==='*'||m.ter==='*'||m.ter.includes(bestFilter)).slice().sort((a,b)=>(a.rar-b.rar)||(a.t-b.t));
+  const pic=m=>m.m3d?`<img class="bp" src="models/portraits/${monKey(m)}.png" alt="">`:`<span class="be">${m.e}</span>`;
+  const bossW=S.bossEver||{};
+  return `<div class="row"><div class="r1"><span>📖 Registrados</span><b>${got} / ${tot}</b></div><div class="qbar"><i style="width:${got/tot*100}%"></i></div>
+      <div class="r2">${byR.map(([r,n,g])=>`<span style="color:${RARC[r]}">${RARN[r]} ${g}/${n}</span>`).join(' · ')}</div></div>
+    <div class="bchips">${['*',...Object.keys(TER)].map(k=>`<span class="chip ${bestFilter===k?'on':''}" onclick="bestFilter='${k}';renderSheet()">${k==='*'?'Todos':TER[k].ic+' '+TER[k].n}</span>`).join('')}</div>
+    <div class="bgrid">${list.map(m=>{const s=seen[m.n];return`<div class="bc ${s?'':'unk'}" style="border-color:${RARC[m.rar]}">
+      <div class="bpic">${pic(m)}</div><div class="bn">${s?esc(m.n):'???'}</div><div class="br" style="color:${RARC[m.rar]}">${RARN[m.rar]}${s?` · ${s}×`:''}</div>
+      <div class="bh">${monHint(m)}</div></div>`}).join('')}</div>
+    <div class="sect">Chefes de Fortaleza</div>
+    ${BOSSES.map(b=>`<div class="row ${bossW[b.id]?'':'lock'}"><div class="r1"><span>${b.e} ${bossW[b.id]?b.n:'??? (chefe lendário)'}</span><b>${bossW[b.id]?bossW[b.id]+'× derrotado':'à espreita'}</b></div></div>`).join('')}
+    <div class="r2" style="font-size:11px;color:#837aa8;margin-top:8px">Cada terreno tem seus monstros. Alguns só aparecem à noite, na chuva, na lua cheia ou em viagens longas: não dá pra completar tudo andando só no bairro.</div>`;
 }

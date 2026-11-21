@@ -1,74 +1,179 @@
 [
- {"v":"5.8","d":"21/11/2026","t":"Controles do celular e números","apk":true,"i":[
-  "O botão voltar do celular agora fecha as janelas uma por uma. No mapa, ele pergunta se você quer sair do app.",
-  "Janelas com a barrinha no topo (ficha do herói, paradas, reportar bug) fecham arrastando pra baixo.",
-  "Os botões de centralizar e de som não ficam mais em cima da janela de busca: acompanham a altura dela.",
-  "As abas da ficha do herói não ficam mais apertadas e aparecem todas de uma vez.",
-  "Nova aba 📊 Números: km da semana e do mês em gráfico, recordes, tempo ao volante e os monstros que você mais derrotou.",
-  "O topo da tela mostra a cidade onde você está (Caucaia, Fortaleza, Aquiraz...) e o XP em números.",
-  "A região 'Cidade' do jogo virou 'Zona Urbana', pra não confundir com o nome da cidade.",
-  "Precisa instalar o APK novo uma vez, por causa do botão voltar."]},
- {"v":"5.7","d":"21/11/2026","t":"Jornada sem toque","i":[
-  "⚖️ Honra no volante: respeitar o limite de velocidade rende pontos de Honra e bônus de XP e ouro. Correr demais mancha sua honra.",
-  "🏰 Bardo: cada bairro é um reino. Uma voz anuncia quando você entra num bairro, e descobrir bairros novos dá XP.",
-  "🛡️ Cerco: parado no engarrafamento, seu herói enfrenta ondas de monstros sozinho.",
-  "📜 Crônica: ao chegar, um resumo épico da viagem.",
-  "⚔️ Patrulhas: o app aprende suas rotas da rotina e oferece a rota no horário de sempre.",
-  "🏛️ Viagens longas trazem monstros mais raros. A partir de 60 km aparecem os Ancestrais, mais fortes e com loot melhor."]},
- {"v":"5.6","d":"21/11/2026","t":"Busca nova e reportar bug","i":[
-  "A busca abre em tela cheia, igual ao Waze, e nada fica por cima da lista de sugestões.",
-  "As sugestões aparecem a partir de 2 letras e entendem abreviação (av, r., dr) e falta de acento.",
-  "Índice próprio da Grande Fortaleza: ruas, bairros e lugares aparecem na hora, mesmo sem internet.",
-  "🐞 Botão Reportar bug/sugestão (em Ajustes): manda pelo WhatsApp junto com as informações técnicas.",
-  "Corrigido: o app inteiro 'balançava' alguns pixels o tempo todo, o que atrapalhava o toque e gastava bateria."]},
- {"v":"5.5","d":"21/11/2026","t":"Monstros 3D","i":[
-  "20 tipos de monstro agora aparecem em 3D animado no mapa: nascem, olham pro herói, atacam e morrem.",
-  "5 monstros novos: Slime do Esgoto, Cogumelo Saltitante, Abelha Assassina, Caveira Flutuante e Diabrete do Farol.",
-  "Os cards de batalha mostram o retrato 3D do monstro.",
-  "Corrigido: modelos 3D apareciam 'estilhaçados' por falta de precisão. O herói também ficou mais firme na tela."]},
- {"v":"5.4","d":"21/11/2026","t":"Tema Castelo e retratos 3D","i":[
-  "Novo visual padrão Castelo, inspirado em Castlevania: azul-noite, vermelho-sangue e dourado.",
-  "Fontes novas com números bem legíveis (antes dava pra confundir 2, 5 e 8).",
-  "Retratos 3D dos heróis na seleção de classe, no topo da tela e na ficha.",
-  "Esqueletos em 3D no mapa."]},
- {"v":"5.3","d":"21/11/2026","t":"RPG mais profundo","i":[
-  "✨ Talentos: 1 ponto por nível pra fortalecer o herói do seu jeito.",
-  "Cada classe tem uma habilidade automática (bloqueio, fúria, bola de fogo, golpe nas sombras, tiro certeiro).",
-  "🥚 Companheiro: um ovo aparece no nível 3, choca andando e o bichinho ajuda nas batalhas.",
-  "Regiões (Costa, Centro, Mata, Sertão) com monstros diferentes.",
-  "Clima real: chuva, calor e lua cheia mudam os monstros e dão bônus.",
-  "🏯 Masmorras em shoppings e pontos de Fortaleza, e conjuntos de equipamento.",
-  "Dificuldade rebalanceada: o jogo estava fácil demais."]},
- {"v":"5.2","d":"21/11/2026","t":"Ajustes do teste de rua","i":[
-  "Recálculo de rota bem mais rápido: cerca de 4 segundos ao entrar numa rua errada.",
-  "🗼 Torres do Vigia (radares) sempre visíveis no mapa.",
-  "Números com fonte mais legível."]},
- {"v":"5.1","d":"20/11/2026","t":"Nasce o Ranvus Maps","i":[
-  "Nome novo: Ranvus Maps, com ícone novo.",
-  "Herói 3D animado que corre de costas na navegação e pode ser visto de outros ângulos girando o mapa."]},
- {"v":"5.0","d":"20/11/2026","t":"Alertas e mundo vivo","i":[
-  "Alertas de radar, lombada, pedágio, passagem de trem, curva perigosa e queda de limite.",
-  "Indicação de faixas, paradas no caminho (posto, farmácia, estacionamento), Casa e Trabalho.",
-  "Compartilhar a viagem no WhatsApp, busca por voz, funciona offline e backup do progresso.",
-  "Chefes fixos em pontos de Fortaleza, missões semanais e névoa nas áreas não exploradas."]},
- {"v":"4.5","d":"20/11/2026","t":"Aplicativo Android","apk":true,"i":[
-  "Primeiro APK: GPS em segundo plano, voz nativa e tela sempre ligada.",
-  "Tela de permissões na primeira abertura.",
-  "Erros aparecem na tela pra facilitar o diagnóstico."]},
- {"v":"4.3","d":"20/11/2026","t":"Navegação mais esperta","i":[
-  "Corrigido: a rota ficava sendo recalculada o tempo todo.",
-  "Bússola e acelerômetro: a posição não 'pula' com o carro parado.",
-  "Continua navegando por alguns segundos quando o GPS perde o sinal."]},
- {"v":"4.2","d":"20/11/2026","t":"Velocímetro","i":[
-  "Velocímetro e placa de velocidade máxima da via, com alerta quando passa do limite.",
-  "A busca mostra primeiro os lugares mais perto de você."]},
- {"v":"4.1","d":"20/11/2026","t":"Câmera 3D","i":[
-  "Câmera 3D estilo Waze na navegação, com prédios em 3D.",
-  "Volta o visual temático do mapa."]},
- {"v":"4.0","d":"20/11/2026","t":"Meu Mapa RPG","i":[
-  "O mapa vira jogo: escolha sua classe (cavaleiro, bárbaro, mago, ladino, arqueiro).",
-  "Batalhas automáticas pelo caminho, XP, níveis, ouro e itens. Você só dirige.",
-  "Voz guiando a viagem e modo treino pra simular uma rota."]},
- {"v":"1.0","d":"18/11/2026","t":"Primeira versão","i":[
-  "Mapa pessoal com busca de endereço e rota."]}
+ {
+  "v": "5.9",
+  "d": "21/11/2026",
+  "t": "Bestiário e terrenos",
+  "i": [
+   "📖 Novo Bestiário: 70 monstros com retrato, raridade (comum a lendário) e dicas de onde e quando aparecem. Os que você nunca viu aparecem como silhueta.",
+   "🗺️ Terrenos de verdade, tirados do mapa: praia e dunas, lagoa e rio, mangue, mata e parque, zona industrial, comércio, centro histórico, sertão e estrada. Cada terreno tem seus próprios monstros.",
+   "Monstros especiais só aparecem à noite, na chuva, na lua cheia ou em viagens longas. Não dá pra completar o bestiário andando só no bairro.",
+   "Mais monstros em 3D, incluindo variantes de cor (Slime de Areia, Caranguejo Rei, Fantasma Dourado...).",
+   "Chefes de Fortaleza aparecem no bestiário depois de derrotados.",
+   "Busca com o índice completo da Grande Fortaleza: mais de 28 mil ruas, bairros e lugares."
+  ]
+ },
+ {
+  "v": "5.8",
+  "d": "21/11/2026",
+  "t": "Controles do celular e números",
+  "apk": true,
+  "i": [
+   "O botão voltar do celular agora fecha as janelas uma por uma. No mapa, ele pergunta se você quer sair do app.",
+   "Janelas com a barrinha no topo (ficha do herói, paradas, reportar bug) fecham arrastando pra baixo.",
+   "Os botões de centralizar e de som não ficam mais em cima da janela de busca: acompanham a altura dela.",
+   "As abas da ficha do herói não ficam mais apertadas e aparecem todas de uma vez.",
+   "Nova aba 📊 Números: km da semana e do mês em gráfico, recordes, tempo ao volante e os monstros que você mais derrotou.",
+   "O topo da tela mostra a cidade onde você está (Caucaia, Fortaleza, Aquiraz...) e o XP em números.",
+   "A região 'Cidade' do jogo virou 'Zona Urbana', pra não confundir com o nome da cidade.",
+   "Precisa instalar o APK novo uma vez, por causa do botão voltar."
+  ]
+ },
+ {
+  "v": "5.7",
+  "d": "21/11/2026",
+  "t": "Jornada sem toque",
+  "i": [
+   "⚖️ Honra no volante: respeitar o limite de velocidade rende pontos de Honra e bônus de XP e ouro. Correr demais mancha sua honra.",
+   "🏰 Bardo: cada bairro é um reino. Uma voz anuncia quando você entra num bairro, e descobrir bairros novos dá XP.",
+   "🛡️ Cerco: parado no engarrafamento, seu herói enfrenta ondas de monstros sozinho.",
+   "📜 Crônica: ao chegar, um resumo épico da viagem.",
+   "⚔️ Patrulhas: o app aprende suas rotas da rotina e oferece a rota no horário de sempre.",
+   "🏛️ Viagens longas trazem monstros mais raros. A partir de 60 km aparecem os Ancestrais, mais fortes e com loot melhor."
+  ]
+ },
+ {
+  "v": "5.6",
+  "d": "21/11/2026",
+  "t": "Busca nova e reportar bug",
+  "i": [
+   "A busca abre em tela cheia, igual ao Waze, e nada fica por cima da lista de sugestões.",
+   "As sugestões aparecem a partir de 2 letras e entendem abreviação (av, r., dr) e falta de acento.",
+   "Índice próprio da Grande Fortaleza: ruas, bairros e lugares aparecem na hora, mesmo sem internet.",
+   "🐞 Botão Reportar bug/sugestão (em Ajustes): manda pelo WhatsApp junto com as informações técnicas.",
+   "Corrigido: o app inteiro 'balançava' alguns pixels o tempo todo, o que atrapalhava o toque e gastava bateria."
+  ]
+ },
+ {
+  "v": "5.5",
+  "d": "21/11/2026",
+  "t": "Monstros 3D",
+  "i": [
+   "20 tipos de monstro agora aparecem em 3D animado no mapa: nascem, olham pro herói, atacam e morrem.",
+   "5 monstros novos: Slime do Esgoto, Cogumelo Saltitante, Abelha Assassina, Caveira Flutuante e Diabrete do Farol.",
+   "Os cards de batalha mostram o retrato 3D do monstro.",
+   "Corrigido: modelos 3D apareciam 'estilhaçados' por falta de precisão. O herói também ficou mais firme na tela."
+  ]
+ },
+ {
+  "v": "5.4",
+  "d": "21/11/2026",
+  "t": "Tema Castelo e retratos 3D",
+  "i": [
+   "Novo visual padrão Castelo, inspirado em Castlevania: azul-noite, vermelho-sangue e dourado.",
+   "Fontes novas com números bem legíveis (antes dava pra confundir 2, 5 e 8).",
+   "Retratos 3D dos heróis na seleção de classe, no topo da tela e na ficha.",
+   "Esqueletos em 3D no mapa."
+  ]
+ },
+ {
+  "v": "5.3",
+  "d": "21/11/2026",
+  "t": "RPG mais profundo",
+  "i": [
+   "✨ Talentos: 1 ponto por nível pra fortalecer o herói do seu jeito.",
+   "Cada classe tem uma habilidade automática (bloqueio, fúria, bola de fogo, golpe nas sombras, tiro certeiro).",
+   "🥚 Companheiro: um ovo aparece no nível 3, choca andando e o bichinho ajuda nas batalhas.",
+   "Regiões (Costa, Centro, Mata, Sertão) com monstros diferentes.",
+   "Clima real: chuva, calor e lua cheia mudam os monstros e dão bônus.",
+   "🏯 Masmorras em shoppings e pontos de Fortaleza, e conjuntos de equipamento.",
+   "Dificuldade rebalanceada: o jogo estava fácil demais."
+  ]
+ },
+ {
+  "v": "5.2",
+  "d": "21/11/2026",
+  "t": "Ajustes do teste de rua",
+  "i": [
+   "Recálculo de rota bem mais rápido: cerca de 4 segundos ao entrar numa rua errada.",
+   "🗼 Torres do Vigia (radares) sempre visíveis no mapa.",
+   "Números com fonte mais legível."
+  ]
+ },
+ {
+  "v": "5.1",
+  "d": "20/11/2026",
+  "t": "Nasce o Ranvus Maps",
+  "i": [
+   "Nome novo: Ranvus Maps, com ícone novo.",
+   "Herói 3D animado que corre de costas na navegação e pode ser visto de outros ângulos girando o mapa."
+  ]
+ },
+ {
+  "v": "5.0",
+  "d": "20/11/2026",
+  "t": "Alertas e mundo vivo",
+  "i": [
+   "Alertas de radar, lombada, pedágio, passagem de trem, curva perigosa e queda de limite.",
+   "Indicação de faixas, paradas no caminho (posto, farmácia, estacionamento), Casa e Trabalho.",
+   "Compartilhar a viagem no WhatsApp, busca por voz, funciona offline e backup do progresso.",
+   "Chefes fixos em pontos de Fortaleza, missões semanais e névoa nas áreas não exploradas."
+  ]
+ },
+ {
+  "v": "4.5",
+  "d": "20/11/2026",
+  "t": "Aplicativo Android",
+  "apk": true,
+  "i": [
+   "Primeiro APK: GPS em segundo plano, voz nativa e tela sempre ligada.",
+   "Tela de permissões na primeira abertura.",
+   "Erros aparecem na tela pra facilitar o diagnóstico."
+  ]
+ },
+ {
+  "v": "4.3",
+  "d": "20/11/2026",
+  "t": "Navegação mais esperta",
+  "i": [
+   "Corrigido: a rota ficava sendo recalculada o tempo todo.",
+   "Bússola e acelerômetro: a posição não 'pula' com o carro parado.",
+   "Continua navegando por alguns segundos quando o GPS perde o sinal."
+  ]
+ },
+ {
+  "v": "4.2",
+  "d": "20/11/2026",
+  "t": "Velocímetro",
+  "i": [
+   "Velocímetro e placa de velocidade máxima da via, com alerta quando passa do limite.",
+   "A busca mostra primeiro os lugares mais perto de você."
+  ]
+ },
+ {
+  "v": "4.1",
+  "d": "20/11/2026",
+  "t": "Câmera 3D",
+  "i": [
+   "Câmera 3D estilo Waze na navegação, com prédios em 3D.",
+   "Volta o visual temático do mapa."
+  ]
+ },
+ {
+  "v": "4.0",
+  "d": "20/11/2026",
+  "t": "Meu Mapa RPG",
+  "i": [
+   "O mapa vira jogo: escolha sua classe (cavaleiro, bárbaro, mago, ladino, arqueiro).",
+   "Batalhas automáticas pelo caminho, XP, níveis, ouro e itens. Você só dirige.",
+   "Voz guiando a viagem e modo treino pra simular uma rota."
+  ]
+ },
+ {
+  "v": "1.0",
+  "d": "18/11/2026",
+  "t": "Primeira versão",
+  "i": [
+   "Mapa pessoal com busca de endereço e rota."
+  ]
+ }
 ]

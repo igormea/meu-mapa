@@ -205,7 +205,7 @@ body.arrive #fabs{display:none}
 #sheet{position:fixed;inset:0;z-index:300;display:none;background:rgba(0,0,0,.55)}
 #sheet.on{display:block}
 #sheetBox{position:absolute;left:0;right:0;bottom:0;max-height:88vh;display:flex;flex-direction:column;border-radius:18px 18px 0 0;background:linear-gradient(180deg,#1b1846,#0c0a1c);border-top:3px solid var(--gold);padding:10px 14px calc(16px + env(safe-area-inset-bottom))}
-#tabs{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:2px 0 12px;flex-shrink:0}
+#tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:2px 0 12px;flex-shrink:0}
 .tab{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;padding:6px 1px 5px;border-radius:9px;font:600 10.5px/1.1 var(--px);background:#0b0918;border:2px solid var(--edge);color:var(--muted);cursor:pointer}
 .tab i{font-style:normal;font-size:19px;line-height:1.1}
 .tab span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -431,3 +431,16 @@ body.searching #hud,body.searching #fabs,body.searching #recenterBtn,body.search
 .pn ul{margin:6px 0 0;padding-left:18px}.pn li{font-size:13px;color:var(--parch);margin-bottom:4px;line-height:1.35}
 .pn-apk{font-size:12px;color:#f3a3a3;margin-top:5px}
 #newsPanel .opt{display:flex}#newsPanel .opt button{flex:1;padding:11px;border-radius:10px;border:2px solid var(--gold);background:#8f1d2c;color:#fff;font:700 14px var(--px)}
+
+/* bestiário */
+.bchips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:10px 0}
+.bchips .chip{flex-shrink:0;padding:6px 10px;border-radius:14px;border:1.5px solid var(--edge);font-size:12px;color:var(--muted);background:#0b0918;white-space:nowrap}
+.bchips .chip.on{border-color:var(--gold);color:var(--gold2)}
+.bgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.bc{border:2px solid;border-radius:12px;padding:8px;background:#0b0918;display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0}
+.bpic{width:76px;height:76px;display:flex;align-items:center;justify-content:center}
+.bp{width:76px;height:76px;object-fit:contain}.be{font-size:46px}
+.bc.unk .bp,.bc.unk .be{filter:brightness(0) drop-shadow(0 0 2px rgba(180,170,255,.5));opacity:.8}
+.bn{font:700 13px var(--px);color:var(--parch);margin-top:4px}
+.br{font-size:11px;margin-top:1px}
+.bh{font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.35}

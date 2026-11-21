@@ -121,43 +121,50 @@ function fight(m){
 }
 const critChance=()=>cls().crit+bonus('crit');
 
-/* ═════ REGIÕES DE FORTALEZA ═════ (aproximadas) */
-const REGION={costa:{n:'Costa',ic:'🌊'},centro:{n:'Centro Antigo',ic:'🏛️'},mata:{n:'Mata',ic:'🌳'},sertao:{n:'Sertão',ic:'🌵'},cidade:{n:'Zona Urbana',ic:'🏙️'}};
+/* ═════ TERRENOS (js/terrain.js) ═════ REGION = terrenos; a aproximação antiga fica como reserva */
+const REGION=TER;
 const COAST=[[-3.6930,-38.6000],[-3.7050,-38.5700],[-3.7120,-38.5450],[-3.7180,-38.5250],[-3.7200,-38.5050],[-3.7225,-38.4900],
   [-3.7160,-38.4780],[-3.7290,-38.4660],[-3.7470,-38.4540],[-3.7750,-38.4420],[-3.8050,-38.4180],[-3.8400,-38.3900]];
 const PARKS=[[-3.7455,-38.4870,1600],[-3.7880,-38.4350,1500],[-3.7950,-38.5050,700]];
 function distToLine(lat,lon,pts){let b=Infinity;for(let i=0;i<pts.length-1;i++)b=Math.min(b,projSeg(lat,lon,pts[i],pts[i+1]).d);return b}
-function regionAt(lat,lon){
+function regionAtOld(lat,lon){
   if(hav(lat,lon,-3.7275,-38.5275)<1600)return'centro';
-  if(distToLine(lat,lon,COAST)<1300)return'costa';
+  if(distToLine(lat,lon,COAST)<700)return'costa';
   for(const p of PARKS)if(hav(lat,lon,p[0],p[1])<p[2])return'mata';
   if(hav(lat,lon,-3.7600,-38.5300)>22000)return'sertao';
   return'cidade';
 }
-// sorteio de monstro considerando região, noite, chuva, lua cheia e calor
+const regionAt=(lat,lon)=>terrainAt(lat,lon);
+// condições do monstro (noite, lua, chuva, distância) — usado no sorteio e no bestiário
+function monOk(m,c){return(!m.night||c.night)&&(!m.moonOnly||c.moon)&&(!m.rain||c.rain)&&(!m.deep||c.deep>=m.deep)}
+// sorteio: terreno onde o monstro nasce + raridade + noite/chuva/lua/calor + distância da viagem
 // km = quanto já se andou nesta viagem: quanto mais longe de casa, mais raros e fortes os monstros
 function rollMonster(lat,lon,km=0){
-  const deep=Math.max(0,km);
+  const deep=Math.max(0,km),e=envNow();
   if(S.lvl>=5&&Math.random()<.015+Math.min(.04,deep/2500))return mkMon(MONS.find(m=>m.t===6),{dragon:true,depth:deep});
-  const mt=Math.min(5,1+Math.floor((S.lvl-1)/3)+Math.floor(deep/45)),night=isNight(),e=envNow();
-  const reg=lat!=null?regionAt(lat,lon):null;
-  const ok=m=>m.t<=mt&&m.t<6&&(!m.night||night)&&(!m.moonOnly||e.moon);
-  // longe de casa os monstros fracos somem do sorteio
-  const minT=deep>=120?3:deep>=60?2:1;
-  let pool=MONS.filter(m=>ok(m)&&m.t>=Math.min(minT,mt)&&(!reg||!m.r||m.r.includes(reg)));
-  if(!pool.length)pool=MONS.filter(ok);
-  const w=pool.map(m=>Math.pow(m.t,1.5)*(e.rain&&m.aq?3:1)*(e.moon&&(m.moon||m.moonOnly)?3:1)*(e.hot&&m.hot?2:1));
+  const mt=Math.min(5,1+Math.floor((S.lvl-1)/3)+Math.floor(deep/45));
+  const ter=lat!=null?terrainAt(lat,lon):'u',cond={night:isNight(),moon:e.moon,rain:e.rain,deep};
+  const ok=m=>m.t<=mt&&m.t<6&&monOk(m,cond);
+  const minT=deep>=120?3:deep>=60?2:1;              // longe de casa os monstros fracos somem do sorteio
+  const here=m=>m.ter==='*'||m.ter.includes(ter);
+  let pool=MONS.filter(m=>ok(m)&&here(m)&&m.t>=Math.min(minT,mt));
+  if(pool.length<2)pool=MONS.filter(m=>ok(m)&&here(m));
+  if(!pool.length)pool=MONS.filter(m=>ok(m)&&m.ter.includes('u'));
+  const w=pool.map(m=>RARW[m.rar||1]*(e.rain&&m.aq?3:1)*(e.moon&&m.moon?3:1)*(e.hot&&m.hot?2:1));
   let r=Math.random()*w.reduce((a,b)=>a+b,0),p=pool[0];
   for(let i=0;i<pool.length;i++){r-=w[i];if(r<=0){p=pool[i];break}}
-  const mon=mkMon(p,{elite:Math.random()<.1+Math.min(.25,deep/300),depth:deep});mon.reg=reg;return mon;
+  const mon=mkMon(p,{elite:Math.random()<.1+Math.min(.25,deep/300),depth:deep});mon.reg=ter;return mon;
 }
 let regionShown=null;
+let regCand=null,regCandN=0,regCardT=0;
 function regionTick(lat,lon){
   if(simSnap&&!isNav)return;
-  const r=regionAt(lat,lon);if(r===regionShown)return;
-  const first=regionShown===null;regionShown=r;S.curRegion=r;
+  const r=regionAt(lat,lon);if(r===regionShown){regCand=null;return}
+  const first=regionShown===null;
+  if(!first){if(r!==regCand){regCand=r;regCandN=1;return}if(++regCandN<3)return}   // 3 leituras seguidas (evita pisca-pisca)
+  regionShown=r;S.curRegion=r;regCand=null;
   S.regions=S.regions||[];if(!S.regions.includes(r)&&!simSnap){S.regions.push(r);checkAch()}
-  if(!first)card(REGION[r].ic,`Você entrou em: ${REGION[r].n}`,'Os monstros daqui são diferentes','gold');
+  if(!first&&Date.now()-regCardT>60000){regCardT=Date.now();card(REGION[r].ic,`Terreno: ${REGION[r].n}`,'Os monstros daqui são diferentes','gold')}
   renderEnv();
 }
 
@@ -255,6 +262,7 @@ function runDungeon(d){
 
 /* ═════ ganchos chamados a cada posição do GPS ═════ */
 function rpgTick(lat,lon,spd,real){
+  curKmh=(spd||0)*3.6;
   regionTick(lat,lon);
   if(real){weatherTick(lat,lon);cityTick(lat,lon)}
   dungeonTick(lat,lon,spd,false);

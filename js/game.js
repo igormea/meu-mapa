@@ -87,9 +87,9 @@ function battle(s){
     const x=gainXP(m.xp),g=gainGold(m.gold*(res.steal?1.5:1));
     S.stats.kills++;histAdd('k',1);bestAdd(m.n);ensureDaily();S.daily.kills++;if(T)T.kills++;if(!simSnap)weekAdd('kills',1);if(m.dragon){S.stats.dragons++;speak('Você derrotou um Dragão Ancião!','fun')}
     floatTxt(`+${x} XP`,'xp');hero3d('act','attack');
-    card(m.m3d?monPic(m.m3d):m.e,`${m.n}${m.elite?' ★':''} <span style="color:#b59f7b">Nv ${m.lvl}</span> derrotado!`,
+    card(m.m3d?monPic(monKey(m)):m.e,`${m.n}${m.elite?' ★':''} <span style="color:#b59f7b">Nv ${m.lvl}</span> derrotado!`,
       `<b>+${x} XP</b> · <b>+${g} 🪙</b>${res.taken?` · −${res.taken} ❤️`:''}${res.crit?' · <b>CRÍTICO!</b>':''}${res.skills.length?' · '+res.skills.join(' · '):''}${res.steal?' · 💰 roubo!':''}`,m.dragon?'epic':'');
-    if(m.reg==='costa'||m.aq)S.stats.aqKills=(S.stats.aqKills||0)+(envNow().rain&&m.aq?1:0);
+    if(m.aq)S.stats.aqKills=(S.stats.aqKills||0)+(envNow().rain&&m.aq?1:0);
     if(m.anc){if(T)T.deep=(T.deep||0)+1;S.stats.anc=(S.stats.anc||0)+1}
     const ch=(m.dragon?1:m.elite?.5:.16)*cls().loot*(1+bonus('loot'))*(1+Math.min(1.5,(m.depth||0)/80));
     if(Math.random()<ch)handleItem(makeItem(Math.max(rollRar(Math.min(.6,(m.depth||0)/200)),m.dragon?3:m.elite||m.anc?1:0)));

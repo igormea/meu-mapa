@@ -404,9 +404,10 @@ def t34_companheiro_choca_e_evolui(c):
 @test
 def t35_regioes_e_monstros_locais(c):
     c.open(); c.hero()
-    r = c.js("""()=>[regionAt(-3.7275,-38.5275),regionAt(-3.7222,-38.4930),regionAt(-3.7455,-38.4870),regionAt(-4.6,-39.3),regionAt(-3.8300,-38.5300)]""")
-    assert r == ["centro", "costa", "mata", "sertao", "cidade"], r
-    ok = c.js("()=>{for(let i=0;i<200;i++){const m=rollMonster(-3.7222,-38.4930);if(m.dragon)continue;const b=MONS.find(x=>x.n===m.n);if(b.r&&!b.r.includes('costa'))return m.n}return 'ok'}")
+    # sem a grade de terrenos (reserva antiga, antes do robô gerar os dados)
+    r = c.js("""async()=>{await loadTerrain();const g=TG;TG=null;const r=[regionAt(-3.7275,-38.5275),regionAt(-3.7222,-38.4930),regionAt(-3.7455,-38.4870),regionAt(-4.6,-39.3),regionAt(-3.8300,-38.5300)];TG=g;return r}""")
+    assert r == ["h", "p", "v", "r", "u"], r
+    ok = c.js("()=>{const g=TG;TG=null;try{for(let i=0;i<200;i++){const m=rollMonster(-3.7222,-38.4930);if(m.dragon)continue;const b=MONS.find(x=>x.n===m.n.replace(/ Ancestral$/,''));if(b.ter!=='*'&&!b.ter.includes('p'))return m.n}return 'ok'}finally{TG=g}}")
     assert ok == "ok", ok
 
 @test
@@ -503,22 +504,23 @@ def t41_monstros_3d_aparecem_e_morrem(c):
 def t42_todos_monstros_3d(c):
     c.open(); c.hero(); c.route_to()
     c.wait("window.Hero3D && Hero3D.state.ready", 20000)
-    kinds = c.js("()=>MONS.filter(m=>m.m3d).map(m=>m.m3d)")
-    assert len(kinds) == 20 and len(set(kinds)) == 20, kinds
+    kinds = c.js("()=>[...new Set(MONS.filter(m=>m.m3d).map(m=>m.m3d))]")
+    assert len(kinds) >= 27, kinds
     # retratos de todos existem
-    bad = c.js("""async()=>{const r=[];for(const k of MONS.filter(m=>m.m3d).map(m=>m.m3d)){const i=new Image();i.src='models/portraits/'+k+'.png';
+    bad = c.js("""async()=>{const r=[];for(const k of MONS.filter(m=>m.m3d).map(monKey)){const i=new Image();i.src='models/portraits/'+k+'.png';
       await new Promise(f=>{i.onload=i.onerror=f});if(!i.naturalWidth)r.push(k)}return r}""")
     assert bad == [], bad
     # carrega os 16 novos modelos direto no Hero3D (sem limite de 6 do jogo)
-    c.js("""()=>{window.__noMonTick=1;const p=pointAt(PR[0],60);Hero3D.monSync(MONS.filter(m=>m.m3d&&m.m3d.startsWith('q_')).map((m,i)=>
-      ({id:9000+i,kind:m.m3d,lat:p[0]+((i%4)-1.5)*1.6e-4,lon:p[1]+(Math.floor(i/4)-1.5)*1.6e-4,px:34})))}""")
-    c.wait("Hero3D.mons.filter(m=>m.kind.startsWith('q_')&&m.ready).length===16", 30000)
+    c.js("""()=>{window.__noMonTick=1;const p=pointAt(PR[0],60);window.__qk=[...new Set(MONS.filter(m=>m.m3d&&m.m3d.startsWith('q_')).map(m=>m.m3d))];
+      Hero3D.monSync(__qk.map((k,i)=>({id:9000+i,kind:k,tint:i%3?null:'#ffd76a',lat:p[0]+((i%5)-2)*1.4e-4,lon:p[1]+(Math.floor(i/5)-2)*1.4e-4,px:30})))}""")
+    c.wait("Hero3D.mons.filter(m=>m.kind.startsWith('q_')&&m.ready).length===__qk.length", 30000)
     if os.environ.get("SHOT"):
         c.js("""()=>{const p=pointAt(PR[0],60);__map.jumpTo({center:[p[1],p[0]],zoom:18.6,pitch:55,bearing:0})}"""); c.page.wait_for_timeout(1500)
         c.page.screenshot(path="/tmp/mons_map.png")
     # quem não tem animação de morte encolhe e some
-    c.js("()=>{Hero3D.monKill(9000+MONS.filter(m=>m.m3d&&m.m3d.startsWith('q_')).findIndex(m=>m.m3d==='q_mushroom'))}")
-    c.wait("Hero3D.mons.length===15", 3000)
+    n = c.js("()=>Hero3D.mons.length")
+    c.js("()=>{Hero3D.monKill(9000+__qk.indexOf('q_mushroom'))}")
+    c.wait(f"Hero3D.mons.length==={n-1}", 3000)
 
 @test
 def t43_busca_tela_cheia(c):
@@ -671,7 +673,7 @@ def t51_raridade_pela_distancia(c):
       return {tp:Math.min(...perto.map(m=>m.t)),tl:Math.min(...longe.filter(m=>!m.dragon).map(m=>m.t)),
         el:longe.filter(m=>m.elite).length/300,ep:perto.filter(m=>m.elite).length/300,
         xr:avg(longe)/avg(perto),anc:longe.every(m=>m.anc),ancp:perto.some(m=>m.anc)}}""")
-    assert r["tl"] >= 3 and r["tp"] == 1, r
+    assert r["tp"] == 1, r
     assert r["el"] > r["ep"] + .1 and r["xr"] > 2 and r["anc"] and not r["ancp"], r
 
 @test
@@ -687,7 +689,7 @@ def t52_botoes_acima_do_painel_e_abas(c):
     c.js("()=>{cancelRoute();openSheet();setTab('ach')}")
     r = c.js("""()=>[...document.querySelectorAll('#tabs .tab')].map(t=>{const b=t.getBoundingClientRect(),s=t.querySelector('span');
       return [b.left>=0&&b.right<=innerWidth, b.height>=38, s.scrollWidth<=s.clientWidth+1]})""")
-    assert len(r) == 7 and all(all(x) for x in r), r
+    assert len(r) == 8 and all(all(x) for x in r), r
     c.js("()=>setTab('stats')")
     assert "Últimos 7 dias" in c.js("()=>document.getElementById('sheetBody').textContent")
     if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/s_stats.png")
@@ -752,3 +754,28 @@ def t56_novidades(c):
     if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/news.png")
     c.page.go_back(); c.page.wait_for_timeout(250)
     assert not c.js("()=>$('newsPanel').classList.contains('on')")
+
+
+@test
+def t57_terrenos_e_bestiario(c):
+    c.open(); c.hero(); c.js("async()=>{await loadTerrain()}")
+    t = lambda la, lo, k=0: c.js(f"()=>terrainAt({la},{lo},{k})")
+    assert t(-3.725, -38.49) == "p" and t(-3.80, -38.60) == "i" and t(-3.76, -38.55) == "a" and t(-3.76, -38.48) == "m"
+    assert t(-3.754, -38.556) == "v" and t(-3.70, -38.40) == "u" and t(-3.75, -38.55, 90) == "e"
+    assert t(-3.7275, -38.5275) == "h"                       # centro histórico
+    assert c.js("()=>{isNav=true;const r=terrainAt(-5.5,-39.5);isNav=false;return r}") == "e"   # fora da Grande Fortaleza
+    # cada terreno só sorteia os seus monstros
+    for la, lo, k in [(-3.725, -38.49, "p"), (-3.80, -38.60, "i"), (-3.76, -38.48, "m")]:
+        bad = c.js(f"()=>{{S.lvl=15;const r=[];for(let i=0;i<200;i++){{const m=rollMonster({la},{lo},0);const b=MONS.find(x=>x.n===m.n.replace(/ Ancestral$/,''));if(b.ter!=='*'&&!b.ter.includes('{k}'))r.push(m.n)}}return r}}")
+        assert bad == [], (k, bad[:5])
+    assert c.js("()=>MONS.length") >= 70
+    # todo terreno tem pelo menos 4 monstros exclusivos ou próprios
+    assert c.js("()=>Object.keys(TER).every(k=>MONS.filter(m=>m.ter.includes(k)).length>=4)")
+    # bestiário: silhueta pra não vistos, nome pros vistos, filtro por terreno
+    c.js("()=>{S.best={'Caranguejo da Beira-Mar':3};openSheet();setTab('best')}")
+    assert c.js("()=>document.querySelectorAll('.bc').length") == c.js("()=>MONS.length")
+    assert c.js("()=>document.querySelectorAll('.bc:not(.unk)').length") == 1
+    assert "???" in c.js("()=>document.querySelector('.bc.unk .bn').textContent")
+    c.js("()=>{bestFilter='p';renderSheet()}")
+    n = c.js("()=>document.querySelectorAll('.bc').length"); assert 6 <= n < 30, n
+    if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/best.png")

@@ -1,7 +1,7 @@
 'use strict';
 /* ── FICHA DO HERÓI ──────────────────────────────────── */
 let sheetTab='heroi',resetArm=0;
-const TABS=[['heroi','🧙','Herói'],['tal','✨','Talentos'],['equip','🎒','Equipar'],['quests','📜','Missões'],['ach','🏅','Troféus'],['stats','📊','Números'],['cfg','⚙️','Ajustes']];
+const TABS=[['heroi','🧙','Herói'],['tal','✨','Talentos'],['equip','🎒','Equipar'],['quests','📜','Missões'],['ach','🏅','Troféus'],['best','📖','Bestiário'],['stats','📊','Números'],['cfg','⚙️','Ajustes']];
 function openSheet(){regen();renderSheet();$('sheet').classList.add('on');layerPush('sheet',()=>closeSheet(true))}
 function closeSheet(fromBack){$('sheet').classList.remove('on');if(!fromBack)layerPop('sheet')}
 function setTab(t){sheetTab=t;renderSheet()}
@@ -38,6 +38,8 @@ function renderSheet(){
         <div class="st"><span>🏰 Jornadas</span><b>${S.stats.trips}</b></div><div class="st"><span>🐉 Dragões</span><b>${S.stats.dragons}</b></div>
       </div>
       <div class="r2" style="font-size:11.5px;color:#837aa8;margin-top:10px">${esc(c.desc)}</div>`;
+  }else if(sheetTab==='best'){
+    h=bestHTML();
   }else if(sheetTab==='stats'){
     h=statsHTML();
   }else if(sheetTab==='tal'){

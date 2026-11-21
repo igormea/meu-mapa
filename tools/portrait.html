@@ -17,6 +17,7 @@ window.shoot = async (url, opt = {}) => {
   const rim = new THREE.DirectionalLight(0x8fb0ff, 2.2); rim.position.set(-3, 2, -2); scene.add(rim);
   const l = new GLTFLoader(); l.setMeshoptDecoder(MeshoptDecoder);
   const g = await l.loadAsync(url); const m = opt.clone ? cloneSkinned(g.scene) : g.scene; scene.add(m);
+  if (opt.tint) m.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); o.material.color.set(opt.tint); o.material.emissive?.set(opt.tint).multiplyScalar(.28); } });
   const mixer = new THREE.AnimationMixer(m); const clip = g.animations.find(a => a.name === (opt.anim || 'idle'));
   if (clip) { mixer.clipAction(clip).play(); mixer.update(opt.t || 0.6); }
   m.rotation.y = opt.rot ?? 0.55;

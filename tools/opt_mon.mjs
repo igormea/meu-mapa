@@ -4,10 +4,12 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { prune, dedup, resample, weld, quantize, meshopt } from '@gltf-transform/functions';
 import { MeshoptEncoder, MeshoptDecoder } from 'meshoptimizer';
 const SRC = process.argv[2], OUT = process.argv[3];
+const ONLY = process.argv[4] ? process.argv[4].split(',') : null;
 const M = {   // arquivo → [id no app, {animação original: nome no app}]
   Crab: ['q_crab'], Bat: ['q_bat'], Cactus: ['q_cactus'], Ghost: ['q_ghost'], Tree: ['q_tree'], Cthulhu: ['q_cthulhu'],
   YellowDragon: ['q_ydragon'], Demon: ['q_demon'], Cyclops: ['q_cyclops'], Pig: ['q_pig'], Bee: ['q_bee'],
   Mushroom: ['q_mushroom'], Skull: ['q_skull'], Yeti: ['q_yeti'], Old_Slime: ['q_slime'], Old_Dragon: ['q_dragon'],
+  Alien: ['q_alien'], Alien_Tall: ['q_alientall'], Deer: ['q_deer'], Panda: ['q_panda'], Penguin: ['q_penguin'], Chicken: ['q_chicken'], GreenDemon: ['q_gdemon'],
 };
 const NAME = n => {
   const s = n.split('|').pop().replace(/\.\d+$/, '');
@@ -22,6 +24,7 @@ const NAME = n => {
 await MeshoptEncoder.ready; await MeshoptDecoder.ready;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.encoder': MeshoptEncoder, 'meshopt.decoder': MeshoptDecoder });
 for (const [file, [id]] of Object.entries(M)) {
+  if (ONLY && !ONLY.includes(file)) continue;
   const doc = await io.read(`${SRC}/${file}.glb`); const root = doc.getRoot(); const seen = new Set();
   for (const a of root.listAnimations()) {
     let nm = NAME(a.getName());

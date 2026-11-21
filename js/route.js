@@ -65,7 +65,7 @@ let spawnSeq=0;
 function mon3dTick(lat,lon){
   if(!window.Hero3D?.state.ready||window.__noMonTick)return;  // __noMonTick: usado só nos testes
   const Rt=isNav?R:PR[selIdx];const list=[];
-  if(Rt)for(const s of Rt.spawns){if(s.done||!s.m.m3d)continue;const d=hav(lat,lon,s.lat,s.lon);if(d<700)list.push({id:s.id,kind:s.m.m3d,lat:s.lat,lon:s.lon,px:s.m.elite?40:34,d})}
+  if(Rt)for(const s of Rt.spawns){if(s.done||!s.m.m3d)continue;const d=hav(lat,lon,s.lat,s.lon);if(d<700)list.push({id:s.id,kind:s.m.m3d,tint:s.m.tint||null,lat:s.lat,lon:s.lon,px:s.m.elite?40:34,d})}
   list.sort((a,b)=>a.d-b.d);window.Hero3D.monSync(list.slice(0,6));
 }
 window.__onMon3D=(id,ok)=>{for(const Rt of [R,...PR])for(const s of Rt?.spawns||[])if(s.id===id&&s.mk)s.mk.getElement().style.visibility=ok?'hidden':''};

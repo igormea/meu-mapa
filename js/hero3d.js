@@ -89,12 +89,14 @@ async function template(kind) {
   });
   return TPL[kind];
 }
-async function monAdd(id, kind, lat, lon, px = 36) {
+async function monAdd(id, kind, lat, lon, px = 36, tint = null) {
   if (MON.has(id) || H.failed) return;
   const m = { id, kind, lat, lon, px, obj: null }; MON.set(id, m);
   try {
     const t = await template(kind); if (!MON.has(id)) return;
     const obj = cloneSkinned(t.g.scene); m.obj = obj; m.height = t.height; scene.add(obj);
+    // variantes: mesmo modelo com outra cor (ex.: Slime de Areia, Caranguejo Rei)
+    if (tint) obj.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); o.material.color.set(tint); o.material.emissive?.set(tint).multiplyScalar(.28); } });
     m.mixer = new THREE.AnimationMixer(obj); m.actions = {};
     for (const c of t.g.animations) m.actions[c.name] = m.mixer.clipAction(c);
     for (const k of ['spawn', 'attack', 'hit', 'death']) if (m.actions[k]) { m.actions[k].setLoop(THREE.LoopOnce, 1); m.actions[k].clampWhenFinished = true; }
@@ -158,7 +160,7 @@ window.Hero3D = {
     if (!H.ready) return;
     const want = new Set(list.map(x => x.id));
     for (const id of [...MON.keys()]) if (!want.has(id) && !MON.get(id).dying) monRemove(id);
-    for (const x of list) monAdd(x.id, x.kind, x.lat, x.lon, x.px);
+    for (const x of list) monAdd(x.id, x.kind, x.lat, x.lon, x.px, x.tint);
   },
   monKill, monAttack(id) { const m = MON.get(id); (m?.actions?.attack || m?.actions?.hit)?.reset().play(); },
   get mons() { return [...MON.values()].map(m => ({ id: m.id, kind: m.kind, ready: !!m.obj, dying: !!m.dying })); },

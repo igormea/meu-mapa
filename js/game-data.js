@@ -45,40 +45,97 @@ function spriteSVG(key){
 /* ── MONSTROS / ITENS / CONQUISTAS ───────────────────── */
 // Monstros. r = regiões onde aparecem (sem r = qualquer lugar); night = só à noite;
 // aq = aquático (mais comum na chuva); moon = mais comum na lua cheia; moonOnly = só na lua cheia; hot = mais comum no calor
+/* BESTIÁRIO — ter: terrenos onde aparece (u urbano · c comércio · h centro histórico · i industrial · p praia · a lagoa/rio ·
+   m mangue · v mata · r sertão · e estrada · * qualquer). rar: 1 comum · 2 incomum · 3 raro · 4 épico · 5 lendário.
+   Condições: night (só à noite), moonOnly (só lua cheia), rain (só com chuva), hot (calor), deep (km mínimos na viagem).
+   aq/moon/hot também aumentam a chance com chuva/lua/calor. tint: cor aplicada ao modelo 3D (variantes). */
 const MONS=[
-  {n:'Rato de Esgoto',e:'🐀',t:1,r:['cidade','centro']},
-  {n:'Morcego Noturno',e:'🦇',t:1,night:1,m3d:'q_bat'},
-  {n:'Caranguejo da Beira-Mar',e:'🦀',t:1,r:['costa'],aq:1,m3d:'q_crab'},
-  {n:'Gaivota Ladra',e:'🐦',t:1,r:['costa']},
-  {n:'Sapo Venenoso',e:'🐸',t:1,r:['mata'],aq:1},
-  {n:'Calango Ligeiro',e:'🦎',t:1,r:['sertao'],hot:1},
-  {n:'Cacto Vivo',e:'🌵',t:2,r:['sertao','mata'],m3d:'q_cactus'},
-  {n:'Serpente do Mangue',e:'🐍',t:2,r:['mata','costa'],aq:1},
-  {n:'Aranha Gigante',e:'🕷️',t:2,r:['mata','centro','cidade']},
-  {n:'Polvo das Jangadas',e:'🐙',t:3,r:['costa'],aq:1,m3d:'q_cthulhu'},
-  {n:'Lobo Cinzento',e:'🐺',t:3,r:['cidade','mata','sertao'],moon:1},
-  {n:'Escorpião do Sertão',e:'🦂',t:3,r:['sertao','cidade'],hot:1},
-  {n:'Javali Furioso',e:'🐗',t:3,r:['mata','sertao'],m3d:'q_pig'},
-  {n:'Jacaré do Mangue',e:'🐊',t:4,r:['mata','costa'],aq:1},
-  {n:'Lacaio Esquelético',e:'💀',t:2,r:['centro','cidade'],m3d:'esq_lacaio'},
-  {n:'Saqueador Esquelético',e:'💀',t:3,r:['centro','costa'],m3d:'esq_ladino'},
-  {n:'Esqueleto Errante',e:'💀',t:4,r:['centro','cidade'],m3d:'esq_guerreiro'},
-  {n:'Necromante Esquelético',e:'💀',t:4,night:1,r:['centro','cidade','mata'],m3d:'esq_mago'},
-  {n:'Zumbi da Madrugada',e:'🧟',t:4,night:1,r:['centro','cidade']},
-  {n:'Fantasma',e:'👻',t:4,night:1,r:['centro'],m3d:'q_ghost'},
-  {n:'Lagarto de Fogo',e:'🦎',t:4,r:['sertao'],hot:1,m3d:'q_ydragon'},
-  {n:'Tubarão de Areia',e:'🦈',t:5,r:['costa'],aq:1},
-  {n:'Ogro da Ponte',e:'👹',t:5,r:['cidade','centro'],m3d:'q_cyclops'},
-  {n:'Troll das Dunas',e:'🧌',t:5,r:['costa','sertao'],m3d:'q_yeti'},
-  {n:'Ent Jovem',e:'🌳',t:5,r:['mata'],m3d:'q_tree'},
-  {n:'Lobisomem',e:'🐺',t:5,moonOnly:1},
-  {n:'Dragão Ancião',e:'🐉',t:6,m3d:'q_dragon'},
-  {n:'Slime do Esgoto',e:'🟢',t:1,r:['cidade','centro'],m3d:'q_slime'},
-  {n:'Cogumelo Saltitante',e:'🍄',t:1,r:['mata'],m3d:'q_mushroom'},
-  {n:'Abelha Assassina',e:'🐝',t:2,r:['mata','sertao'],m3d:'q_bee'},
-  {n:'Caveira Flutuante',e:'💀',t:3,night:1,r:['centro','cidade'],m3d:'q_skull'},
-  {n:'Diabrete do Farol',e:'😈',t:5,night:1,r:['costa','centro'],m3d:'q_demon'},
+  // ── zona urbana
+  {n:'Rato de Esgoto',e:'🐀',t:1,ter:'ui',rar:1},
+  {n:'Slime do Esgoto',e:'🟢',t:1,ter:'u',rar:1,m3d:'q_slime'},
+  {n:'Morcego Noturno',e:'🦇',t:1,ter:'uhv',rar:1,night:1,m3d:'q_bat'},
+  {n:'Galinha Possuída',e:'🐔',t:1,ter:'ur',rar:2,m3d:'q_chicken',tint:'#c9a0ff'},
+  {n:'Aranha Gigante',e:'🕷️',t:2,ter:'uv',rar:1},
+  {n:'Lacaio Esquelético',e:'💀',t:2,ter:'uh',rar:2,m3d:'esq_lacaio'},
+  {n:'Gato das Sombras',e:'🐈‍⬛',t:2,ter:'uh',rar:2,night:1},
+  {n:'Diabrete do Beco',e:'😈',t:3,ter:'ui',rar:2,night:1,m3d:'q_gdemon'},
+  {n:'Caveira Flutuante',e:'💀',t:3,ter:'uh',rar:3,night:1,m3d:'q_skull'},
+  {n:'Zumbi da Madrugada',e:'🧟',t:4,ter:'uh',rar:2,night:1},
+  {n:'Ogro da Ponte',e:'👹',t:5,ter:'uc',rar:3,m3d:'q_cyclops'},
+  // ── comércio / shoppings
+  {n:'Porco Ganancioso',e:'🐷',t:2,ter:'c',rar:1,m3d:'q_pig',tint:'#ffd76a'},
+  {n:'Panda Glutão',e:'🐼',t:2,ter:'cv',rar:2,m3d:'q_panda'},
+  {n:'Saqueador Esquelético',e:'💀',t:3,ter:'chp',rar:2,m3d:'esq_ladino'},
+  {n:'Mímico de Vitrine',e:'🎁',t:3,ter:'c',rar:3},
+  {n:'Ciclope Cobrador',e:'👁️',t:4,ter:'c',rar:4,m3d:'q_cyclops',tint:'#9fe0a8'},
+  // ── centro histórico
+  {n:'Esqueleto Errante',e:'💀',t:4,ter:'hu',rar:2,m3d:'esq_guerreiro'},
+  {n:'Fantasma',e:'👻',t:4,ter:'h',rar:2,night:1,m3d:'q_ghost'},
+  {n:'Necromante Esquelético',e:'💀',t:4,ter:'h',rar:3,night:1,m3d:'esq_mago'},
+  {n:'Gárgula de Pedra',e:'🗿',t:4,ter:'h',rar:3},
+  {n:'Fantasma Dourado',e:'👻',t:5,ter:'h',rar:5,night:1,moonOnly:1,m3d:'q_ghost',tint:'#ffd76a'},
+  // ── zona industrial / porto
+  {n:'Rato Mutante',e:'🐀',t:2,ter:'i',rar:1},
+  {n:'Slime Tóxico',e:'🟣',t:3,ter:'i',rar:2,m3d:'q_slime',tint:'#b06bff'},
+  {n:'Golem de Sucata',e:'🤖',t:4,ter:'i',rar:2},
+  {n:'Alien Operário',e:'👽',t:3,ter:'ie',rar:3,m3d:'q_alien'},
+  {n:'Ciclope Ferreiro',e:'🔨',t:5,ter:'i',rar:3,m3d:'q_cyclops',tint:'#8fa6c9'},
+  {n:'Demônio da Fornalha',e:'🔥',t:5,ter:'i',rar:4,hot:1,m3d:'q_demon',tint:'#ff9a4a'},
+  // ── praia e dunas
+  {n:'Caranguejo da Beira-Mar',e:'🦀',t:1,ter:'p',rar:1,aq:1,m3d:'q_crab'},
+  {n:'Gaivota Ladra',e:'🐦',t:1,ter:'p',rar:1},
+  {n:'Slime de Areia',e:'🟡',t:1,ter:'p',rar:1,m3d:'q_slime',tint:'#e8c77a'},
+  {n:'Pinguim Perdido',e:'🐧',t:2,ter:'p',rar:3,m3d:'q_penguin'},
+  {n:'Polvo das Jangadas',e:'🐙',t:3,ter:'pa',rar:2,aq:1,m3d:'q_cthulhu'},
+  {n:'Cacto das Dunas',e:'🌵',t:2,ter:'p',rar:2,hot:1,m3d:'q_cactus',tint:'#f0e0a0'},
+  {n:'Troll das Dunas',e:'🧌',t:5,ter:'pr',rar:3,m3d:'q_yeti',tint:'#e8cf9a'},
+  {n:'Tubarão de Areia',e:'🦈',t:5,ter:'p',rar:3,aq:1},
+  {n:'Caranguejo Rei',e:'👑',t:5,ter:'p',rar:5,moonOnly:1,m3d:'q_crab',tint:'#ffd76a'},
+  // ── lagoa e rio
+  {n:'Sapo Venenoso',e:'🐸',t:1,ter:'am',rar:1,aq:1},
+  {n:'Peixe-Lâmina',e:'🐟',t:2,ter:'a',rar:1,aq:1},
+  {n:'Serpente do Lago',e:'🐍',t:2,ter:'a',rar:2,aq:1},
+  {n:'Fada do Lago',e:'🧚',t:3,ter:'a',rar:4,night:1},
+  {n:'Jacaré do Mangue',e:'🐊',t:4,ter:'am',rar:3,aq:1},
+  {n:'Kraken da Lagoa',e:'🦑',t:5,ter:'a',rar:4,rain:1,aq:1,m3d:'q_cthulhu',tint:'#5fd0c8'},
+  // ── mangue
+  {n:'Caranguejo-Uçá Gigante',e:'🦀',t:2,ter:'m',rar:1,aq:1,m3d:'q_crab',tint:'#5a6fb0'},
+  {n:'Serpente do Mangue',e:'🐍',t:2,ter:'m',rar:1,aq:1},
+  {n:'Cogumelo do Mangue',e:'🍄',t:1,ter:'mv',rar:1,m3d:'q_mushroom',tint:'#b08a6a'},
+  {n:'Garça Assombrada',e:'🦢',t:3,ter:'m',rar:2,night:1},
+  {n:'Guardião do Mangue',e:'🌳',t:5,ter:'m',rar:4,m3d:'q_tree',tint:'#4f8a4f'},
+  // ── mata e parques
+  {n:'Cogumelo Saltitante',e:'🍄',t:1,ter:'v',rar:1,m3d:'q_mushroom'},
+  {n:'Abelha Assassina',e:'🐝',t:2,ter:'vr',rar:1,m3d:'q_bee'},
+  {n:'Javali Furioso',e:'🐗',t:3,ter:'vr',rar:1,m3d:'q_pig'},
+  {n:'Lobo Cinzento',e:'🐺',t:3,ter:'vr',rar:2,moon:1},
+  {n:'Cervo Espectral',e:'🦌',t:4,ter:'v',rar:4,night:1,m3d:'q_deer',tint:'#bfe8ff'},
+  {n:'Ent Jovem',e:'🌳',t:5,ter:'v',rar:3,m3d:'q_tree'},
+  {n:'Abelha Rainha',e:'🐝',t:5,ter:'v',rar:5,hot:1,m3d:'q_bee',tint:'#ff7a5a'},
+  // ── sertão / rural
+  {n:'Calango Ligeiro',e:'🦎',t:1,ter:'r',rar:1,hot:1},
+  {n:'Cacto Vivo',e:'🌵',t:2,ter:'r',rar:1,m3d:'q_cactus'},
+  {n:'Cervo do Sertão',e:'🦌',t:2,ter:'r',rar:2,m3d:'q_deer'},
+  {n:'Escorpião do Sertão',e:'🦂',t:3,ter:'r',rar:2,hot:1},
+  {n:'Bode Demoníaco',e:'🐐',t:3,ter:'r',rar:3,night:1},
+  {n:'Lagarto de Fogo',e:'🦎',t:4,ter:'r',rar:3,hot:1,m3d:'q_ydragon'},
+  // ── estrada (fora da cidade)
+  {n:'Grifo da Rodovia',e:'🦅',t:4,ter:'e',rar:2},
+  {n:'Alien Viajante',e:'👽',t:4,ter:'e',rar:3,night:1,m3d:'q_alientall'},
+  {n:'Yeti Errante',e:'❄️',t:5,ter:'e',rar:3,deep:40,m3d:'q_yeti'},
+  {n:'Cavaleiro Sem Cabeça',e:'🏇',t:5,ter:'e',rar:4,night:1,deep:60},
+  {n:'Ciclope Primordial',e:'👁️',t:5,ter:'er',rar:5,deep:100,m3d:'q_cyclops',tint:'#ff6a6a'},
+  {n:'Dragão Dourado',e:'🐲',t:5,ter:'e',rar:5,deep:150,m3d:'q_ydragon',tint:'#ffd76a'},
+  // ── em qualquer lugar (condições especiais)
+  {n:'Lobisomem',e:'🐺',t:5,ter:'*',rar:3,moonOnly:1},
+  {n:'Diabrete do Farol',e:'😈',t:5,ter:'ph',rar:4,night:1,m3d:'q_demon'},
+  {n:'Espírito da Chuva',e:'🌧️',t:3,ter:'*',rar:4,rain:1,m3d:'q_ghost',tint:'#7fb2ff'},
+  {n:'Dragão Ancião',e:'🐉',t:6,ter:'*',rar:5,m3d:'q_dragon'},
 ];
+const RARW=[0,60,25,9,3,.7];
+const RARN=['','Comum','Incomum','Raro','Épico','Lendário'];
+const RARC=['','#c8c3e0','#7fd18f','#6fa8ff','#c98bff','#ffc94a'];
+const monKey=m=>m.m3d?m.m3d+(m.tint?'_'+m.tint.slice(1):''):null;
 const RAR=[{n:'Comum',m:1,w:60},{n:'Incomum',m:1.3,w:25},{n:'Raro',m:1.7,w:10},{n:'Épico',m:2.3,w:4},{n:'Lendário',m:3.2,w:1}];
 const SUF=['do Sertão','da Beira-Mar','de Iracema','do Mucuripe','da Jangada','das Dunas','do Cangaço','da Lua Cheia','do Farol','do Dragão','dos Ventos','da Serra'];
 const SLOT={weapon:'🗡️ Arma',armor:'🛡️ Armadura',amulet:'📿 Amuleto'};
@@ -103,7 +160,9 @@ const ACH=[
   {id:'rich',n:'Barão do Ouro',d:'Junte 5.000 de ouro no total',f:()=>S.stats.gold>=5000},
   {id:'pet',n:'Melhor Amigo',d:'Choque o ovo do seu companheiro',f:()=>!!S.pet?.type},
   {id:'dun',n:'Explorador de Masmorras',d:'Conclua uma masmorra',f:()=>(S.stats.dungeons||0)>=1},
-  {id:'reg',n:'Andarilho de Fortaleza',d:'Visite as 5 regiões',f:()=>(S.regions||[]).length>=5},
+  {id:'reg',n:'Andarilho de Fortaleza',d:'Visite 5 tipos de terreno',f:()=>(S.regions||[]).length>=5},
+  {id:'best25',n:'Caçador de Lendas',d:'Registre 25 monstros no bestiário',f:()=>Object.keys(S.best||{}).length>=25},
+  {id:'bestlend',n:'Mito Vivo',d:'Derrote um monstro lendário',f:()=>MONS.some(m=>m.rar===5&&S.best?.[m.n])},
   {id:'set',n:'Conjunto Completo',d:'Equipe as 3 peças de um conjunto',f:()=>!!activeSet()},
   {id:'chuva',n:'Caçador da Chuva',d:'Derrote um monstro aquático na chuva',f:()=>(S.stats.aqKills||0)>=1},
   {id:'tal',n:'Mestre dos Talentos',d:'Distribua 10 pontos de talento',f:()=>talentSpent()>=10},

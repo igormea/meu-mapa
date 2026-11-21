@@ -39,6 +39,7 @@ def router(route):
         if url.startswith(f"http://localhost:{PORT}") or url.startswith(APP_ORIGIN):
             if "/data/osm-ce.json" in url and OSM_FIXTURE is not None: return j(OSM_FIXTURE)
             if "/data/places.json" in url: return j(PLACES_FIXTURE)
+            if "/data/terrain.json" in url: return j(TERRAIN_FIXTURE)
             return route.continue_()
         if "tile.openstreetmap.org" in url: return route.fulfill(status=200, content_type="image/png", body=TILE, headers={"Access-Control-Allow-Origin": "*"})
         if "tiles.openfreemap.org/planet" in url and url.rstrip('/').endswith('planet'):
@@ -54,6 +55,7 @@ def router(route):
         print("mock erro", url, e); return route.abort()
 
 PLACES_FIXTURE = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures', 'places.json')))
+TERRAIN_FIXTURE = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures', 'terrain.json')))
 READY = "(()=>{try{return typeof map==='object'&&map.loaded&&map.loaded()&&typeof S==='object'}catch(e){return false}})()"
 RESULTS = []
 def test(fn):
