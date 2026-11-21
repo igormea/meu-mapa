@@ -118,7 +118,7 @@ function importSave(){
 /* ── REPORTAR BUG / SUGESTÃO ─────────────────────────────── */
 /* Quem usa descreve (digitando ou falando) e o app monta a mensagem com tudo que ajuda a investigar:
    versão, celular, últimos erros, onde estava na rota. Envia pelo WhatsApp. */
-const REPORT_TO='';   // número do Igor (só dígitos, com 55+DDD). Vazio = a pessoa escolhe o contato no WhatsApp
+const REPORT_TO='5585997662543';   // número do Igor (só dígitos, com 55+DDD). Vazio = a pessoa escolhe o contato no WhatsApp
 function reportInfo(){
   const ua=navigator.userAgent,and=(ua.match(/Android [^;)]+(?:; [^;)]+)?/)||[''])[0];
   const L=[`📱 Ranvus Maps v${APPV} · ${NATIVE?'APK':'navegador'}`,`Aparelho: ${and||ua.slice(0,90)} · tela ${innerWidth}x${innerHeight}`,
