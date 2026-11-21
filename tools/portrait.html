@@ -24,7 +24,7 @@ window.shoot = async (url, opt = {}) => {
   m.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(m), size = box.getSize(new THREE.Vector3()), ctr = box.getCenter(new THREE.Vector3());
   const cam = new THREE.PerspectiveCamera(28, 1, 0.1, 100000);
-  const dist = size.y / (2 * Math.tan(THREE.MathUtils.degToRad(14))) * (opt.zoom || 1.12);
+  const dist = Math.max(size.y, size.x * .9, size.z * .7) / (2 * Math.tan(THREE.MathUtils.degToRad(14))) * (opt.zoom || 1.12);
   cam.near = dist / 100; cam.far = dist * 10; cam.updateProjectionMatrix();
   cam.position.set(ctr.x, ctr.y + size.y * 0.08, ctr.z + dist); cam.lookAt(ctr.x, ctr.y + size.y * (opt.look ?? 0.02), ctr.z);
   r.render(scene, cam);

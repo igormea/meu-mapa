@@ -32,7 +32,7 @@ jobs:
           pip install -q gdown >/dev/null 2>&1
           for pg in https://quaternius.com/packs/ultimatemonsters.html https://quaternius.com/packs/ultimateanimatedanimals.html; do
             echo "== site $pg" >> paginas.txt
-            for d in $(curl -sSL -A "Mozilla/5.0" "$pg" | grep -oE 'https://drive\.google\.com/[^"]+' | sort -u); do echo "$d" >> paginas.txt; (cd "$(mktemp -d)" && gdown -q --fuzzy "$d" && for f in *; do mv "$f" "$OLDPWD/$(basename "$pg" .html)_$(echo "$f" | tr ' ' '_')"; done) || echo "FALHOU $d" >> paginas.txt; done
+            for d in $(curl -sSL -A "Mozilla/5.0" "$pg" | grep -oE "https://drive\.google\.com/[^\"' )]+" | sort -u); do echo "$d" >> paginas.txt; (cd "$(mktemp -d)" && gdown -q --folder --remaining-ok "$d" && zip -qr "$OLDPWD/$(basename "$pg" .html).zip" .) || echo "FALHOU $d" >> paginas.txt; done
           done
           ( cat paginas.txt; ls -la; for z in *.zip; do [ -f "$z" ] || continue; echo "== $z"; unzip -l "$z" | awk '{print $4}' | grep -iE "\.(fbx|glb|gltf|png)$" | head -300; done ) > inventario.txt 2>&1
           cat inventario.txt; exit 0

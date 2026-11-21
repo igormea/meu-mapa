@@ -9,15 +9,17 @@ const M = {   // arquivo → [id no app, {animação original: nome no app}]
   Crab: ['q_crab'], Bat: ['q_bat'], Cactus: ['q_cactus'], Ghost: ['q_ghost'], Tree: ['q_tree'], Cthulhu: ['q_cthulhu'],
   YellowDragon: ['q_ydragon'], Demon: ['q_demon'], Cyclops: ['q_cyclops'], Pig: ['q_pig'], Bee: ['q_bee'],
   Mushroom: ['q_mushroom'], Skull: ['q_skull'], Yeti: ['q_yeti'], Old_Slime: ['q_slime'], Old_Dragon: ['q_dragon'],
+  N_Wolf: ['a_wolf'], N_Cat: ['a_cat'], N_Dog: ['a_dog'], N_Piranha: ['a_piranha'], N_Shark: ['a_shark'], N_Manta_ray: ['a_manta'], N_Dolphin: ['a_dolphin'],
+  N_Horse: ['a_horse'], N_Cow: ['a_cow'], N_Sheep: ['a_sheep'], N_Eagle: ['a_eagle'], N_George: ['m_george'], N_Leela: ['m_leela'], N_Mike: ['m_mike'], N_Stan: ['m_stan'],
   Alien: ['q_alien'], Alien_Tall: ['q_alientall'], Deer: ['q_deer'], Panda: ['q_panda'], Penguin: ['q_penguin'], Chicken: ['q_chicken'], GreenDemon: ['q_gdemon'],
 };
 const NAME = n => {
   const s = n.split('|').pop().replace(/\.\d+$/, '');
   if (/^(Idle|Slime_Idle)$/.test(s)) return 'idle';
-  if (/^(Flying|Dragon_Flying)$/.test(s)) return 'fly';
-  if (/^(Bite_Front|Slime_Attack|Dragon_Attack)$/.test(s)) return 'attack';
+  if (/^(Flying|Dragon_Flying|Swim|Swimming|Walking|Walk)$/.test(s)) return 'fly';
+  if (/^(Bite_Front|Slime_Attack|Dragon_Attack|Bite|Punch|SwordSlash)$/.test(s)) return 'attack';
   if (/^(Death|Slime_Death|Dragon_Death)$/.test(s)) return 'death';
-  if (/^(HitRecieve|Dragon_Hit)$/.test(s)) return 'hit';
+  if (/^(HitRecieve|Dragon_Hit|HitRecieve_1)$/.test(s)) return 'hit';
   if (/^Jump$/.test(s)) return 'spawn';
   return null;
 };

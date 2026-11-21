@@ -511,11 +511,11 @@ def t42_todos_monstros_3d(c):
       await new Promise(f=>{i.onload=i.onerror=f});if(!i.naturalWidth)r.push(k)}return r}""")
     assert bad == [], bad
     # carrega os 16 novos modelos direto no Hero3D (sem limite de 6 do jogo)
-    c.js("""()=>{window.__noMonTick=1;const p=pointAt(PR[0],60);window.__qk=[...new Set(MONS.filter(m=>m.m3d&&m.m3d.startsWith('q_')).map(m=>m.m3d))];
-      Hero3D.monSync(__qk.map((k,i)=>({id:9000+i,kind:k,tint:i%3?null:'#ffd76a',lat:p[0]+((i%5)-2)*1.4e-4,lon:p[1]+(Math.floor(i/5)-2)*1.4e-4,px:30})))}""")
-    c.wait("Hero3D.mons.filter(m=>m.kind.startsWith('q_')&&m.ready).length===__qk.length", 30000)
+    c.js("""()=>{window.__noMonTick=1;const p=pointAt(PR[0],60);window.__qk=[...new Set(MONS.filter(m=>m.m3d&&/^[qam]_/.test(m.m3d)).map(m=>m.m3d))];
+      Hero3D.monSync(__qk.map((k,i)=>({id:9000+i,kind:k,tint:i%3?null:'#ffd76a',lat:p[0]+((i%6)-2.5)*1.3e-4,lon:p[1]+(Math.floor(i/6)-3)*1.3e-4,px:30})))}""")
+    c.wait("Hero3D.mons.filter(m=>/^[qam]_/.test(m.kind)&&m.ready).length===__qk.length", 40000)
     if os.environ.get("SHOT"):
-        c.js("""()=>{const p=pointAt(PR[0],60);__map.jumpTo({center:[p[1],p[0]],zoom:18.6,pitch:55,bearing:0})}"""); c.page.wait_for_timeout(1500)
+        c.js("""()=>{const p=pointAt(PR[0],60);__map.jumpTo({center:[p[1],p[0]],zoom:18.2,pitch:55,bearing:0})}"""); c.page.wait_for_timeout(1500)
         c.page.screenshot(path="/tmp/mons_map.png")
     # quem não tem animação de morte encolhe e some
     n = c.js("()=>Hero3D.mons.length")

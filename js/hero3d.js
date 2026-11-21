@@ -85,7 +85,8 @@ const MON = new Map(), TPL = {};
 async function template(kind) {
   if (!TPL[kind]) TPL[kind] = loader.loadAsync(`models/mon/${kind}.glb?v=2`).then(g => {
     g.scene.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
-    const box = new THREE.Box3().setFromObject(g.scene); return { g, height: Math.max(.5, box.max.y - box.min.y) };
+    const box = new THREE.Box3().setFromObject(g.scene), sz = box.getSize(new THREE.Vector3());
+    return { g, height: Math.max(.5, sz.y, .6 * Math.max(sz.x, sz.z)) };   // bichos compridos (tubarão, cavalo) não viram gigantes
   });
   return TPL[kind];
 }
