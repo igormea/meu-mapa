@@ -1,6 +1,6 @@
 {
   "appId": "io.github.igormea.meumapa",
-  "appName": "Meu Mapa RPG",
+  "appName": "Ranvus Maps",
   "webDir": "www",
   "server": {
     "url": "https://igormea.github.io/meu-mapa/",
@@ -8,6 +8,6 @@
     "allowNavigation": ["igormea.github.io"]
   },
   "android": {
-    "backgroundColor": "#2a1c12"
+    "backgroundColor": "#0e1a34"
   }
 }

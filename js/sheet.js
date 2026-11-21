@@ -122,7 +122,7 @@ async function askPerms(){
   try{await NAT.notif.requestPermissions()}catch(e){}
   const s=await permState();
   if(s.loc==='granted'){closePerms();startGPS();toast('📍 Localização liberada')}
-  else toast('Sem localização o herói não consegue te acompanhar. Libere em Configurações → Apps → Meu Mapa RPG → Permissões.',6000);
+  else toast('Sem localização o herói não consegue te acompanhar. Libere em Configurações → Apps → Ranvus Maps → Permissões.',6000);
 }
 function closePerms(){$('permSel').classList.remove('on')}
 async function checkPermsAtStart(){

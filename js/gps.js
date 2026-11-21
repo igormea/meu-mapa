@@ -61,7 +61,7 @@ let bgWatch=null;
 async function startBgGPS(){
   if(!NATIVE||bgWatch)return;
   try{
-    bgWatch=await NAT.bg.addWatcher({backgroundTitle:'Meu Mapa RPG — jornada em andamento',backgroundMessage:'Seu herói continua te guiando',
+    bgWatch=await NAT.bg.addWatcher({backgroundTitle:'Ranvus Maps — jornada em andamento',backgroundMessage:'Seu herói continua te guiando',
       requestPermissions:true,stale:false,distanceFilter:0},(loc,err)=>{
       if(err){if(err.code==='NOT_AUTHORIZED')toast('📍 Permita a localização nas configurações do app',4000);return}
       if(!loc)return;lastRealT=Date.now();lastRealSpd=loc.speed||0;
@@ -117,6 +117,7 @@ function onFix(f){
     spr.classList.toggle('walk',!!walking);
     if(brg!=null){const rel=((brg-map.getBearing())%360+360)%360;spr.classList.toggle('flip',rel>180)}
   }
+  hero3d('setMotion',brg,f.spd!=null?f.spd:(moved?1.2:0));
   if(isNav)follow(lat,lon,brg,f.spd,dur);
   else if(followIdle&&Date.now()>camBusyUntil){if(first)map.jumpTo({center:[lon,lat],zoom:16});else map.easeTo({center:[lon,lat],duration:dur,easing:t=>t})}
   prevDraw=[lat,lon];

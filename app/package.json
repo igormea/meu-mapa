@@ -2,7 +2,7 @@
   "name": "meu-mapa-rpg",
   "version": "1.2.0",
   "private": true,
-  "description": "Meu Mapa RPG — app Android (Capacitor) que carrega o site e adiciona GPS em segundo plano, voz nativa e tela sempre ligada",
+  "description": "Ranvus Maps — app Android (Capacitor) que carrega o site e adiciona GPS em segundo plano, voz nativa e tela sempre ligada",
   "dependencies": {
     "@capacitor/android": "^8.0.0",
     "@capacitor/cli": "^8.0.0",

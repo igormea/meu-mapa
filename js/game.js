@@ -12,7 +12,7 @@ const smithCost=()=>Math.round(40*Math.pow(S.smith.w+S.smith.a+1,1.6));
 function smith(){let c;while(S.gold>=(c=smithCost())){S.gold-=c;const w=S.smith.w<=S.smith.a;if(w)S.smith.w++;else S.smith.a++;
   card('🔨','O ferreiro trabalhou!',w?`Sua arma agora é <b>+${S.smith.w}</b>`:`Sua armadura agora é <b>+${S.smith.a}</b>`,'gold')}}
 function levelUp(){
-  $('lvNum').textContent=S.lvl;const o=$('lvlUp');o.classList.remove('on');void o.offsetWidth;o.classList.add('on');
+  $('lvNum').textContent=S.lvl;hero3d('act','cheer');const o=$('lvlUp');o.classList.remove('on');void o.offsetWidth;o.classList.add('on');
   speak(`Subiu para o nível ${S.lvl}!`,'fun');
 }
 let lastRegen=Date.now();
@@ -91,14 +91,14 @@ function battle(s){
     S.hp=Math.max(1,Math.round(res.php));
     const x=gainXP(m.xp),g=gainGold(m.gold);
     S.stats.kills++;ensureDaily();S.daily.kills++;if(T)T.kills++;if(!simSnap)weekAdd('kills',1);if(m.dragon){S.stats.dragons++;speak('Você derrotou um Dragão Ancião!','fun')}
-    floatTxt(`+${x} XP`,'xp');
+    floatTxt(`+${x} XP`,'xp');hero3d('act','attack');
     card(m.e,`${m.n}${m.elite?' ★':''} <span style="color:#b59f7b">Nv ${m.lvl}</span> derrotado!`,
       `<b>+${x} XP</b> · <b>+${g} 🪙</b>${res.taken?` · −${res.taken} ❤️`:''}${res.crit?' · <b>CRÍTICO!</b>':''}`,m.dragon?'epic':'');
     const ch=(m.dragon?1:m.elite?.5:.16)*cls().loot;
     if(Math.random()<ch)handleItem(makeItem(Math.max(rollRar(),m.dragon?3:m.elite?1:0)));
   }else{
     S.hp=Math.round(maxHP()*.35);const lost=Math.floor(S.gold*.08);S.gold-=lost;
-    floatTxt('Recuou!','hp');
+    floatTxt('Recuou!','hp');hero3d('act','hit');
     card('😵',`${m.n} te venceu!`,`Você recuou e se recuperou${lost?` · −${lost} 🪙`:''}`,'lose');
   }
   checkQuests();checkAch();hud();save();

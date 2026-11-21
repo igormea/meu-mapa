@@ -1,4 +1,4 @@
-"""Extrai do OpenStreetMap (Overpass) os pontos usados nos alertas do Meu Mapa RPG.
+"""Extrai do OpenStreetMap (Overpass) os pontos usados nos alertas do Ranvus Maps.
 
 Gera data/osm-ce.json, compacto:
   cam  : radares            [lat, lon, limite_kmh|0]

@@ -282,3 +282,28 @@ def t24_ficha_abre_todas_as_abas(c):
         c.js(f"()=>{{openSheet();setTab('{t}')}}")
         assert len(c.js("()=>document.getElementById('sheetBody').innerHTML")) > 100, t
     assert "Chefes lendários" in c.js("()=>{setTab('quests');return document.getElementById('sheetBody').textContent}")
+
+@test
+def t25_heroi_3d_classes_e_animacoes(c):
+    c.open(); c.hero("barbaro")
+    c.wait("window.Hero3D && Hero3D.state.ready && Hero3D.state.cls==='barbaro'", 20000)
+    assert c.js("()=>document.body.classList.contains('has3d')")
+    assert c.js("()=>Hero3D.state.anim") == "idle"
+    c.js("()=>Hero3D.setMotion(90,1.5)"); assert c.js("()=>Hero3D.state.anim") == "walk"
+    c.js("()=>Hero3D.setMotion(90,12)");  assert c.js("()=>Hero3D.state.anim") == "run"
+    c.js("()=>Hero3D.act('attack')");     assert c.js("()=>Hero3D.state.anim") == "attack"
+    c.wait("Hero3D.state.anim==='run'", 6000)     # volta a correr após o ataque
+    for cls in ["cavaleiro", "mago", "ladino", "arqueiro"]:
+        c.js(f"()=>{{selCls='{cls}';confirmClass()}}")
+        c.wait(f"Hero3D.state.cls==='{cls}' && Hero3D.state.ready", 15000)
+    sz = c.js("async()=>{const r=await fetch('models/arqueiro.glb');return (await r.arrayBuffer()).byteLength}")
+    assert sz < 400_000, sz
+
+@test
+def t26_heroi_3d_falha_volta_para_2d(c):
+    c.open(block_sw=True, block="**/models/*.glb*")
+    c.hero("mago")
+    c.wait("window.Hero3D && Hero3D.state.failed", 15000)
+    assert not c.js("()=>document.body.classList.contains('has3d')")
+    assert c.js("()=>getComputedStyle(document.getElementById('plSpr')||document.body).display") != "none"
+    c.errors.clear()   # o erro de rede do modelo bloqueado é esperado

@@ -56,6 +56,7 @@ const mapReady=new Promise(res=>map.on('load',()=>{
   paintTheme(document.body.classList.contains('night'));
   res();
 }));
+window.__map=map;window.__mapReady=mapReady;window.dispatchEvent(new Event('mapready'));
 function elOf(html){const d=document.createElement('div');d.innerHTML=html;return d}
 function addMk(html,lat,lon,anchor='center'){return new maplibregl.Marker({element:elOf(html),anchor}).setLngLat([lon,lat]).addTo(map)}
 function applyTheme(){const m=S.theme||'auto';const n=m==='noite'||(m==='auto'&&isNight());document.body.classList.toggle('night',n);document.body.classList.toggle('day',!n);paintTheme(n)}

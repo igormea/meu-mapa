@@ -1,4 +1,4 @@
-"""Gera data/osm-ce.json (pontos usados nos alertas do Meu Mapa RPG).
+"""Gera data/osm-ce.json (pontos usados nos alertas do Ranvus Maps).
 
 Entrada: GeoJSON-seq produzido pelo osmium a partir do extrato da Geofabrik
 (veja .github/workflows/osm-data.yml). Uso: python3 tools/osm_extract.py filtrado.geojsonseq

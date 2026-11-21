@@ -7,6 +7,11 @@ function ensurePlayer(lat,lon){
   player.getElement().style.zIndex=10;
 }
 // move o herói suavemente (mesma duração da câmera → fica parado na tela)
+// ganchos do herói 3D (js/hero3d.js)
+window.__heroPos=()=>player?player.getLngLat():null;
+window.__heroCls=()=>S.cls;
+window.__heroBusy=()=>isNav;
+const hero3d=(fn,...a)=>{try{window.Hero3D?.[fn](...a)}catch{}};
 function movePlayer(lat,lon,dur){
   cancelAnimationFrame(mvAnim);
   const a=player.getLngLat(),t0=performance.now();
@@ -31,4 +36,5 @@ function refreshAll(){
   hud();$('hudAva').innerHTML=spriteSVG(S.cls);
   const p=$('plSpr');if(p)p.innerHTML=spriteSVG(S.cls);
   renderRecents();applyTheme();
+  hero3d('setClass',S.cls);
 }

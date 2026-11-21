@@ -1,4 +1,4 @@
-"""Testes ponta a ponta do Meu Mapa RPG (Playwright + serviços falsos).
+"""Testes ponta a ponta do Ranvus Maps (Playwright + serviços falsos).
 Uso: python3 tests/e2e.py [filtro]
 """
 import sys, os, io, json, threading, time, http.server, functools, traceback
@@ -58,12 +58,14 @@ def test(fn):
 class Ctx:
     def __init__(self, browser):
         self.browser = browser; self.ctx = None; self.page = None; self.errors = []
-    def open(self, keep_storage=None, geo=None, init_script=None):
+    def open(self, keep_storage=None, geo=None, init_script=None, block_sw=False, block=None):
         opts = dict(viewport={"width": 412, "height": 860}, device_scale_factor=1, has_touch=True, locale="pt-BR",
                     permissions=["geolocation"], geolocation=geo or {"latitude": ORIGIN["lat"], "longitude": ORIGIN["lon"], "accuracy": 8})
         if keep_storage: opts["storage_state"] = keep_storage
+        if block_sw: opts["service_workers"] = "block"
         self.ctx = self.browser.new_context(**opts)
         self.ctx.route("**/*", router)
+        if block: self.ctx.route(block, lambda r: r.abort())   # registrado por último = roda primeiro
         if init_script: self.ctx.add_init_script(init_script)
         self.page = self.ctx.new_page()
         self.page.on("pageerror", lambda e: self.errors.append(f"pageerror: {e}"))

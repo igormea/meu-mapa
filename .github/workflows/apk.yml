@@ -34,7 +34,7 @@ jobs:
             cd app
             npm install
             npx cap add android
-            npx @capacitor/assets generate --android --iconBackgroundColor '#3a281a' --splashBackgroundColor '#2a1c12' || echo "icones: usando padrao"
+            npx @capacitor/assets generate --android --iconBackgroundColor '#1d3b5c' --splashBackgroundColor '#0e1a34' || echo "icones: usando padrao"
             npx cap sync android
             python3 patch_manifest.py
             mkdir -p ~/.android
@@ -42,7 +42,7 @@ jobs:
             cd android
             chmod +x gradlew
             ./gradlew assembleDebug --no-daemon
-            cp app/build/outputs/apk/debug/app-debug.apk ../../meu-mapa-rpg.apk
+            cp app/build/outputs/apk/debug/app-debug.apk ../../ranvus-maps.apk && cp ../../ranvus-maps.apk ../../meu-mapa-rpg.apk
           ) 2>&1 | tee -a build.log
 
       - name: Mostrar erro
@@ -58,9 +58,11 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk
-          name: Meu Mapa RPG — APK
+          name: Ranvus Maps — APK
           body: |
-            Baixe o arquivo **meu-mapa-rpg.apk** abaixo pelo celular e instale.
+            Baixe o arquivo **ranvus-maps.apk** abaixo pelo celular e instale.
             Gerado automaticamente a partir do commit ${{ github.sha }}.
-          files: meu-mapa-rpg.apk
+          files: |
+            ranvus-maps.apk
+            meu-mapa-rpg.apk
           make_latest: true

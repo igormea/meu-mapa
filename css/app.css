@@ -268,3 +268,11 @@ body.nav #feed{top:calc(150px + env(safe-area-inset-top))}
 #bkText{width:100%;margin-top:8px;background:#1c130b;border:2px solid var(--edge);border-radius:10px;color:var(--parch);font:11px monospace;padding:8px}
 body.far .boss i{display:none}
 body.far .boss span{font-size:22px}
+
+/* herói 3D ativo: esconde o boneco 2D (fica o anel e o nível) */
+body.has3d .spr{display:none}
+body.has3d .pl-lv{top:-2px}
+.spr{transform-origin:50% 100%;transform:scale(.78)}
+.spr.flip{transform:scale(-.78,.78)}
+.cs-brand{display:flex;align-items:center;justify-content:center;gap:9px;font:700 18px var(--px);color:#f2e2bf;margin-bottom:10px;letter-spacing:.5px}
+.cs-brand img{width:34px;height:34px;border-radius:9px;box-shadow:0 2px 8px rgba(0,0,0,.5)}
