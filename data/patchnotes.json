@@ -1,5 +1,16 @@
 [
  {
+  "v": "1.17.0",
+  "d": "21/11/2026",
+  "t": "Portais",
+  "i": [
+   "🌀 Portais: seus lugares salvos, com nome e endereço (ex.: 'Casa do meu irmão'). Puxe a barrinha dourada da busca pra cima pra ver; puxe pra baixo ou aperte voltar pra fechar.",
+   "Toque num portal e a rota é traçada na hora.",
+   "Crie portais buscando um endereço, pelo botão 'Salvar onde estou' ou pelo 'Salvar como portal' na prévia da rota. Dá pra escolher um ícone, renomear e apagar (✎).",
+   "Buscar pelo nome do portal (ex.: 'irmão') mostra ele em primeiro lugar."
+  ]
+ },
+ {
   "v": "1.16.0",
   "d": "21/11/2026",
   "t": "Bestiário gigante",

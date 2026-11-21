@@ -847,3 +847,39 @@ def t62_areia_isolada_nao_e_praia(c):
       await loadTerrain()}""")
     assert c.js("()=>terrainAt(-3.80+5.5*.002,-38.70+10.5*.002,0)") == "u"     # areia isolada
     assert c.js("()=>terrainAt(-3.80+35.5*.002,-38.70+20.5*.002,0)") == "p"    # faixa grande de praia
+
+@test
+def t63_portais(c):
+    c.open(); c.hero(); c.js("()=>{lastFix={lat:-3.7300,lon:-38.5200,t:Date.now(),acc:8}}"); c.page.wait_for_timeout(300)
+    h = c.js("()=>{const r=document.querySelector('#searchPanel .handle').getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2]}")
+    # puxar a barrinha pra cima abre os portais
+    c.page.mouse.move(h[0], h[1]); c.page.mouse.down(); c.page.mouse.move(h[0], h[1]-80, steps=5); c.page.mouse.up()
+    c.wait("$('searchPanel').classList.contains('portals')", 2000)
+    assert "Nenhum portal" in c.js("()=>$('portalList').textContent")
+    # salvar onde estou → nome → salvar
+    c.page.click("text=📍 Salvar onde estou"); c.wait("$('portalDlg').classList.contains('on')", 2000)
+    c.page.fill("#pdName", "Casa do meu irmão"); c.page.click(".pd-ics span:has-text('👪')"); c.page.click("#pdOk")
+    c.wait("S.portals.length===1", 2000)
+    assert c.js("()=>S.portals[0].ic") == "👪" and "Casa do meu irmão" in c.js("()=>$('portalList').textContent")
+    if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/portais.png")
+    # puxar pra baixo fecha; tocar na barrinha alterna
+    h = c.js("()=>{const r=document.querySelector('#searchPanel .handle').getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2]}")
+    c.page.mouse.move(h[0], h[1]); c.page.mouse.down(); c.page.mouse.move(h[0], h[1]+80, steps=5); c.page.mouse.up()
+    c.wait("!$('searchPanel').classList.contains('portals')", 2000)
+    # busca pelo nome acha o portal primeiro
+    c.js("async()=>{await loadPlaces()}")
+    r = c.js("()=>localSearch(expandQ('irmao'),searchCenter())[0]")
+    assert r["name"] == "Casa do meu irmão" and r["portal"] == 1, r
+    # tocar no portal traça a rota
+    c.js("()=>portalsOpen(true)"); c.page.click(".ptl"); c.wait("PR.length>0", 10000)
+    # salvar destino da prévia como portal
+    c.page.click("#savePortalBtn"); c.wait("$('portalDlg').classList.contains('on')", 2000)
+    c.page.fill("#pdName", "Praia"); c.page.click("#pdOk"); c.wait("S.portals.length===2", 2000)
+    # editar e apagar
+    c.js("()=>{cancelRoute();portalsOpen(true)}"); c.page.click(".ptl >> nth=1 >> .pt-ed")
+    c.page.fill("#pdName", "Praia do Futuro"); c.page.click("#pdOk"); assert c.js("()=>S.portals[1].n") == "Praia do Futuro"
+    c.page.click(".ptl >> nth=1 >> .pt-ed"); c.page.click("#pdDel"); c.page.click("#pdDel")
+    c.wait("S.portals.length===1", 2000)
+    # voltar do celular fecha os portais
+    c.page.go_back(); c.page.wait_for_timeout(250)
+    assert not c.js("()=>$('searchPanel').classList.contains('portals')")

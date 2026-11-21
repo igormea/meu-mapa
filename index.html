@@ -33,7 +33,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="vendor/maplibre-gl.css">
-<link rel="stylesheet" href="css/app.css?v=1.16.0">
+<link rel="stylesheet" href="css/app.css?v=1.17.0">
 </head>
 <body class="day">
 <div id="map"></div>
@@ -83,7 +83,7 @@
 
 <!-- BUSCA -->
 <div id="searchPanel" class="bpanel">
-  <div class="handle"></div>
+  <div class="handle" title="Puxe pra cima: seus Portais"></div>
   <div class="ttl"><button id="srchBack" aria-label="Voltar">‹</button>🗺️ Para onde, aventureiro?</div>
   <div class="acw">
     <input type="text" id="inpD" placeholder="Buscar destino…" autocomplete="off" enterkeyhint="go">
@@ -91,6 +91,11 @@
     <div id="ac-d" class="acl"></div>
   </div>
   <div id="favRow"></div>
+  <div id="portalBox">
+    <div class="pt-head">🌀 Seus Portais <small>lugares salvos</small></div>
+    <div id="portalList"></div>
+    <div class="pt-btns"><button onclick="portalNewSearch()">➕ Novo portal</button><button onclick="portalHere()">📍 Salvar onde estou</button></div>
+  </div>
   <div id="originRow">📍 Partida: <b id="originLbl">sua localização</b> · <a onclick="showOriginInput()">alterar</a></div>
   <div id="originBox" class="acw">
     <input type="text" id="inpO" placeholder="Endereço de partida…" autocomplete="off">
@@ -107,6 +112,7 @@
   <div id="routeHead"><div class="rh-big" id="rhTime">–</div><div class="rh-sub" id="rhDist">–</div><div class="rh-sub" id="rhETA"></div></div>
   <div id="rewards"></div>
   <div id="altsRow"></div>
+  <button id="savePortalBtn" onclick="portalFromRoute()">🌀 Salvar como portal</button>
   <div id="routeBtns">
     <button class="btn sec" style="flex:1" onclick="cancelRoute()">Voltar</button>
     <button class="btn go" style="flex:2" onclick="startNav(false)"><span class="cd" id="cdBar"></span><span style="position:relative">⚔️ Partir</span></button>
@@ -172,31 +178,32 @@
 </div>
 
 <script src="vendor/maplibre-gl.js"></script>
-<script src="js/util.js?v=1.16.0"></script>
-<script src="js/native.js?v=1.16.0"></script>
-<script src="js/game-data.js?v=1.16.0"></script>
-<script src="js/state.js?v=1.16.0"></script>
-<script src="js/map.js?v=1.16.0"></script>
-<script src="js/game.js?v=1.16.0"></script>
-<script src="js/hero.js?v=1.16.0"></script>
-<script src="js/gps.js?v=1.16.0"></script>
-<script src="js/camera.js?v=1.16.0"></script>
-<script src="js/layers.js?v=1.16.0"></script>
-<script src="js/places.js?v=1.16.0"></script>
-<script src="js/search.js?v=1.16.0"></script>
-<script src="js/route.js?v=1.16.0"></script>
-<script src="js/nav.js?v=1.16.0"></script>
-<script src="js/osm.js?v=1.16.0"></script>
-<script src="js/world.js?v=1.16.0"></script>
-<script src="js/terrain.js?v=1.16.0"></script>
-<script src="js/rpg.js?v=1.16.0"></script>
-<script src="js/extras.js?v=1.16.0"></script>
-<script src="js/sheet.js?v=1.16.0"></script>
-<script src="js/stats.js?v=1.16.0"></script>
-<script src="js/scrolls.js?v=1.16.0"></script>
-<script src="js/journey.js?v=1.16.0"></script>
-<script src="js/main.js?v=1.16.0"></script>
+<script src="js/util.js?v=1.17.0"></script>
+<script src="js/native.js?v=1.17.0"></script>
+<script src="js/game-data.js?v=1.17.0"></script>
+<script src="js/state.js?v=1.17.0"></script>
+<script src="js/map.js?v=1.17.0"></script>
+<script src="js/game.js?v=1.17.0"></script>
+<script src="js/hero.js?v=1.17.0"></script>
+<script src="js/gps.js?v=1.17.0"></script>
+<script src="js/camera.js?v=1.17.0"></script>
+<script src="js/layers.js?v=1.17.0"></script>
+<script src="js/places.js?v=1.17.0"></script>
+<script src="js/search.js?v=1.17.0"></script>
+<script src="js/portals.js?v=1.17.0"></script>
+<script src="js/route.js?v=1.17.0"></script>
+<script src="js/nav.js?v=1.17.0"></script>
+<script src="js/osm.js?v=1.17.0"></script>
+<script src="js/world.js?v=1.17.0"></script>
+<script src="js/terrain.js?v=1.17.0"></script>
+<script src="js/rpg.js?v=1.17.0"></script>
+<script src="js/extras.js?v=1.17.0"></script>
+<script src="js/sheet.js?v=1.17.0"></script>
+<script src="js/stats.js?v=1.17.0"></script>
+<script src="js/scrolls.js?v=1.17.0"></script>
+<script src="js/journey.js?v=1.17.0"></script>
+<script src="js/main.js?v=1.17.0"></script>
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.min.js"}}</script>
-<script type="module" src="js/hero3d.js?v=1.16.0"></script>
+<script type="module" src="js/hero3d.js?v=1.17.0"></script>
 </body>
 </html>

@@ -69,7 +69,7 @@ function setupAC(inpId,listId,onPick){
   // na busca em tela cheia a lista continua visível mesmo com o teclado fechado
   inp.addEventListener('blur',()=>setTimeout(()=>{if(!inp.closest('.full'))lst.style.display='none'},220));
 }
-setupAC('inpD','ac-d',d=>{srchFull(false);if(favConsume(d))return;$('inpD').value=d.name;goTo(d)});
+setupAC('inpD','ac-d',d=>{srchFull(false);if(portalConsume(d)||favConsume(d))return;$('inpD').value=d.name;goTo(d,!!d.portal)});
 setupAC('inpS','ac-s',d=>addStop(d));
 setupAC('inpO','ac-o',d=>{originOverride={lat:d.lat,lon:d.lon};$('originLbl').textContent=d.name;$('inpO').value='';$('originBox').style.display='none'});
 $('inpD').addEventListener('keydown',async e=>{

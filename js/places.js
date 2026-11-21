@@ -29,7 +29,8 @@ function near1(t,w){
 }
 // toks: palavras já normalizadas e com abreviações expandidas (expandQ)
 function localSearch(toks,c){
-  if(!PL||!toks.length)return[];
+  const pt=typeof portalSearch==='function'?portalSearch(toks):[];
+  if(!PL||!toks.length)return pt;
   const res=[],k=Math.cos(c.lat*Math.PI/180);
   for(const it of PL.items){
     let sc=0,ok=true;
@@ -47,7 +48,7 @@ function localSearch(toks,c){
     res.push([Math.round(sc*5)/5,d2,it]);
   }
   res.sort((a,b)=>(b[0]-a[0])||(a[1]-b[1]));
-  return res.slice(0,12).map(([,,it])=>({name:it.n,lat:it.lat,lon:it.lon,loc:1,ic:PCAT[it.c]?.[0]||'📍',
-    sub:[PCAT[it.c]?.[1],it.s>=0?PL.subs[it.s]:''].filter(Boolean).join(' · ')}));
+  return pt.concat(res.slice(0,12-pt.length).map(([,,it])=>({name:it.n,lat:it.lat,lon:it.lon,loc:1,ic:PCAT[it.c]?.[0]||'📍',
+    sub:[PCAT[it.c]?.[1],it.s>=0?PL.subs[it.s]:''].filter(Boolean).join(' · ')})));
 }
 setTimeout(loadPlaces,4000);   // já deixa o índice pronto antes da primeira busca
