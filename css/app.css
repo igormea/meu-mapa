@@ -385,3 +385,4 @@ body.searching #hud,body.searching #fabs,body.searching #recenterBtn,body.search
 #repPanel .opt button.prim{background:#8f1d2c;border-color:var(--gold);color:#fff}
 #repPanel details{font-size:12px;color:var(--muted)}
 #repPanel pre{white-space:pre-wrap;font:11px monospace;background:#07061a;padding:8px;border-radius:8px;max-height:30vh;overflow:auto;color:#b8b0dd}
+.aic{font-style:normal;margin-right:7px}

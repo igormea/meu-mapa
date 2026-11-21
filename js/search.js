@@ -44,19 +44,27 @@ async function searchPlaces(q,typing=false){
 const _ac={};
 function setupAC(inpId,listId,onPick){
   const inp=$(inpId),lst=$(listId);let seq=0;
+  const render=(d,q)=>{
+    if(inp.value.trim()!==q)return;
+    if(!d.length){lst.innerHTML='<div class="acn">Nada encontrado ainda… continue digitando ou toque em Ir</div>';lst.style.display='block';srchTyping(inpId==='inpD');return}
+    lst.innerHTML=d.map((x,i)=>`<div class="aci" data-i="${i}"><div class="am"><span>${x.ic?`<i class="aic">${x.ic}</i>`:''}${esc(x.name)}</span><span class="ad2">${fmtD(x.dist)}</span></div><div class="as">${esc(x.sub)}</div></div>`).join('');
+    lst.querySelectorAll('.aci').forEach(el=>{
+      const go=e=>{e.preventDefault();lst.style.display='none';inp.blur();srchTyping(false);onPick(d[+el.dataset.i])};
+      el.addEventListener('mousedown',e=>e.preventDefault());el.addEventListener('click',go);   // click: rolar a lista não escolhe sem querer
+    });
+    lst.style.display='block';srchTyping(inpId==='inpD');
+  };
+  inp.addEventListener('focus',()=>loadPlaces());
   inp.addEventListener('input',()=>{
     clearTimeout(_ac[inpId]);const q=inp.value.trim();
     if(q.length<2){lst.style.display='none';srchTyping(false);return}
+    // 1) índice próprio: aparece na hora, a cada letra
+    if(PL){const c=searchCenter(),loc=localSearch(expandQ(q),c);loc.forEach(r=>r.dist=hav(c.lat,c.lon,r.lat,r.lon));if(loc.length)render(loc.slice(0,10),q)}
+    // 2) internet (Photon) completa logo depois, quando a pessoa dá uma pausa
     _ac[inpId]=setTimeout(async()=>{
-      const my=++seq;const d=await searchPlaces(q,true);if(my!==seq||inp.value.trim()!==q)return;
-      if(!d.length){lst.innerHTML='<div class="acn">Nada encontrado ainda… continue digitando ou toque em Ir</div>';lst.style.display='block';srchTyping(inpId==='inpD');return}
-      lst.innerHTML=d.map((x,i)=>`<div class="aci" data-i="${i}"><div class="am"><span>${esc(x.name)}</span><span class="ad2">${fmtD(x.dist)}</span></div><div class="as">${esc(x.sub)}</div></div>`).join('');
-      lst.querySelectorAll('.aci').forEach(el=>{
-        const go=e=>{e.preventDefault();lst.style.display='none';inp.blur();srchTyping(false);onPick(d[+el.dataset.i])};
-        el.addEventListener('mousedown',e=>e.preventDefault());el.addEventListener('click',go);   // click: rolar a lista não escolhe sem querer
-      });
-      lst.style.display='block';srchTyping(inpId==='inpD');
-    },220);
+      const my=++seq;const d=await searchPlaces(q,true);if(my!==seq)return;
+      render(d,q);
+    },PL?300:220);
   });
   // na busca em tela cheia a lista continua visível mesmo com o teclado fechado
   inp.addEventListener('blur',()=>setTimeout(()=>{if(!inp.closest('.full'))lst.style.display='none'},220));

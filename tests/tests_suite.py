@@ -1,4 +1,4 @@
-import os
+import os, json
 import e2e
 from e2e import test, ORIGIN, DEST, READY
 import time
@@ -489,7 +489,7 @@ def t40_retratos_3d(c):
 def t41_monstros_3d_aparecem_e_morrem(c):
     c.open(); c.hero(); c.route_to()
     c.wait("window.Hero3D && Hero3D.state.ready", 20000)
-    c.js("""()=>{const s=PR[0].spawns[0];const b=MONS.find(m=>m.m3d==='esq_guerreiro');s.m=mkMon(b,{});
+    c.js("""()=>{const s=PR[0].spawns[0];const b=MONS.find(m=>m.m3d==='esq_guerreiro');s.m=mkMon(b,{});s.m.hp=1;s.m.atk=0;
       const p=pointAt(PR[0],120);s.lat=p[0];s.lon=p[1];mon3dTick(%s,%s)}""" % (ORIGIN["lat"], ORIGIN["lon"]))
     c.wait("Hero3D.mons.some(m=>m.kind==='esq_guerreiro'&&m.ready)", 15000)
     sid = c.js("()=>PR[0].spawns[0].id")
@@ -583,3 +583,20 @@ def t45_reportar_bug(c):
     # também está nos Ajustes
     c.js("()=>{openSheet();setTab('cfg')}")
     assert "Reportar bug" in c.js("()=>document.getElementById('sheetBody').textContent")
+
+@test
+def t46_indice_local_fortaleza(c):
+    c.open(); c.hero()
+    c.js("()=>{lastFix={lat:-3.7300,lon:-38.4950,t:Date.now()}}")
+    c.js("async()=>{await loadPlaces()}")
+    s = lambda q: c.js(f"()=>localSearch(expandQ({json.dumps(q)}),searchCenter()).map(x=>x.name+'|'+x.sub)")
+    assert s("beira")[0].startswith("Avenida Beira Mar|Rua · Meireles"), s("beira")    # pedaço + mais perto primeiro
+    assert s("av beira m")[0].startswith("Avenida Beira Mar"), s("av beira m")          # abreviação
+    assert s("tiburcio")[0].startswith("Rua Tibúrcio Cavalcante"), s("tiburcio")       # sem acento
+    assert s("tiburico")[0].startswith("Rua Tibúrcio Cavalcante"), s("tiburico")       # erro de digitação
+    assert s("hospital")[0].startswith("Hospital Monte Klinikum|Saúde"), s("hospital")
+    assert s("shopping")[0].startswith("Shopping Iguatemi"), s("shopping")
+    assert s("xyzw") == []
+    # na tela: aparece na hora, sem esperar a internet
+    c.page.click("#inpD"); c.page.type("#inpD", "ibur")
+    c.wait("document.querySelector('#ac-d .aci') && document.querySelector('#ac-d').textContent.includes('Tibúrcio')", 1500)
