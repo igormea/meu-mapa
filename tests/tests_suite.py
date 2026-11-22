@@ -964,11 +964,7 @@ class _Tree:
         if v is None: o.pop(k, None)
         else: o[k] = v
     def patch(s, path, v):
-        cur = s.get(path) or {}
-        for a, b in v.items():
-            if b is None: cur.pop(a, None)
-            else: cur[a] = b
-        s.put(path, cur)
+        for a, b in v.items(): s.put(path.rstrip("/") + "/" + a, b)
 
 def _fb_tree(c, tree):
     import json as _j
@@ -977,6 +973,8 @@ def _fb_tree(c, tree):
         if "identitytoolkit" in u or "securetoken" in u:
             return route.fulfill(status=200, content_type="application/json", body=_j.dumps({"idToken": "tok", "refreshToken": "ref", "localId": "me", "expiresIn": "3600", "id_token": "tok", "refresh_token": "ref", "user_id": "me", "expires_in": "3600"}))
         path = u.split("firebaseio.com/")[1].split(".json")[0]
+        if path.startswith("shares/") and m == "GET" and "auth=" not in u:
+            return route.fulfill(status=200, content_type="text/event-stream", body="event: put\ndata: " + _j.dumps({"path": "/", "data": tree.get(path)}) + "\n\n")
         body = _j.loads(route.request.post_data or "null")
         if m == "PUT": tree.put(path, body)
         elif m == "PATCH": tree.patch(path, body)
@@ -1008,13 +1006,14 @@ def t67_multiplayer_amigos_e_guilda(c):
     c.js("async()=>{await socLoad(true);renderSheet()}")
     assert "Gleyson" in c.js("()=>$('sheetBody').textContent") and "mago" not in c.js("()=>$('sheetBody').textContent").lower()[:0]
     # cria guilda e convida
-    c.page.fill("#guildIn", "Os Ranvus"); c.page.click("#sheetBody button:has-text('Criar')"); c.wait("SOC.group && SOC.group.name==='Os Ranvus'", 4000); c.page.wait_for_timeout(800)
+    c.js("()=>socView('guild')"); c.page.fill("#guildIn", "Os Ranvus"); c.page.click("#sheetBody button:has-text('Criar')"); c.wait("SOC.group && SOC.group.name==='Os Ranvus'", 4000); c.page.wait_for_timeout(800)
     gid = c.js("()=>SOC.gid"); assert tree.get(f"groups/{gid}/leader") == "me"
-    c.page.click("#sheetBody button[title='Convidar pra guilda']"); c.page.wait_for_timeout(500)
+    assert tree.get(f"groups/{gid}/seats/1") == "me"
+    c.js("()=>socView('comp')"); c.page.click("#sheetBody button[title='Convidar pra guilda']"); c.page.wait_for_timeout(500)
     assert tree.get(f"invites/u2/{gid}")["from"] == "Ranvus"
     if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/social.png")
     # sair da guilda sendo o único → guilda some
-    c.page.click("#sheetBody >> text=Sair da guilda"); c.wait("!SOC.group", 4000)
+    c.js("()=>socView('guild')"); c.page.click("#sheetBody >> text=Sair da guilda"); c.wait("!SOC.group", 4000)
     assert tree.get(f"groups/{gid}") is None
 
 @test
@@ -1065,3 +1064,112 @@ def t69_save_na_nuvem(c):
     assert "Encontrei seu progresso" in c.js("()=>$('cloudDlg').textContent")
     if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/cloud1.png")
     c.page.click("text=Restaurar meu herói"); c.page.wait_for_timeout(1500); c.page.wait_for_function("typeof S!=='undefined' && S.lvl===12", timeout=20000)
+
+def _social_setup(c, tree, guild=True):
+    tree.put("users/me", {"nick": "Ranvus", "cls": "cavaleiro", "lvl": 5, "km": 100, "t": 0})
+    tree.put("nicks/ranvus", "me"); tree.put("nicks/gleyson", "u2")
+    tree.put("users/u2", {"nick": "Gleyson", "cls": "mago", "lvl": 9, "km": 400, "t": 0, "wk": 33, "wkid": "", "kills": 50, "best": 12})
+    tree.put("friends/me/u2", "ok"); tree.put("friends/u2/me", "ok")
+    if guild:
+        tree.put("users/me/gid", "gx")
+        tree.put("groups/gx", {"name": "Os Ranvus", "leader": "me", "t": 1, "members": {"me": {"nick": "Ranvus"}, "u2": {"nick": "Gleyson"}}, "seats": {"1": "me"}})
+    c.js(LOGIN_JS); c.js("async()=>{await socLoad(true)}")
+
+@test
+def t70_chefe_de_guilda(c):
+    tree = _Tree()
+    c.open(); _fb_tree(c, tree); c.hero(); _social_setup(c, tree)
+    # guilda antiga sem vaga pro membro: o líder corrige sozinho
+    assert tree.get("groups/gx/seats/2") == "u2"
+    c.js("()=>{openSheet();setTab('soc');socView('guild')}")
+    assert "Ouriço Azul do Pirambu" in c.js("()=>$('sheetBody').textContent")
+    c.page.click("text=Invocar chefe da guilda"); c.page.wait_for_timeout(800); assert c.js("()=>!!(SOC.group&&SOC.group.raid)"), c.js("()=>[document.body.innerText.slice(0,300),JSON.stringify(SOC.group),uidMe(),isNav]"); c.page.wait_for_timeout(300)
+    r = tree.get("groups/gx/raid"); assert r and r["tier"] == 1 and r["hp"] == 40, r      # 2 membros: 40*(0.6+0.4)
+    # dirigir causa dano (sem tocar em nada)
+    c.js("()=>{addDistance(3000);raidPush()}"); c.page.wait_for_timeout(400)
+    assert abs(tree.get("groups/gx/raid/dmg/me") - 3) < .01
+    # amigo dirigiu o resto → todos ganham a recompensa
+    tree.put("groups/gx/raid/dmg/u2", 37.5)
+    xp0 = c.js("()=>S.lvl*1e6+S.xp")
+    c.js("async()=>{await socLoad(false)}"); c.page.wait_for_timeout(300)
+    assert c.js("()=>S.raidWon && S.raidWon['%s']" % r["id"]) == 1, c.js("()=>JSON.stringify({g:SOC.group?.raid,won:S.raidWon,me:SOC.me?.nick,sum:raidSum(SOC.group?.raid)})")
+    assert c.js("()=>S.lvl*1e6+S.xp") > xp0 and c.js("()=>S.stats.raids") == 1
+    assert tree.get(f"groups/gx/raid/claimed/me") is True
+    assert tree.get("groups/gx/tier") == 1                               # libera o próximo
+    c.js("()=>renderSheet()")
+    if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/raid.png")
+    assert "Escaravelho da Beira-Mar" in c.js("()=>$('sheetBody').textContent")
+    # não ganha duas vezes
+    c.js("async()=>{await socLoad(false)}"); assert c.js("()=>S.stats.raids") == 1
+
+@test
+def t71_bau_loja_e_poção(c):
+    c.open(); c.hero()
+    # item Raro que não é melhor vai pro baú
+    c.js("()=>{S.equip.weapon={slot:'weapon',r:4,pow:999,name:'X'};handleItem({slot:'weapon',r:2,pow:5,name:'Espada Rara'})}")
+    assert c.js("()=>S.bag.length") == 1 and c.js("()=>S.loot[0].act") == "guardado"
+    # comum é vendido na hora como antes
+    c.js("()=>handleItem({slot:'weapon',r:0,pow:5,name:'Comum'})"); assert c.js("()=>S.bag.length") == 1
+    # épico também fica guardado; baú cheio vende o mais fraco
+    c.js("()=>{for(let i=0;i<13;i++)handleItem({slot:'armor',r:3,pow:10+i,name:'Ep'+i});S.equip.armor={slot:'armor',r:4,pow:999,name:'Y'}}")
+    assert c.js("()=>S.bag.length") <= 12
+    # loja: passando num posto, vende os Raros e compra poções
+    c.js("()=>{S.bag=[{slot:'weapon',r:2,pow:5,name:'R'},{slot:'armor',r:3,pow:9,name:'E'}];S.gold=5000;S.pots=0;S.shopT=0;SHOPS=[{n:'Posto Flex',lat:-3.72,lon:-38.55,k:'posto'}];shopTick({lat:-3.7202,lon:-38.5501})}")
+    assert c.js("()=>S.pots") == 3 and c.js("()=>S.bag.map(i=>i.name).join()") == "E"
+    assert "Posto Flex" in c.js("()=>$('feed').textContent")
+    # não para de novo logo em seguida
+    c.js("()=>{S.pots=0;shopLastCheck=0;shopTick({lat:-3.7202,lon:-38.5501})}"); assert c.js("()=>S.pots") == 0
+    # poção é bebida sozinha antes da luta com vida baixa
+    c.js("()=>{S.pots=1;S.hp=Math.round(maxHP()*.2);potAuto()}")
+    assert c.js("()=>S.pots") == 0 and c.js("()=>S.hp/maxHP()") > .6
+    c.js("()=>{openSheet();setTab('equip')}"); assert "Baú" in c.js("()=>$('sheetBody').textContent")
+
+@test
+def t72_troca_de_itens(c):
+    import json as _j
+    tree = _Tree()
+    c.open(); _fb_tree(c, tree); c.hero(); _social_setup(c, tree, guild=False)
+    c.js("()=>{S.bag=[{slot:'weapon',r:3,pow:40,name:'Lança do Farol'}];openSheet();setTab('soc');socView('comp')}")
+    c.page.click("#sheetBody button[title='Oferecer item']"); c.page.click("#sheetBody >> text=Lança do Farol")
+    c.page.wait_for_timeout(400)
+    tr = tree.get("trades/u2"); assert tr and len(tr) == 1, tr
+    t = list(tr.values())[0]; assert t["from"] == "me" and t["kind"] == "offer" and _j.loads(t["item"])["name"] == "Lança do Farol"
+    assert c.js("()=>S.bag.length") == 0
+    # recebe uma oferta do amigo e aceita
+    tree.put("trades/me/tA", {"from": "u2", "nick": "Gleyson", "kind": "offer", "t": 1, "item": _j.dumps({"slot": "amulet", "r": 4, "pow": 30, "name": "Amuleto Lendário"})})
+    c.js("async()=>{await tradeLoad();renderSheet()}")
+    assert "Gleyson" in c.js("()=>$('sheetBody').textContent") and "Ofertas" in c.js("()=>$('sheetBody').textContent")
+    if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/trade.png")
+    c.page.click("#sheetBody >> text=Aceitar >> nth=0"); c.page.wait_for_timeout(400)
+    assert tree.get("trades/me/tA") is None and c.js("()=>S.equip.amulet?.name") == "Amuleto Lendário"
+    # oferta recusada volta pro dono
+    tree.put("trades/me/tB", {"from": "u2", "nick": "Gleyson", "kind": "offer", "t": 1, "item": _j.dumps({"slot": "armor", "r": 2, "pow": 1, "name": "Couraça"})})
+    c.js("async()=>{await tradeLoad();renderSheet()}"); c.page.click("#sheetBody >> text=Recusar"); c.page.wait_for_timeout(400)
+    back = [v for v in (tree.get("trades/u2") or {}).values() if v["kind"] == "back"]; assert back and _j.loads(back[0]["item"])["name"] == "Couraça"
+    # item adulterado é descartado
+    tree.put("trades/me/tC", {"from": "u2", "nick": "G", "kind": "gift", "t": 1, "item": _j.dumps({"slot": "weapon", "r": 4, "pow": 99999, "name": "Hack"})})
+    c.js("async()=>{await tradeLoad()}"); assert c.js("()=>S.equip.weapon?.name") != "Hack" and tree.get("trades/me/tC") is None
+
+@test
+def t73_ranking_avisos_e_amigo_no_mapa(c):
+    tree = _Tree()
+    c.open(); _fb_tree(c, tree); c.hero(); _social_setup(c, tree, guild=False)
+    wk = c.js("()=>weekKey()"); tree.put("users/u2/wkid", wk)
+    c.js("async()=>{await socLoad(true);openSheet();setTab('soc');socView('rank')}")
+    txt = c.js("()=>$('sheetBody').textContent"); assert "🥇Gleyson" in txt and "🥈Ranvus" in txt, txt
+    if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/rank.png")
+    # avisos: primeira verificação só registra; depois avisa o que é novo
+    c.js("async()=>{localStorage.removeItem('ranvus_seen');await socPoll()}")
+    tree.put("nicks/ju", "u3"); tree.put("users/u3", {"nick": "Jaqueline", "lvl": 2}); tree.put("friends/me/u3", "in")
+    c.js("async()=>{await socPoll()}")
+    assert "Jaqueline quer ser seu companheiro" in c.js("()=>$('feed').textContent")
+    # amigo compartilhando a rota aparece no mapa
+    tree.put("feeds/me/u2", {"sid": "s" * 24, "nick": "Gleyson", "cls": "mago", "t": int(__import__('time').time() * 1000)})
+    c.js("async()=>{await socPoll()}")
+    assert c.js("()=>!!FLIVE.u2") and "Gleyson está na estrada" in c.js("()=>$('feed').textContent")
+    c.js("()=>{FLIVE.u2.st={st:'nav',pos:{lat:-3.73,lon:-38.52},dest:{n:'Praia'},rem:5000};flDraw('u2')}")
+    assert c.js("()=>!!document.querySelector('.fr-mk')")
+    # ao compartilhar minha rota, aviso meus companheiros; ao parar, removo
+    c.js("async()=>{await feedsPublish('x'.repeat(24))}"); assert tree.get("feeds/u2/me")["nick"] == "Ranvus"
+    c.js("async()=>{await feedsClear()}"); assert tree.get("feeds/u2/me") is None
+    tree.put("feeds/me/u2", None); c.js("async()=>{await socPoll()}"); assert not c.js("()=>!!document.querySelector('.fr-mk')")

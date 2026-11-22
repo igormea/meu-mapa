@@ -1,5 +1,26 @@
 [
  {
+  "v": "1.22.0",
+  "d": "22/11/2026",
+  "t": "Chefes de guilda, trocas, ranking e lojas",
+  "i": [
+   "⚔️ Chefes de guilda: o líder invoca o chefe e cada km que QUALQUER membro dirige é um golpe (monstros também contam). São 8 chefes, do Ouriço Azul do Pirambu à Tartaruga-Ilha do Mucuripe. A vida deles cresce com o tamanho da guilda e vocês têm 7 dias para vencer.",
+   "Vencendo, todo mundo ganha XP, ouro e um item Épico ou Lendário. Quem dirigiu ganha a recompensa cheia, e o próximo chefe é liberado. O painel mostra quanto cada membro já causou de dano.",
+   "🏆 Ranking na aba Social: km na semana, nível, km total, monstros e bestiário, entre você, seus companheiros e a sua guilda.",
+   "🧰 Baú: itens Raros ou melhores que não forem equipados agora ficam guardados (até 12), em vez de serem vendidos na hora.",
+   "🎁 Trocas: ofereça um item do baú a um companheiro (botão 🎁). Ele pode aceitar, aceitar e mandar outro item de volta, ou recusar (aí o item volta pra você).",
+   "⛽💊 Lojas automáticas: ao passar perto de um posto ou farmácia navegando, o herói vende os itens Raros do baú e compra poções (até 3). Os Épicos e Lendários ficam guardados pra trocar.",
+   "🧪 Poções: bebidas sozinhas antes de uma luta quando a vida está abaixo de 45%. Recuperam metade da vida.",
+   "🔔 Avisos: pedido de amizade, convite de guilda, oferta de troca e chefe invocado aparecem como aviso (e notificação, se o app estiver em segundo plano).",
+   "📡 Amigos no mapa: quando um companheiro compartilha a rota, ele aparece no seu mapa andando ao vivo. Dá pra desligar isso pra você na aba Social.",
+   "Guilda limitada a 8 pessoas também no servidor, e não só no app.",
+   "🐛 Corrigido: ao reabrir o app, a guilda podia sumir do seu perfil. Quem foi afetado volta pra guilda sozinho.",
+   "🐛 Corrigido: cada APK novo saía com uma assinatura diferente, o que quebrava o login do Google e impedia instalar por cima. Agora a assinatura é sempre a mesma.",
+   "Novas conquistas: Força da Guilda, Lenda da Guilda, Mercador e Freguês da Estrada.",
+   "Arte dos chefes de guilda: 50+ Monsters Pack, de isaiah658 (CC0)."
+  ]
+ },
+ {
   "v": "1.21.0",
   "d": "21/11/2026",
   "t": "Save na nuvem",

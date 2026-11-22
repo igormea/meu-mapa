@@ -7,7 +7,7 @@
               groups/{gid} guilda (líder, membros) · invites/{uid}/{gid} convite de guilda
    As regras de segurança no console garantem que cada um só mexe no que é seu. */
 const NICK_RE=/^[a-zA-Z0-9_]{3,16}$/;
-const SOC={me:null,friends:{},profiles:{},group:null,gid:null,invites:{},busy:false,err:''};
+const SOC={me:null,friends:{},profiles:{},group:null,gid:null,invites:{},busy:false,err:'',view:'comp',rk:'wk'};
 
 /* ═════ SESSÃO ═════ */
 function fbAuth(){try{return JSON.parse(localStorage.getItem('ranvus_fbauth')||'null')}catch{return null}}
@@ -79,20 +79,28 @@ const fbSet=(p,v)=>fbWrite(p,v,'PUT'),fbDel=p=>fbWrite(p,null,'DELETE');
 const uidMe=()=>fbAuth()?.uid;
 
 /* ═════ PERFIL ═════ */
-function myPublic(){return{nick:SOC.me?.nick,cls:S.cls,lvl:S.lvl,km:Math.round(S.stats.km),t:Date.now(),realms:(S.realms||[]).length,honor:S.honor||0,gid:SOC.gid||null}}
+function myPublic(){if(typeof ensureWeek==='function')ensureWeek();
+  return{nick:SOC.me?.nick,cls:S.cls,lvl:S.lvl,km:Math.round(S.stats.km),t:Date.now(),realms:(S.realms||[]).length,honor:S.honor||0,gid:SOC.gid||null,
+    wk:Math.round((S.week?.km||0)*10)/10,wkid:S.week?.key||'',kills:S.stats.kills||0,best:Object.keys(S.best||{}).length,raids:S.stats.raids||0}}
 async function socLoad(full){
   if(!isLogged())return;
   const u=uidMe();
   try{
     SOC.me=await fbGet('users/'+u);
+    if(SOC.me&&'gid' in SOC.me)SOC.gid=SOC.me.gid||null;      // guilda vem do perfil ANTES de regravá-lo
     if(SOC.me?.nick){fbWrite('users/'+u,myPublic()).catch(()=>{})}
-    if(!full)return;
+    if(!SOC.me?.nick)return;
     SOC.friends=await fbGet('friends/'+u)||{};
     SOC.invites=await fbGet('invites/'+u)||{};
-    SOC.gid=SOC.me?.gid||null;SOC.group=SOC.gid?await fbGet('groups/'+SOC.gid).catch(()=>null):null;
+    SOC.gid=SOC.me?.gid||S.gid||null;SOC.group=SOC.gid?await fbGet('groups/'+SOC.gid).catch(()=>null):null;
     if(SOC.gid&&!SOC.group?.members?.[u]){SOC.gid=null;SOC.group=null}
+    if((S.gid||null)!==SOC.gid){S.gid=SOC.gid;save()}                          // cópia local (recupera a guilda se o perfil perder)
+    if(SOC.gid&&!SOC.me.gid)fbWrite('users/'+u,{gid:SOC.gid}).catch(()=>{});
+    await guildSeatFix();
+    if(typeof tradeLoad==='function')await tradeLoad();
     const ids=new Set([...Object.keys(SOC.friends),...Object.keys(SOC.group?.members||{})]);
-    await Promise.all([...ids].map(async id=>{SOC.profiles[id]=await fbGet('users/'+id).catch(()=>null)}));
+    await Promise.all([...ids].filter(id=>full||!SOC.profiles[id]).map(async id=>{SOC.profiles[id]=await fbGet('users/'+id).catch(()=>null)}));
+    if(typeof raidTierSync==='function'){raidTierSync();raidCheckWin()}
   }catch(e){console.warn('social',e)}
 }
 async function socSetNick(){
@@ -130,7 +138,7 @@ function gidNew(){const b=new Uint8Array(12);crypto.getRandomValues(b);return'g'
 async function guildCreate(){
   const name=($('guildIn')?.value||'').trim().slice(0,24);if(name.length<3)return toast('Nome da guilda: pelo menos 3 letras');
   const u=uidMe(),gid=gidNew();
-  try{await fbSet('groups/'+gid,{name,leader:u,t:Date.now(),members:{[u]:{nick:SOC.me.nick,t:Date.now()}}});
+  try{await fbSet('groups/'+gid,{name,leader:u,t:Date.now(),members:{[u]:{nick:SOC.me.nick,t:Date.now()}},seats:{1:u}});
     SOC.gid=gid;await fbWrite('users/'+u,{gid});toast('Guilda criada: '+name);await socLoad(true);renderSheet();checkAch()}catch{toast('Não consegui criar a guilda')}
 }
 async function guildInvite(f){
@@ -141,13 +149,24 @@ async function guildInvite(f){
 async function guildJoin(gid){
   const u=uidMe();
   if(SOC.gid)return toast('Saia da sua guilda atual antes');
-  try{await fbSet(`groups/${gid}/members/${u}`,{nick:SOC.me.nick,t:Date.now()});await fbDel(`invites/${u}/${gid}`);
+  try{const g=await fbGet('groups/'+gid);const n=seatFree(g);if(!n)return toast(`Guilda cheia (máx. ${G_MAX})`);
+    await fbWrite('groups/'+gid,{['members/'+u]:{nick:SOC.me.nick,t:Date.now()},['seats/'+n]:u});await fbDel(`invites/${u}/${gid}`);
     SOC.gid=gid;await fbWrite('users/'+u,{gid});toast('Você entrou na guilda!');await socLoad(true);renderSheet();checkAch()}catch{toast('Convite inválido ou guilda cheia')}
+}
+const seatOf=(g,m)=>Object.keys(g?.seats||{}).find(k=>g.seats[k]===m);
+function seatFree(g){const S2=g?.seats||{};for(let i=1;i<=G_MAX;i++)if(!S2[i])return i;return 0}
+function seatOut(g,m){const o={['members/'+m]:null},k=seatOf(g,m);if(k)o['seats/'+k]=null;return o}
+// guildas criadas antes das vagas: o líder distribui as vagas uma vez
+async function guildSeatFix(){
+  const g=SOC.group;if(!g||g.leader!==uidMe())return;
+  const miss=Object.keys(g.members||{}).filter(m=>!seatOf(g,m));if(!miss.length)return;
+  const o={};g.seats=g.seats||{};for(const m of miss){const n=seatFree(g);if(!n)break;g.seats[n]=m;o['seats/'+n]=m}
+  await fbWrite('groups/'+SOC.gid,o).catch(()=>{});
 }
 async function guildDecline(gid){try{await fbDel(`invites/${uidMe()}/${gid}`);await socLoad(true);renderSheet()}catch{}}
 async function guildKick(m){
   if(SOC.group?.leader!==uidMe()||m===uidMe())return;
-  try{await fbDel(`groups/${SOC.gid}/members/${m}`);toast('Membro expulso');await socLoad(true);renderSheet()}catch{toast('Falhou')}
+  try{await fbWrite('groups/'+SOC.gid,seatOut(SOC.group,m));toast('Membro expulso');await socLoad(true);renderSheet()}catch{toast('Falhou')}
 }
 async function guildLead(m){
   if(SOC.group?.leader!==uidMe())return;
@@ -158,7 +177,7 @@ async function guildLeave(){
   const others=Object.keys(g.members||{}).filter(x=>x!==u);
   try{
     if(g.leader===u){if(others.length)await fbWrite('groups/'+SOC.gid,{leader:others[0]});else{await fbDel('groups/'+SOC.gid);}}
-    if(others.length||g.leader!==u)await fbDel(`groups/${SOC.gid}/members/${u}`);
+    if(others.length||g.leader!==u)await fbWrite('groups/'+SOC.gid,seatOut(g,u));
     await fbWrite('users/'+u,{gid:null});SOC.gid=null;SOC.group=null;toast('Você saiu da guilda');await socLoad(true);renderSheet();
   }catch{toast('Falhou, tente de novo')}
 }
@@ -178,32 +197,122 @@ function socialHTML(){
     <div class="r2" style="margin-top:10px">Conectado como ${esc(a.email||a.name)} · <a onclick="socLogout()">sair</a></div></div>`;
   const F=SOC.friends,P=SOC.profiles,ok=Object.keys(F).filter(k=>F[k]==='ok'),inn=Object.keys(F).filter(k=>F[k]==='in'),out=Object.keys(F).filter(k=>F[k]==='out');
   const g=SOC.group,lead=g&&g.leader===u,mem=g?Object.keys(g.members||{}):[];
+  const offers=Object.keys(TR.in||{}).length,invs=Object.keys(SOC.invites).length;
   let h=`<div class="soc-me">${a.photo?`<img src="${esc(a.photo)}" alt="">`:''}<div><b>${esc(SOC.me.nick)}</b><small>${esc(a.email||'')}</small></div><button class="mini2" onclick="socRefresh()">↻</button></div>`;
-  // guilda
-  h+='<div class="sect">🏰 Guilda</div>';
-  if(g){h+=`<div class="row"><div class="r1"><span><b>${esc(g.name)}</b></span><b>${mem.length}/${G_MAX}</b></div>
-      ${mem.map(m=>`<div class="sp">${pLine(m,P[m]||g.members[m])}${m===g.leader?'<span class="crown">👑</span>':''}
+  const tab=(id,t,n)=>`<button class="soc-tab${SOC.view===id?' on':''}" onclick="socView('${id}')">${t}${n?`<i>${n}</i>`:''}</button>`;
+  h+=`<div class="soc-tabs">${tab('comp','🤝 Amigos',inn.length+offers)}${tab('guild','🏰 Guilda',invs)}${tab('rank','🏆 Ranking')}</div>`;
+  if(SOC.view==='guild'){
+    if(g){h+=`<div class="row"><div class="r1"><span><b>${esc(g.name)}</b></span><b>${mem.length}/${G_MAX}</b></div>${raidHTML(g,lead)}</div>
+      <div class="sect">Membros</div>${mem.map(m=>`<div class="sp">${pLine(m,P[m]||g.members[m])}${m===g.leader?'<span class="crown">👑</span>':''}
         ${lead&&m!==u?`<button class="mini2" onclick="guildLead('${m}')" title="Passar liderança">👑</button><button class="mini2 del" onclick="guildKick('${m}')" title="Expulsar">✕</button>`:''}</div>`).join('')}
-      <button class="btn" style="margin-top:8px" onclick="guildLeave()">Sair da guilda</button></div>`}
+      ${lead&&ok.some(f=>!mem.includes(f))?`<div class="r2" style="margin-top:6px">Convide companheiros na aba 🤝 Amigos (botão 🏰+).</div>`:''}
+      <button class="btn" style="margin-top:10px" onclick="guildLeave()">Sair da guilda</button>`}
+    else{
+      h+=Object.entries(SOC.invites).map(([gid,iv])=>`<div class="row"><div class="r1"><span>📨 <b>${esc(iv.from)}</b> te convidou para <b>${esc(iv.name)}</b></span></div>
+        <div class="soc-act"><button class="mini" onclick="guildJoin('${gid}')">Entrar</button><button class="mini2" onclick="guildDecline('${gid}')">Recusar</button></div></div>`).join('');
+      h+=`<div class="r2" style="margin:4px 2px 8px">Numa guilda (até ${G_MAX} pessoas), vocês enfrentam chefes juntos: cada km que qualquer um dirige é um golpe.</div>
+        <div class="soc-row"><input id="guildIn" class="soc-in" maxlength="24" placeholder="Nome da nova guilda"><button class="mini" onclick="guildCreate()">Criar</button></div>`;
+    }
+  }else if(SOC.view==='rank')h+=rankHTML();
   else{
-    h+=Object.entries(SOC.invites).map(([gid,iv])=>`<div class="row"><div class="r1"><span>📨 <b>${esc(iv.from)}</b> te convidou para <b>${esc(iv.name)}</b></span></div>
-      <div class="soc-act"><button class="mini" onclick="guildJoin('${gid}')">Entrar</button><button class="mini2" onclick="guildDecline('${gid}')">Recusar</button></div></div>`).join('');
-    h+=`<div class="soc-row"><input id="guildIn" class="soc-in" maxlength="24" placeholder="Nome da nova guilda"><button class="mini" onclick="guildCreate()">Criar</button></div>`;
+    h+=tradeHTML();
+    h+=`<div class="sect">🤝 Companheiros</div><div class="soc-row"><input id="friendIn" class="soc-in" maxlength="16" placeholder="Apelido do amigo"><button class="mini" onclick="socAddFriend()">Adicionar</button></div>`;
+    if(inn.length)h+=inn.map(f=>`<div class="sp">${pLine(f,P[f])}<button class="mini" onclick="socAccept('${f}')">Aceitar</button><button class="mini2 del" onclick="socRemove('${f}')">✕</button></div>`).join('');
+    h+=ok.length?ok.map(f=>`<div class="sp">${pLine(f,P[f])}${FLIVE[f]?'<span title="compartilhando a rota">📡</span>':''}<button class="mini2" onclick="tradePick('${f}')" title="Oferecer item">🎁</button>${lead&&!mem.includes(f)?`<button class="mini2" onclick="guildInvite('${f}')" title="Convidar pra guilda">🏰+</button>`:''}<button class="mini2 del" onclick="socRemove('${f}')" title="Remover">✕</button></div>`).join('')
+      :'<div class="r2" style="margin:6px 2px">Nenhum companheiro ainda. Peça o apelido dos seus amigos e adicione aqui.</div>';
+    if(out.length)h+=`<div class="r2" style="margin-top:8px">Pedidos enviados: ${out.map(f=>`${esc(P[f]?.nick||'?')} <a onclick="socRemove('${f}')">cancelar</a>`).join(' · ')}</div>`;
+    h+=`<label class="soc-chk"><input type="checkbox" ${S.shareFriends!==false?'checked':''} onchange="S.shareFriends=this.checked;save()"> Ao compartilhar a rota (📡), mostrar também pros companheiros no mapa deles</label>`;
   }
-  // companheiros
-  h+=`<div class="sect">🤝 Companheiros</div><div class="soc-row"><input id="friendIn" class="soc-in" maxlength="16" placeholder="Apelido do amigo"><button class="mini" onclick="socAddFriend()">Adicionar</button></div>`;
-  if(inn.length)h+=inn.map(f=>`<div class="sp">${pLine(f,P[f])}<button class="mini" onclick="socAccept('${f}')">Aceitar</button><button class="mini2 del" onclick="socRemove('${f}')">✕</button></div>`).join('');
-  h+=ok.length?ok.map(f=>`<div class="sp">${pLine(f,P[f])}${lead&&!mem.includes(f)?`<button class="mini2" onclick="guildInvite('${f}')" title="Convidar pra guilda">🏰+</button>`:''}<button class="mini2 del" onclick="socRemove('${f}')" title="Remover">✕</button></div>`).join('')
-    :'<div class="r2" style="margin:6px 2px">Nenhum companheiro ainda. Peça o apelido dos seus amigos e adicione aqui.</div>';
-  if(out.length)h+=`<div class="r2" style="margin-top:8px">Pedidos enviados: ${out.map(f=>`${esc(P[f]?.nick||'?')} <a onclick="socRemove('${f}')">cancelar</a>`).join(' · ')}</div>`;
-  h+=`<div class="r2" style="margin-top:12px">Em breve: troca de itens e chefes de pergaminho em guilda. · <a onclick="socLogout()">sair da conta</a></div>`;
+  h+=`<div class="r2" style="margin-top:14px"><a onclick="socLogout()">sair da conta</a></div>`;
   return h;
+}
+function socView(v){SOC.view=v;renderSheet()}
+/* ── ranking: eu + companheiros (+ membros da guilda) ── */
+const RK={wk:['Km na semana',p=>p.wkid===weekKey()?p.wk||0:0,' km'],lvl:['Nível',p=>p.lvl||1,''],km:['Km total',p=>p.km||0,' km'],kills:['Monstros',p=>p.kills||0,''],best:['Bestiário',p=>p.best||0,'']};
+function rankHTML(){
+  const u=uidMe(),P=SOC.profiles,F=SOC.friends;
+  const ids=new Set([u,...Object.keys(F).filter(k=>F[k]==='ok'),...Object.keys(SOC.group?.members||{})]);
+  const me={...myPublic()},[lab,fn,un]=RK[SOC.rk];
+  const rows=[...ids].map(id=>[id,id===u?me:P[id]]).filter(x=>x[1]).sort((a,b)=>fn(b[1])-fn(a[1]));
+  const med=['🥇','🥈','🥉'];
+  return`<div class="soc-chips">${Object.entries(RK).map(([k,v])=>`<button class="chip${SOC.rk===k?' on':''}" onclick="SOC.rk='${k}';renderSheet()">${v[0]}</button>`).join('')}</div>`+
+    rows.map(([id,p],i)=>`<div class="sp rk${id===u?' me':''}"><span class="rk-n">${med[i]||i+1}</span>${pLine(id,p)}<b class="rk-v">${Math.round(fn(p)*10)/10}${un}</b></div>`).join('')+
+    (rows.length<2?'<div class="r2" style="margin-top:8px">Adicione companheiros pra competir com eles.</div>':'')+
+    `<div class="r2" style="margin-top:8px">A semana começa na segunda-feira. Atualiza quando cada um abre o app.</div>`;
 }
 async function socRefresh(){toast('Atualizando…');await socLoad(true);renderSheet()}
 function socOnTab(){                                   // chamado sempre que a aba 👥 é desenhada
   if(!isLogged()){if(!NATIVE)setTimeout(socGisButton,30);return}
   if(!SOC.loaded){SOC.loaded=true;socLoad(true).then(()=>{if(sheetTab==='soc')renderSheet()})}
 }
-// presença: atualiza o perfil público ao abrir e ao chegar de viagem
-setTimeout(()=>socLoad(false),6000);
+/* ═════ AVISOS: a cada 2,5 min olha pedidos, convites, ofertas, chefe da guilda e amigos ao vivo ═════ */
+let socPolling=false;
+function seenGet(){try{return JSON.parse(localStorage.getItem('ranvus_seen')||'{}')}catch{return{}}}
+function notifyUser(ic,title,body,k='gold'){
+  card(ic,esc(title),esc(body),k);
+  if(document.hidden&&NAT?.notif)NAT.notif.schedule({notifications:[{id:Math.floor(Math.random()*2e9),title,body}]}).catch(()=>{});
+}
+async function socPoll(){
+  if(!isLogged()||socPolling)return;socPolling=true;
+  try{
+    await socLoad(false);if(!SOC.me?.nick)return;
+    const sn=seenGet(),first=!sn.init,P=SOC.profiles,F=SOC.friends,u=uidMe();
+    const fr=Object.keys(F).filter(k=>F[k]==='in'),inv=Object.keys(SOC.invites),tr=Object.keys(TR.in||{});
+    if(!first){
+      for(const f of fr)if(!(sn.fr||[]).includes(f))notifyUser('🤝','Pedido de companheiro',`${P[f]?.nick||'Alguém'} quer ser seu companheiro de estrada`);
+      for(const g of inv)if(!(sn.inv||[]).includes(g))notifyUser('🏰','Convite de guilda',`${SOC.invites[g].from} te convidou para ${SOC.invites[g].name}`);
+      for(const t of tr)if(!(sn.tr||[]).includes(t))notifyUser('🎁','Oferta de troca',`${TR.in[t].nick} te ofereceu ${TR.in[t].it.name}`);
+      const r=SOC.group?.raid;if(r&&r.id!==sn.raid&&SOC.group.leader!==u&&!raidDone(r)&&!raidOver(r))notifyUser('⚔️','Chefe da guilda invocado',`${RAIDS[r.tier].n}: dirija pra ajudar a guilda`,'epic');
+    }
+    localStorage.setItem('ranvus_seen',JSON.stringify({init:1,fr,inv,tr,raid:SOC.group?.raid?.id||sn.raid}));
+    await feedsPoll(!first);
+    if($('sheet')?.classList.contains('on')&&sheetTab==='soc')renderSheet();
+  }catch(e){console.warn('poll',e)}
+  finally{socPolling=false}
+}
+setTimeout(socPoll,6000);setInterval(socPoll,150000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)socPoll()});
+
+/* ═════ AMIGOS NO MAPA: quem compartilha a rota (📡) aparece pros companheiros ═════
+   feeds/{amigo}/{eu} = {sid, nick, cls, t} — o mapa do amigo segue shares/{sid} ao vivo. */
+const FLIVE={};
+async function feedsPublish(sid){
+  if(!isLogged()||S.shareFriends===false||!SOC.me?.nick)return;
+  const F=SOC.friends,u=uidMe();
+  await Promise.all(Object.keys(F).filter(k=>F[k]==='ok').map(f=>fbSet(`feeds/${f}/${u}`,{sid,nick:SOC.me.nick,cls:S.cls,t:Date.now()}).catch(()=>{})));
+}
+async function feedsClear(){
+  if(!isLogged())return;const F=SOC.friends,u=uidMe();
+  await Promise.all(Object.keys(F).filter(k=>F[k]==='ok').map(f=>fbDel(`feeds/${f}/${u}`).catch(()=>{})));
+}
+async function feedsPoll(notify){
+  const all=await fbGet('feeds/'+uidMe()).catch(()=>null)||{};
+  for(const [f,v] of Object.entries(all)){
+    if(!v?.sid||Date.now()-v.t>12*3600e3||SOC.friends[f]!=='ok'){fbDel(`feeds/${uidMe()}/${f}`).catch(()=>{});continue}
+    if(!FLIVE[f]){FLIVE[f]=flFollow(f,v);if(notify)notifyUser('📡',`${v.nick} está na estrada`,'Compartilhou a rota com você. Ele aparece no seu mapa.')}
+  }
+  for(const f of Object.keys(FLIVE))if(!all[f])flDrop(f);
+}
+function flFollow(f,v){
+  const o={v,st:{},mk:null,es:null};
+  try{
+    o.es=new EventSource(`${FB_CONFIG.databaseURL}/shares/${v.sid}.json`);
+    const up=e=>{try{const m=JSON.parse(e.data);if(!m)return;
+      if(m.path==='/')o.st=m.data||{};else{const k=m.path.replace(/^\//,'').split('/')[0];if(e.type==='patch')Object.assign(o.st,m.data);else o.st[k]=m.data}
+      flDraw(f)}catch{}};
+    o.es.addEventListener('put',up);o.es.addEventListener('patch',up);
+  }catch{}
+  return o;
+}
+function flDraw(f){
+  const o=FLIVE[f];if(!o)return;const st=o.st;
+  if(!st||st.st==='done'||st.st==='stop'||(st.exp&&Date.now()>st.exp)){flDrop(f);return}
+  const p=st.pos;if(!p||typeof maplibregl==='undefined'||!window.__map)return;
+  if(!o.mk){const el=document.createElement('div');el.className='fr-mk';
+    el.innerHTML=`<span class="fr-ic">${typeof heroPic==='function'&&o.v.cls?heroPic(o.v.cls):'🧙'}</span><span class="fr-nm">${esc(o.v.nick)}</span>`;
+    el.onclick=()=>toast(`${o.v.nick} → ${st.dest?.n||'?'} · ${st.rem!=null?(st.rem/1000).toFixed(1)+' km':''}`);
+    o.mk=new maplibregl.Marker({element:el,anchor:'bottom'}).setLngLat([p.lon,p.lat]).addTo(window.__map)}
+  else o.mk.setLngLat([p.lon,p.lat]);
+}
+function flDrop(f){const o=FLIVE[f];if(!o)return;try{o.es?.close()}catch{};try{o.mk?.remove()}catch{};delete FLIVE[f]}
 gateOpen();

@@ -516,3 +516,30 @@ button.mini2.del{color:#f3a3a3}
 .cl-card b{color:#fff;font-size:15px}.cl-card small{color:#8ea0c4}
 .cl-lab{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#c9a24a}
 .cl-n{font-size:22px;font-weight:700;color:#f1d38a}
+/* social: abas internas, ranking, chefe de guilda, trocas, amigos no mapa */
+.soc-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:4px 0 10px}
+.soc-tab{position:relative;background:#141c36;border:1px solid #2c3a66;color:#c7d0e4;border-radius:12px;padding:9px 4px;font-size:13px;font-weight:600}
+.soc-tab.on{border-color:#c9a24a;color:#f1d38a;background:#1d2547}
+.soc-tab i{position:absolute;top:-6px;right:-4px;background:#d9534f;color:#fff;font-style:normal;font-size:11px;min-width:18px;height:18px;line-height:18px;border-radius:9px;padding:0 4px}
+.soc-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px}
+.soc-chips .chip{flex:none;background:#141c36;border:1px solid #2c3a66;color:#c7d0e4;border-radius:16px;padding:6px 11px;font-size:12.5px}
+.soc-chips .chip.on{border-color:#c9a24a;color:#f1d38a}
+.sp.rk .rk-n{width:26px;text-align:center;font-weight:700;color:#c9a24a;flex:none}
+.sp.rk .rk-v{margin-left:auto;color:#f1d38a;white-space:nowrap}
+.sp.rk.me{background:#1d254755;border-radius:10px}
+.raid{display:flex;gap:10px;align-items:center;margin:8px 0}
+.raid>div{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.raid small{color:#9fb0d4;font-size:12px}
+.raid-pic{width:84px;height:84px;object-fit:contain;flex:none;filter:drop-shadow(0 4px 10px #0009)}
+.card .ce .raid-pic{width:40px;height:40px}
+.raid.next .raid-pic{filter:grayscale(.3) drop-shadow(0 4px 10px #0009)}
+.raid-bar{height:10px;background:#2a1a24;border-radius:6px;overflow:hidden;margin:4px 0}
+.raid-bar i{display:block;height:100%;background:linear-gradient(90deg,#c0392b,#e74c3c);transition:width .6s}
+.raid-dmg{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12.5px;color:#c7d0e4;margin:6px 0}
+.raid-dmg div{display:flex;justify-content:space-between}
+.tr-it{cursor:pointer}.tr-it .mini{margin-left:auto}
+.soc-chk{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:#9fb0d4;margin-top:12px;line-height:1.35}
+.fr-mk{display:flex;flex-direction:column;align-items:center;cursor:pointer}
+.fr-ic{width:38px;height:38px;border-radius:50%;background:#1d2547;border:2px solid #4fc3f7;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 0 12px #4fc3f7aa}
+.fr-ic img{width:100%;height:100%;object-fit:cover}
+.fr-nm{margin-top:2px;background:#0e1530e6;color:#fff;font-size:11px;font-weight:700;padding:1px 6px;border-radius:8px;white-space:nowrap}

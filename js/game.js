@@ -14,14 +14,14 @@ function smith(){let c;while(S.gold>=(c=smithCost())){S.gold-=c;const w=S.smith.
 function levelUp(){
   $('lvNum').textContent=S.lvl;hero3d('act','cheer');
   clearTimeout(window.__talTmr);   // vários níveis de uma vez → um aviso só, com o total
-  window.__talTmr=setTimeout(()=>{const n=talentPoints();if(n)card('✨',n>1?`${n} pontos de talento para usar!`:'Novo ponto de talento!','Distribua na mochila 🎒 → Talentos quando estiver parado','gold')},1500);const o=$('lvlUp');if(document.body.classList.contains('arrive')||$('arrivePanel').style.display==='block'||!isNav&&T){const L=S.lvl;setTimeout(()=>card("⭐",`Nível ${L}!`,'Vida restaurada · atributos aumentados','epic'),300)}else{o.classList.remove('on');void o.offsetWidth;o.classList.add('on')}
+  window.__talTmr=setTimeout(()=>{const n=talentPoints();if(n)card('✨',n>1?`${n} pontos de talento para usar!`:'Novo ponto de talento!','Distribua na mochila 🎒 → Talentos quando estiver parado','gold')},1500);const o=$('lvlUp');if(document.body.classList.contains('arrive')||$('arrivePanel').style.display==='block'||!isNav&&T||$('sheet')?.classList.contains('on')){const L=S.lvl;setTimeout(()=>card("⭐",`Nível ${L}!`,'Vida restaurada · atributos aumentados','epic'),300)}else{o.classList.remove('on');void o.offsetWidth;o.classList.add('on')}
   speak(`Subiu para o nível ${S.lvl}!`,'fun');setTimeout(()=>cloudSoon(true),2000);
 }
 let lastRegen=Date.now();
 function regen(){const now=Date.now(),dt=(now-lastRegen)/60000;lastRegen=now;const mx=maxHP();if(S.hp==null)S.hp=mx;S.hp=Math.min(mx,S.hp+mx*.06*(1+bonus('regen'))*dt)}
 let xpFrac=0;
 function addDistance(m){
-  S.stats.km+=m/1000;histAdd('km',m/1000);scrollDamage(m/1000);ensureDaily();S.daily.km+=m/1000;if(T)T.m+=m;weekAdd('km',m/1000);
+  S.stats.km+=m/1000;histAdd('km',m/1000);scrollDamage(m/1000);raidDamage(m/1000);ensureDaily();S.daily.km+=m/1000;if(T)T.m+=m;weekAdd('km',m/1000);
   xpFrac+=m/20*cls().xp*(1+amu()/100+bonus('xp'));
   if(!simSnap)petAddKm(m/1000);
   if(xpFrac>=1){const n=Math.floor(xpFrac);xpFrac-=n;rawXP(n)}
@@ -69,16 +69,17 @@ function handleItem(it){
   const before=activeSet();S.equip[it.slot]=it;const after=activeSet();S.equip[it.slot]=cur;
   const better=!cur||it.pow>cur.pow*(before&&!after?1.25:after&&!before?.8:1);
   if(better){S.equip[it.slot]=it;act='equipado';heroGear();if(after&&!before)setTimeout(()=>card('💠',`Conjunto completo: ${after}!`,SETS[after].d,'epic'),900)}
+  else if(it.r>=2&&!simSnap){g=bagAdd(it);act='guardado'}
   else{g=gainGold(it.pow*2*RAR[it.r].m);act='vendido'}
   S.stats.items++;if(it.r===4)S.stats.legend++;
   S.loot.unshift({...it,act,g});S.loot=S.loot.slice(0,15);if(T)T.items.push(it);
-  const sub=`<span class="r-${it.r}">${RAR[it.r].n}</span> · ${statTxt(it)} · ${act==='equipado'?'<b>equipado!</b>':`vendido por ${g} 🪙`}`;
+  const sub=`<span class="r-${it.r}">${RAR[it.r].n}</span> · ${statTxt(it)} · ${act==='equipado'?'<b>equipado!</b>':act==='guardado'?'guardado no baú 🧰':`vendido por ${g} 🪙`}`;
   card('🎁',`<span class="r-${it.r}">${esc(it.name)}</span>`,sub,it.r>=3?'epic':'gold');
   if(it.r===4)speak('Item lendário encontrado!','fun');
   return{it,act,g};
 }
 function battle(s){
-  s.done=true;const m=s.m,res=fight(m);
+  s.done=true;potAuto();const m=s.m,res=fight(m);
   const el=s.mk?.getElement()?.querySelector('.mon');
   if(el){el.classList.add('dead');const mk=s.mk;setTimeout(()=>mk.remove(),650);s.mk=null}
   if(m.m3d){try{window.Hero3D?.[res.win?'monKill':'monAttack'](s.id)}catch{}}
@@ -91,7 +92,7 @@ function battle(s){
       `<b>+${x} XP</b> · <b>+${g} 🪙</b>${res.taken?` · −${res.taken} ❤️`:''}${res.crit?' · <b>CRÍTICO!</b>':''}${res.skills.length?' · '+res.skills.join(' · '):''}${res.steal?' · 💰 roubo!':''}`,m.dragon?'epic':'');
     if(m.aq)S.stats.aqKills=(S.stats.aqKills||0)+(envNow().rain&&m.aq?1:0);
     if(m.anc){if(T)T.deep=(T.deep||0)+1;S.stats.anc=(S.stats.anc||0)+1}
-    scrollDamage(.3);scrollDrop(m.anc?'ancient':m.elite||m.dragon?'elite':'');
+    scrollDamage(.3);raidDamage(RAID_KILL);scrollDrop(m.anc?'ancient':m.elite||m.dragon?'elite':'');
     const ch=(m.dragon?1:m.elite?.5:.16)*cls().loot*(1+bonus('loot'))*(1+Math.min(1.5,(m.depth||0)/80));
     if(Math.random()<ch)handleItem(makeItem(Math.max(rollRar(Math.min(.6,(m.depth||0)/200)),m.dragon?3:m.elite||m.anc?1:0)));
   }else{

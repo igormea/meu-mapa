@@ -60,8 +60,8 @@ function renderSheet(){
       return `<div class="row"><div class="r1"><span>${SLOT[k]}</span>${it?`<b class="r-${it.r}">${esc(it.name)}</b>`:'<span style="color:#6f679a">vazio</span>'}</div>
         <div class="r2">${it?`${RAR[it.r].n} · ${statTxt(it)}`:'Itens caem dos monstros e dos baús'}${k==='weapon'&&S.smith.w?` · ferreiro +${S.smith.w}`:''}${k==='armor'&&S.smith.a?` · ferreiro +${S.smith.a}`:''}</div></div>`}).join('')+
       `<div class="row"><div class="r1"><span>🔨 Próximo aprimoramento</span><b>${fmtN(smithCost())} 🪙</b></div><div class="r2">O ferreiro usa seu ouro automaticamente</div><div class="qbar"><i style="width:${Math.min(100,S.gold/smithCost()*100)}%"></i></div></div>
-      <div class="sect">Últimos achados</div>`+
-      (S.loot.length?S.loot.map(it=>`<div class="row"><div class="r1"><span class="r-${it.r}">${esc(it.name)}</span><span style="font-size:11.5px;color:#9b93c4">${it.act==='equipado'?'equipado':'+'+it.g+' 🪙'}</span></div><div class="r2">${RAR[it.r].n} · ${statTxt(it)}</div></div>`).join('')
+      ${bagHTML()}<div class="sect">Últimos achados</div>`+
+      (S.loot.length?S.loot.map(it=>`<div class="row"><div class="r1"><span class="r-${it.r}">${esc(it.name)}</span><span style="font-size:11.5px;color:#9b93c4">${it.act==='equipado'?'equipado':it.act==='guardado'?'no baú 🧰':'+'+it.g+' 🪙'}</span></div><div class="r2">${RAR[it.r].n} · ${statTxt(it)}</div></div>`).join('')
         :'<div class="r2" style="color:#6f679a">Nada ainda. Faça uma jornada!</div>');
   }else if(sheetTab==='quests'){
     ensureDaily();

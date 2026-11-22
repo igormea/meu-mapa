@@ -53,7 +53,7 @@ async function liveStart(){
     name:S.name||'Aventureiro',cls:cls()?.nome||'',dest:{n:short(dest.name),lat:+dest.lat.toFixed(5),lon:+dest.lon.toFixed(5)},route:lsRoute(),...lsSnapshot()};
   try{await fbWrite('shares/'+id,data,'PUT')}catch{return toast('Não consegui compartilhar agora')}
   LIVE={id,lastPush:Date.now(),lastPos:liveFix?[liveFix.lat,liveFix.lon]:null,routeLen:R.total};
-  S.liveShares=(S.liveShares||0)+1;renderLiveBtn();liveSend();
+  S.liveShares=(S.liveShares||0)+1;renderLiveBtn();liveSend();feedsPublish(id);
 }
 function liveUrl(){return`${LS_URL}#${LIVE.id}`}
 function liveSend(){
@@ -75,7 +75,7 @@ function liveEnd(st){                               // st: 'done' (chegou) | 'st
   if(!LIVE)return;const id=LIVE.id;LIVE=null;renderLiveBtn();
   const d={st,end:Date.now()};if(st==='done'&&liveFix)d.pos={lat:+liveFix.lat.toFixed(5),lon:+liveFix.lon.toFixed(5),h:0,s:0,t:Date.now()};
   if(st==='done')d.rem=0;
-  fbWrite('shares/'+id,d).catch(()=>{});
+  fbWrite('shares/'+id,d).catch(()=>{});feedsClear();
 }
 function liveStop(){liveEnd('stop');toast('Compartilhamento encerrado')}
 function renderLiveBtn(){

@@ -40,7 +40,7 @@ function navUpdate(sn,f){
   const kmh=f.spd>0?Math.round(f.spd*3.6):0,lim=limitAt(R,sn.prog);
   updSpeedo(kmh,lim);
   journeyTick(f,sn,kmh,lim);
-  liveFix=f;liveTick();
+  liveFix=f;liveTick();shopTick(f);
   $('navMount').textContent=kmh<3?'🧍 Parado':kmh<12?'🚶 A pé':S.vehicle==='moto'?(kmh<60?'🏍️ Na moto':'🏍️ Acelerando'):kmh<40?'🐴 Trotando':kmh<80?'🐎 A galope':'🦅 Voando de grifo';
   announce(k,st,dn,inst,f.spd||0);
   alertTick(sn.prog,f.spd||0);
@@ -126,7 +126,7 @@ function logEv(t){try{const k='meumapa_log',a=JSON.parse(localStorage.getItem(k)
   a.unshift(String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+' '+d.toTimeString().slice(0,5)+' — '+t);
   localStorage.setItem(k,JSON.stringify(a.slice(0,30)))}catch{}}
 function arrive(){
-  liveEnd('done');setTimeout(()=>cloudSoon(true),4000);
+  liveEnd('done');setTimeout(()=>{cloudSoon(true);raidPush()},4000);
   if(!isNav)return;isNav=false;
   const km=R.total/1000,mt=Math.min(5,1+Math.floor((S.lvl-1)/3));
   const boss=mkMon({n:'Guardião de '+short(dest.name),e:'🗿',t:mt},{elite:true});

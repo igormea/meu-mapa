@@ -41,6 +41,8 @@ def router(route):
             if "/data/places.json" in url: return j(PLACES_FIXTURE)
             if "/data/terrain.json" in url: return j(TERRAIN_FIXTURE)
             return route.continue_()
+        if "firebaseio.com/shares/" in url and "auth=" not in url:   # EventSource (ao vivo) passa pelo service worker
+            return route.fulfill(status=200, content_type="text/event-stream", body='event: put\ndata: {"path":"/","data":null}\n\n')
         if "accounts.google.com/gsi" in url:
             return route.fulfill(status=200, content_type="text/javascript", body="window.google={accounts:{id:{initialize(){},disableAutoSelect(){},renderButton(b){b.innerHTML='<button>Fazer login com o Google</button>'}}}}")
         if "tile.openstreetmap.org" in url: return route.fulfill(status=200, content_type="image/png", body=TILE, headers={"Access-Control-Allow-Origin": "*"})
