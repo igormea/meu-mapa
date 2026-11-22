@@ -1,5 +1,15 @@
 [
  {
+  "v": "1.25.0",
+  "d": "22/11/2026",
+  "t": "Preparação pra Play Store",
+  "i": [
+   "🗑️ Excluir conta: na aba Social → 'excluir minha conta'. Apaga do servidor apelido, perfil, amigos, guilda, trocas, localização e o save na nuvem, e também a conta de login. O herói neste aparelho continua.",
+   "🔒 Política de privacidade publicada (link em Ajustes e na tela de login), explicando quais dados o app usa e como apagar.",
+   "Se o líder exclui a conta, a liderança da guilda passa pra outro membro."
+  ]
+ },
+ {
   "v": "1.24.0",
   "d": "22/11/2026",
   "t": "Ícone novo e abertura animada",

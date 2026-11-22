@@ -1248,3 +1248,20 @@ def t78_abertura_com_as_classes(c):
     c.js("()=>sessionStorage.removeItem('ranvus_intro')"); c.page.reload(); c.page.wait_for_timeout(300)
     if c.js("()=>!!$('intro')"):
         c.page.mouse.click(200, 300); c.page.wait_for_timeout(600); assert not c.js("()=>!!$('intro')")
+
+@test
+def t79_excluir_conta(c):
+    tree = _Tree()
+    c.open(); _fb_tree(c, tree); c.hero(); _social_setup(c, tree)
+    tree.put("saves/me", {"t": 1, "data": "{}"}); tree.put("trades/me/x", {"from": "u2"}); tree.put("gloc/gx/me", {"lat": 1, "lon": 1, "t": 1})
+    calls = []
+    c.page.route("**/accounts:delete**", lambda r: (calls.append(1), r.fulfill(status=200, content_type="application/json", body="{}")))
+    c.js("()=>{openSheet();setTab('soc')}")
+    c.page.click("#sheetBody >> text=excluir minha conta"); c.page.click("#sheetBody >> text=Excluir tudo")
+    c.wait("!isLogged()", 8000)
+    for p in ["users/me", "nicks/ranvus", "friends/me", "friends/u2/me", "saves/me", "trades/me", "gloc/gx/me"]:
+        assert tree.get(p) is None, p
+    # era líder com outro membro: a liderança passa pro amigo e eu saio
+    assert tree.get("groups/gx/leader") == "u2" and tree.get("groups/gx/members/me") is None and tree.get("groups/gx/members/u2")
+    assert calls, "conta de login não foi apagada"
+    assert c.js("()=>S.cls")                                     # herói local continua

@@ -65,13 +65,36 @@ function gateRender(){
     ${NATIVE?`<button class="btn prim gate-btn" onclick="socLogin()" ${SOC.busy?'disabled':''}>${SOC.busy?'Entrando…':'<b>G</b>&nbsp; Entrar com Google'}</button>`
       :SOC.busy?'<div class="gate-s">Entrando…</div>':'<div id="gisGate" class="gate-gis"></div>'}
     ${SOC.err?`<div class="gate-err">${esc(SOC.err)}</div>`:''}
-    <a class="gate-skip" onclick="gateSkip()">Agora não, só navegar</a></div>`;
+    <a class="gate-skip" onclick="gateSkip()">Agora não, só navegar</a>
+    <a class="gate-skip" style="font-size:12px;margin-top:4px" href="privacidade.html" target="_blank">Política de privacidade</a></div>`;
   if(!NATIVE&&!SOC.busy)socGisButton('gisGate');
 }
 function gateSkip(){localStorage.setItem('ranvus_skiplogin','1');gateClose()}
 function gateClose(){$('loginGate')?.remove()}
 function socLogout(){localStorage.removeItem('ranvus_fbauth');CLOUD.checked=false;CLOUD.dirty=false;localStorage.setItem('ranvus_skiplogin','1');Object.assign(SOC,{me:null,friends:{},profiles:{},group:null,gid:null,invites:{}});
   try{google?.accounts?.id?.disableAutoSelect()}catch{};try{NAT.social?.logout({provider:'google'})}catch{};renderSheet()}
+
+/* ═════ EXCLUIR CONTA (exigência da Play Store): apaga tudo do servidor e a conta de login ═════ */
+function socDelAsk(){SOC.delAsk=true;renderSheet()}
+async function socDeleteAccount(){
+  const u=uidMe();if(!u)return;SOC.busy=true;renderSheet();
+  const q=p=>fbDel(p).catch(()=>{});
+  try{
+    // guilda: líder passa a liderança (ou apaga a guilda se estiver sozinho); membro só sai
+    const g=SOC.group,gid=SOC.gid;
+    if(g&&gid){const others=Object.keys(g.members||{}).filter(x=>x!==u);
+      if(g.leader===u&&!others.length)await q('groups/'+gid);
+      else{if(g.leader===u)await fbWrite('groups/'+gid,{leader:others[0]}).catch(()=>{});await fbWrite('groups/'+gid,seatOut(g,u)).catch(()=>{})}
+      await q(`gloc/${gid}/${u}`)}
+    for(const f of Object.keys(SOC.friends||{}))await q(`friends/${f}/${u}`);
+    if(SOC.me?.nick)await q('nicks/'+SOC.me.nick.toLowerCase());
+    for(const p of ['friends/','invites/','trades/','saves/','users/'])await q(p+u);
+    // por último, a conta de login
+    const a=await fbToken();
+    await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:delete?key=${FB_CONFIG.apiKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idToken:a.token})});
+    S.gloc=0;S.gid=null;save();SOC.delAsk=false;SOC.busy=false;socLogout();toast('Conta excluída. Seus dados foram apagados do servidor.');
+  }catch(e){SOC.busy=false;toast('Não consegui excluir tudo agora. Tente de novo.');renderSheet()}
+}
 
 /* ═════ REST ═════ */
 async function fbGet(path){const a=await fbToken();const r=await fetch(`${FB_CONFIG.databaseURL}/${path}.json?auth=${a.token}`);if(!r.ok)throw new Error('fb '+r.status);return r.json()}
@@ -223,7 +246,10 @@ function socialHTML(){
       :'<div class="r2" style="margin:6px 2px">Nenhum companheiro ainda. Peça o apelido dos seus amigos e adicione aqui.</div>';
     if(out.length)h+=`<div class="r2" style="margin-top:8px">Pedidos enviados: ${out.map(f=>`${esc(P[f]?.nick||'?')} <a onclick="socRemove('${f}')">cancelar</a>`).join(' · ')}</div>`;
   }
-  h+=`<div class="r2" style="margin-top:14px"><a onclick="socLogout()">sair da conta</a></div>`;
+  h+=`<div class="r2" style="margin-top:14px"><a onclick="socLogout()">sair da conta</a> · <a onclick="socDelAsk()" style="color:#f3a3a3">excluir minha conta</a></div>`;
+  if(SOC.delAsk)h+=`<div class="row" style="border-color:#c0392b"><div class="r1"><span>🗑️ Excluir conta</span></div>
+    <div class="r2">Apaga do servidor: apelido, perfil, amigos, guilda, trocas, localização e o save na nuvem. Seu herói <b>neste aparelho</b> continua. Não dá pra desfazer.</div>
+    <div class="soc-act"><button class="mini" style="background:#c0392b" onclick="socDeleteAccount()" ${SOC.busy?'disabled':''}>${SOC.busy?'Excluindo…':'Excluir tudo'}</button><button class="mini2" onclick="SOC.delAsk=false;renderSheet()">Cancelar</button></div></div>`;
   return h;
 }
 function socView(v){SOC.view=v;renderSheet()}
