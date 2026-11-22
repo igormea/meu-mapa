@@ -1,5 +1,17 @@
 [
  {
+  "v": "1.21.0",
+  "d": "21/11/2026",
+  "t": "Save na nuvem",
+  "i": [
+   "☁️ Com o login do Google, seu progresso agora fica salvo na nuvem: nível, XP, itens, equipamentos, bestiário, conquistas, pergaminhos, portais e estatísticas.",
+   "O backup é automático: na hora quando você chega ao destino ou sobe de nível, quando sai do app e, fora isso, no máximo a cada 3 minutos se algo mudou.",
+   "Celular novo ou app reinstalado: ao entrar com o Google, o app acha seu herói e pergunta se quer restaurar.",
+   "Se o celular e a nuvem tiverem heróis diferentes, o app mostra os dois lado a lado e você escolhe qual manter. Nunca sobrescreve sozinho.",
+   "Seu save é privado: só a sua conta consegue ler ou alterar (testado no servidor)."
+  ]
+ },
+ {
   "v": "1.20.0",
   "d": "21/11/2026",
   "t": "Tela de entrada com Google",

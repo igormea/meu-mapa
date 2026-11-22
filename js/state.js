@@ -13,7 +13,7 @@ function load(){
   return d;
 }
 let S=load(), simSnap=null;
-function save(){if(simSnap)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch{}}
+function save(){if(simSnap)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch{};if(typeof cloudSoon==='function')cloudSoon(false)}
 
 /* ── ATRIBUTOS ───────────────────────────────────────── */
 const cls=()=>CLASSES[S.cls]||CLASSES.cavaleiro;

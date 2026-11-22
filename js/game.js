@@ -15,7 +15,7 @@ function levelUp(){
   $('lvNum').textContent=S.lvl;hero3d('act','cheer');
   clearTimeout(window.__talTmr);   // vários níveis de uma vez → um aviso só, com o total
   window.__talTmr=setTimeout(()=>{const n=talentPoints();if(n)card('✨',n>1?`${n} pontos de talento para usar!`:'Novo ponto de talento!','Distribua na mochila 🎒 → Talentos quando estiver parado','gold')},1500);const o=$('lvlUp');if(document.body.classList.contains('arrive')||$('arrivePanel').style.display==='block'||!isNav&&T){const L=S.lvl;setTimeout(()=>card("⭐",`Nível ${L}!`,'Vida restaurada · atributos aumentados','epic'),300)}else{o.classList.remove('on');void o.offsetWidth;o.classList.add('on')}
-  speak(`Subiu para o nível ${S.lvl}!`,'fun');
+  speak(`Subiu para o nível ${S.lvl}!`,'fun');setTimeout(()=>cloudSoon(true),2000);
 }
 let lastRegen=Date.now();
 function regen(){const now=Date.now(),dt=(now-lastRegen)/60000;lastRegen=now;const mx=maxHP();if(S.hp==null)S.hp=mx;S.hp=Math.min(mx,S.hp+mx*.06*(1+bonus('regen'))*dt)}

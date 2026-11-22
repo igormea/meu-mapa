@@ -47,7 +47,7 @@ async function socFinish(idt){
     if(!j.idToken)throw new Error(j.error?.message||'login');
     localStorage.setItem('ranvus_fbauth',JSON.stringify({uid:j.localId,token:j.idToken,refresh:j.refreshToken,exp:Date.now()+(+j.expiresIn)*1000,
       google:true,name:j.displayName||j.fullName||'',photo:j.photoUrl||'',email:j.email||''}));
-    toast('Conectado com Google');SOC.loaded=true;gateClose();await socLoad(true);
+    toast('Conectado com Google');SOC.loaded=true;gateClose();CLOUD.checked=false;cloudCheck();await socLoad(true);
   }catch(e){SOC.err='Não deu pra entrar ('+String(e?.message||'erro').slice(0,90)+')';console.warn('login',e)}
   SOC.busy=false;socRender();
 }
@@ -70,7 +70,7 @@ function gateRender(){
 }
 function gateSkip(){localStorage.setItem('ranvus_skiplogin','1');gateClose()}
 function gateClose(){$('loginGate')?.remove()}
-function socLogout(){localStorage.removeItem('ranvus_fbauth');localStorage.setItem('ranvus_skiplogin','1');Object.assign(SOC,{me:null,friends:{},profiles:{},group:null,gid:null,invites:{}});
+function socLogout(){localStorage.removeItem('ranvus_fbauth');CLOUD.checked=false;CLOUD.dirty=false;localStorage.setItem('ranvus_skiplogin','1');Object.assign(SOC,{me:null,friends:{},profiles:{},group:null,gid:null,invites:{}});
   try{google?.accounts?.id?.disableAutoSelect()}catch{};try{NAT.social?.logout({provider:'google'})}catch{};renderSheet()}
 
 /* ═════ REST ═════ */

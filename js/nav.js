@@ -126,7 +126,7 @@ function logEv(t){try{const k='meumapa_log',a=JSON.parse(localStorage.getItem(k)
   a.unshift(String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+' '+d.toTimeString().slice(0,5)+' — '+t);
   localStorage.setItem(k,JSON.stringify(a.slice(0,30)))}catch{}}
 function arrive(){
-  liveEnd('done');
+  liveEnd('done');setTimeout(()=>cloudSoon(true),4000);
   if(!isNav)return;isNav=false;
   const km=R.total/1000,mt=Math.min(5,1+Math.floor((S.lvl-1)/3));
   const boss=mkMon({n:'Guardião de '+short(dest.name),e:'🗿',t:mt},{elite:true});

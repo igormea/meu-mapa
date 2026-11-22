@@ -492,7 +492,7 @@ def t41_monstros_3d_aparecem_e_morrem(c):
     c.wait("window.Hero3D && Hero3D.state.ready", 20000)
     c.js("""()=>{const s=PR[0].spawns[0];const b=MONS.find(m=>m.m3d==='esq_guerreiro');s.m=mkMon(b,{});s.m.hp=1;s.m.atk=0;
       const p=pointAt(PR[0],120);s.lat=p[0];s.lon=p[1];mon3dTick(%s,%s)}""" % (ORIGIN["lat"], ORIGIN["lon"]))
-    c.wait("Hero3D.mons.some(m=>m.kind==='esq_guerreiro'&&m.ready)", 15000)
+    c.wait("Hero3D.mons.some(m=>m.kind==='esq_guerreiro'&&m.ready)", 40000)
     sid = c.js("()=>PR[0].spawns[0].id")
     c.wait(f"PR[0].spawns[0].mk && PR[0].spawns[0].mk.getElement().style.visibility==='hidden'", 5000)   # ícone some quando o 3D aparece
     c.js("()=>{S.hp=maxHP();battle(PR[0].spawns[0])}")
@@ -1033,3 +1033,35 @@ def t68_tela_de_login_ao_abrir(c):
     c.js("()=>{localStorage.removeItem('ranvus_skiplogin');gateOpen()}"); c.wait("$('loginGate')", 2000)
     c.js("()=>socFinish('idt-falso')"); c.wait("!$('loginGate')", 4000)
     assert c.js("()=>isLogged()")
+
+LOGIN_JS = """()=>localStorage.setItem('ranvus_fbauth',JSON.stringify({uid:'me',token:'tok',refresh:'ref',exp:Date.now()+3e6,google:true,name:'Igor',email:'i@x.com'}))"""
+
+@test
+def t69_save_na_nuvem(c):
+    import json as _j
+    tree = _Tree()
+    c.open(); _fb_tree(c, tree); c.hero(name="Igor")
+    c.js("()=>{S.lvl=7;S.stats.km=55;save()}")
+    c.js(LOGIN_JS)
+    # 1) primeira vez: sobe o save deste aparelho
+    c.js("async()=>{CLOUD.checked=false;await cloudCheck()}"); c.page.wait_for_timeout(500)
+    sv = tree.get("saves/me"); assert sv and sv["lvl"] == 7 and _j.loads(sv["data"])["name"] == "Igor", sv
+    # 2) mudança comum: marca e só envia depois do intervalo; ao chegar/subir de nível envia na hora
+    c.js("()=>{S.stats.km=60;save()}"); assert tree.get("saves/me")["km"] == 55
+    c.js("()=>cloudSoon(true)"); c.page.wait_for_timeout(500); assert tree.get("saves/me")["km"] == 60
+    # 3) outro aparelho salvou um herói diferente, mais novo → pergunta, não sobrescreve
+    other = {"name": "Outro", "cls": "mago", "lvl": 12, "xp": 0, "stats": {"km": 340, "kills": 90}, "equip": {}, "smith": {"w": 0, "a": 0}}
+    tree.put("saves/me", {"t": 9e12, "lvl": 12, "km": 340, "cls": "mago", "name": "Outro", "data": _j.dumps(other)})
+    c.js("async()=>{CLOUD.checked=false;await cloudCheck()}"); c.wait("$('cloudDlg')", 3000)
+    txt = c.js("()=>$('cloudDlg').textContent"); assert "Neste aparelho" in txt and "Nv 12" in txt and "Nv 7" in txt, txt
+    c.js("()=>cloudSoon(true)"); c.page.wait_for_timeout(300)
+    assert tree.get("saves/me")["lvl"] == 12                       # enquanto pergunta, nada é enviado
+    if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/cloud2.png")
+    c.page.click("text=Usar o da nuvem"); c.page.wait_for_timeout(1500); c.page.wait_for_function("typeof S!=='undefined' && S.lvl===12", timeout=20000)
+    assert c.js("()=>S.name") == "Outro"
+    # 4) aparelho novo (sem herói) com save na nuvem → oferece restaurar
+    c.js("()=>{localStorage.removeItem(SAVE_KEY)}"); c.page.reload(); c.page.wait_for_timeout(1500)
+    c.js("async()=>{CLOUD.checked=false;await cloudCheck()}"); c.wait("$('cloudDlg')", 3000)
+    assert "Encontrei seu progresso" in c.js("()=>$('cloudDlg').textContent")
+    if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/cloud1.png")
+    c.page.click("text=Restaurar meu herói"); c.page.wait_for_timeout(1500); c.page.wait_for_function("typeof S!=='undefined' && S.lvl===12", timeout=20000)

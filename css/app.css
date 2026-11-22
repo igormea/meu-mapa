@@ -507,3 +507,12 @@ button.mini2.del{color:#f3a3a3}
 .gate-gis{min-height:44px;display:flex;justify-content:center}
 .gate-err{color:#f3a3a3;font-size:13px;word-break:break-word}
 .gate-skip{color:#8ea0c4;font-size:14px;margin-top:14px;text-decoration:underline;cursor:pointer}
+/* save na nuvem */
+#cloudDlg{position:fixed;inset:0;z-index:99998;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(5,8,20,.88)}
+.cl-box{width:100%;max-width:420px;background:#141c36;border:1px solid #c9a24a66;border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px;text-align:center}
+.cl-t{font-family:Cinzel,serif;font-size:19px;color:#f1d38a}
+.cl-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cl-card{background:#0e1530;border:1px solid #2c3a66;border-radius:14px;padding:12px 8px;display:flex;flex-direction:column;gap:3px;color:#c7d0e4;font-size:12.5px}
+.cl-card b{color:#fff;font-size:15px}.cl-card small{color:#8ea0c4}
+.cl-lab{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#c9a24a}
+.cl-n{font-size:22px;font-weight:700;color:#f1d38a}
