@@ -690,7 +690,7 @@ def t52_botoes_acima_do_painel_e_abas(c):
     c.js("()=>{cancelRoute();openSheet();setTab('ach')}")
     r = c.js("""()=>[...document.querySelectorAll('#tabs .tab')].map(t=>{const b=t.getBoundingClientRect(),s=t.querySelector('span');
       return [b.left>=0&&b.right<=innerWidth, b.height>=38, s.scrollWidth<=s.clientWidth+1]})""")
-    assert len(r) == 8 and all(all(x) for x in r), r
+    assert len(r) == 9 and all(all(x) for x in r), r
     c.js("()=>setTab('stats')")
     assert "Últimos 7 dias" in c.js("()=>document.getElementById('sheetBody').textContent")
     if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/s_stats.png")
@@ -898,6 +898,7 @@ def _fb_mock(c, store):
             store.setdefault("_calls", []).append(m)
             return route.fulfill(status=200, content_type="application/json", body=_j.dumps(body))
         return route.continue_()
+    c.page.route("**/accounts.google.com/**", lambda r: r.fulfill(status=200, content_type="text/javascript", body="window.google={accounts:{id:{initialize(){},renderButton(b){b.innerHTML='<button>Google</button>'}}}}"))
     c.page.route("**/*identitytoolkit*/**", h); c.page.route("**/*.firebaseio.com/**", h)
 
 @test
@@ -944,3 +945,74 @@ def t66_modo_a_pe(c):
     e2e_reqs = c.js("()=>0")
     c.route_to()
     assert c.js("()=>document.body.classList.contains('mode-foot')")
+
+class _Tree:
+    def __init__(s): s.d = {}
+    def _walk(s, path, create=False):
+        k = [x for x in path.split("/") if x]; o = s.d
+        for x in k[:-1]:
+            if x not in o or not isinstance(o[x], dict):
+                if not create: return None, None
+                o[x] = {}
+            o = o[x]
+        return o, (k[-1] if k else None)
+    def get(s, path):
+        o, k = s._walk(path)
+        return None if o is None else o.get(k)
+    def put(s, path, v):
+        o, k = s._walk(path, True)
+        if v is None: o.pop(k, None)
+        else: o[k] = v
+    def patch(s, path, v):
+        cur = s.get(path) or {}
+        for a, b in v.items():
+            if b is None: cur.pop(a, None)
+            else: cur[a] = b
+        s.put(path, cur)
+
+def _fb_tree(c, tree):
+    import json as _j
+    def h(route):
+        u = route.request.url; m = route.request.method
+        if "identitytoolkit" in u or "securetoken" in u:
+            return route.fulfill(status=200, content_type="application/json", body=_j.dumps({"idToken": "tok", "refreshToken": "ref", "localId": "me", "expiresIn": "3600", "id_token": "tok", "refresh_token": "ref", "user_id": "me", "expires_in": "3600"}))
+        path = u.split("firebaseio.com/")[1].split(".json")[0]
+        body = _j.loads(route.request.post_data or "null")
+        if m == "PUT": tree.put(path, body)
+        elif m == "PATCH": tree.patch(path, body)
+        elif m == "DELETE": tree.put(path, None)
+        return route.fulfill(status=200, content_type="application/json", body=_j.dumps(tree.get(path) if m == "GET" else body))
+    c.page.route("**/accounts.google.com/**", lambda r: r.fulfill(status=200, content_type="text/javascript", body="window.google={accounts:{id:{initialize(){},renderButton(b){b.innerHTML='<button>Google</button>'}}}}"))
+    c.page.route("**/*identitytoolkit*/**", h); c.page.route("**/*securetoken*/**", h); c.page.route("**/*.firebaseio.com/**", h)
+
+@test
+def t67_multiplayer_amigos_e_guilda(c):
+    tree = _Tree()
+    c.open(); _fb_tree(c, tree); c.hero()
+    # sem login: aba mostra convite pra entrar
+    c.js("()=>{openSheet();setTab('soc')}")
+    assert "Jogue com seus amigos" in c.js("()=>$('sheetBody').textContent")
+    # simula sessão do Google já feita
+    c.js("""()=>{localStorage.setItem('ranvus_fbauth',JSON.stringify({uid:'me',token:'tok',refresh:'ref',exp:Date.now()+3e6,google:true,name:'Igor',email:'igor@x.com'}));SOC.loaded=false;renderSheet()}""")
+    c.wait("$('nickIn') && SOC.loaded", 4000); c.page.wait_for_timeout(600)
+    c.page.fill("#nickIn", "Ranvus"); c.page.click("#sheetBody >> text=Salvar apelido")
+    c.wait("SOC.me && SOC.me.nick==='Ranvus'", 4000); c.page.wait_for_timeout(1200)
+    assert tree.get("nicks/ranvus") == "me" and tree.get("users/me")["nick"] == "Ranvus"
+    # amigo existe no banco
+    tree.put("nicks/gleyson", "u2"); tree.put("users/u2", {"nick": "Gleyson", "cls": "mago", "lvl": 4, "km": 120, "t": 0})
+    c.wait("$('friendIn')", 3000); c.page.fill("#friendIn", "gleyson"); c.page.click("#sheetBody >> text=Adicionar")
+    c.wait("SOC.friends.u2==='out'", 4000)
+    assert tree.get("friends/u2/me") == "in"
+    # ele aceita (simulado) → aparece como companheiro
+    tree.put("friends/me/u2", "ok"); tree.put("friends/u2/me", "ok")
+    c.js("async()=>{await socLoad(true);renderSheet()}")
+    assert "Gleyson" in c.js("()=>$('sheetBody').textContent") and "mago" not in c.js("()=>$('sheetBody').textContent").lower()[:0]
+    # cria guilda e convida
+    c.page.fill("#guildIn", "Os Ranvus"); c.page.click("#sheetBody button:has-text('Criar')"); c.wait("SOC.group && SOC.group.name==='Os Ranvus'", 4000); c.page.wait_for_timeout(800)
+    gid = c.js("()=>SOC.gid"); assert tree.get(f"groups/{gid}/leader") == "me"
+    c.page.click("#sheetBody button[title='Convidar pra guilda']"); c.page.wait_for_timeout(500)
+    assert tree.get(f"invites/u2/{gid}")["from"] == "Ranvus"
+    if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/social.png")
+    # sair da guilda sendo o único → guilda some
+    c.page.click("#sheetBody >> text=Sair da guilda"); c.wait("!SOC.group", 4000)
+    assert tree.get(f"groups/{gid}") is None

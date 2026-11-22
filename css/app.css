@@ -205,7 +205,7 @@ body.arrive #fabs{display:none}
 #sheet{position:fixed;inset:0;z-index:300;display:none;background:rgba(0,0,0,.55)}
 #sheet.on{display:block}
 #sheetBox{position:absolute;left:0;right:0;bottom:0;max-height:88vh;display:flex;flex-direction:column;border-radius:18px 18px 0 0;background:linear-gradient(180deg,#1b1846,#0c0a1c);border-top:3px solid var(--gold);padding:10px 14px calc(16px + env(safe-area-inset-bottom))}
-#tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:2px 0 12px;flex-shrink:0}
+#tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:2px 0 12px;flex-shrink:0}
 .tab{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;padding:6px 1px 5px;border-radius:9px;font:600 10.5px/1.1 var(--px);background:#0b0918;border:2px solid var(--edge);color:var(--muted);cursor:pointer}
 .tab i{font-style:normal;font-size:19px;line-height:1.1}
 .tab span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -482,3 +482,17 @@ button.mini:disabled{opacity:.4}
 #modeRow span.on{border-color:var(--gold);color:var(--gold2)}
 body.mode-foot #limitSign,body.mode-bike #limitSign{display:none!important}
 #searchPanel.full.typing #modeRow{display:none}
+
+/* social */
+.soc-box{padding:4px 2px}.soc-t{font:700 16px var(--pixel);color:var(--gold2);margin-bottom:6px}
+.soc-in{flex:1;min-width:0;box-sizing:border-box;background:#0c0a1c;color:var(--parch);border:2px solid var(--edge);border-radius:10px;padding:10px 11px;font:14px var(--px);margin:8px 0}
+.soc-box .soc-in{width:100%}
+.soc-row{display:flex;gap:8px;align-items:center}
+.soc-me{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;background:#0b0918;border:1.5px solid var(--edge)}
+.soc-me img{width:38px;height:38px;border-radius:50%}.soc-me div{flex:1;display:flex;flex-direction:column}.soc-me b{font:700 15px var(--px)}.soc-me small{font-size:11.5px;color:var(--muted)}
+.sp{display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.05)}
+.sp-ic .ptr{width:34px;height:34px}.sp-tx{flex:1;min-width:0;display:flex;flex-direction:column}.sp-tx b{font:700 14px var(--px)}.sp-tx small{font-size:11px;color:var(--muted)}
+.crown{font-size:16px}
+button.mini2{padding:6px 9px;border-radius:9px;border:1.5px solid var(--edge);background:#141134;color:var(--parch);font:600 12px var(--px)}
+button.mini2.del{color:#f3a3a3}
+.soc-act{display:flex;gap:8px;margin-top:6px}

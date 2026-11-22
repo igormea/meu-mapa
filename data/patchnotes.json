@@ -1,5 +1,20 @@
 [
  {
+  "v": "1.19.0",
+  "d": "22/11/2026",
+  "t": "Multiplayer: companheiros e guildas",
+  "i": [
+   "👥 Nova aba Social na ficha do herói. Entre com sua conta Google (um toque, só na primeira vez).",
+   "Escolha um apelido único (3 a 16 letras, números ou _). É por ele que seus amigos te acham.",
+   "🤝 Companheiros: digite o apelido do amigo e mande o pedido. Quando ele aceitar, você vê a classe, o nível e os km dele, e quando ele esteve online.",
+   "🏰 Guildas: crie a sua (até 8 membros) e convide companheiros. O líder (👑) pode expulsar e passar a liderança; qualquer um pode sair.",
+   "Convites de guilda aparecem na aba Social pra aceitar ou recusar.",
+   "Segurança: ninguém consegue editar seu perfil, roubar seu apelido, ver seus amigos ou entrar numa guilda sem convite (testado no servidor).",
+   "Novas conquistas: Companheiro de Estrada e Irmandade.",
+   "Em breve: troca de itens, chefes de pergaminho em guilda e ranking."
+  ]
+ },
+ {
   "v": "1.18.0",
   "d": "21/11/2026",
   "t": "Compartilhar rota ao vivo",

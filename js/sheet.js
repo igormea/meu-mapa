@@ -1,7 +1,7 @@
 'use strict';
 /* ── FICHA DO HERÓI ──────────────────────────────────── */
 let sheetTab='heroi',resetArm=0;
-const TABS=[['heroi','🧙','Herói'],['tal','✨','Talentos'],['equip','🎒','Equipar'],['quests','📜','Missões'],['ach','🏅','Troféus'],['best','📖','Bestiário'],['stats','📊','Números'],['cfg','⚙️','Ajustes']];
+const TABS=[['heroi','🧙','Herói'],['tal','✨','Talentos'],['equip','🎒','Equipar'],['quests','📜','Missões'],['ach','🏅','Troféus'],['best','📖','Bestiário'],['soc','👥','Social'],['stats','📊','Números'],['cfg','⚙️','Ajustes']];
 function openSheet(){regen();renderSheet();$('sheet').classList.add('on');layerPush('sheet',()=>closeSheet(true))}
 function closeSheet(fromBack){$('sheet').classList.remove('on');if(!fromBack)layerPop('sheet')}
 function setTab(t){sheetTab=t;renderSheet()}
@@ -38,6 +38,8 @@ function renderSheet(){
         <div class="st"><span>🏰 Jornadas</span><b>${S.stats.trips}</b></div><div class="st"><span>🐉 Dragões</span><b>${S.stats.dragons}</b></div>
       </div>
       <div class="r2" style="font-size:11.5px;color:#837aa8;margin-top:10px">${esc(c.desc)}</div>`;
+  }else if(sheetTab==='soc'){
+    h=socialHTML();
   }else if(sheetTab==='best'){
     h=bestHTML();
   }else if(sheetTab==='stats'){
@@ -115,6 +117,7 @@ function renderSheet(){
       <div class="r2" style="color:#837aa8;font-size:11.5px;line-height:1.5">${(()=>{try{const a=JSON.parse(localStorage.getItem('meumapa_log')||'[]');return a.length?a.map(esc).join('<br>'):'Nenhum registro ainda.'}catch{return ''}})()}</div>`;
   }
   $('sheetBody').innerHTML=h;
+  if(sheetTab==='soc')socOnTab();
 }
 function setTheme(t){S.theme=t;applyTheme();save();renderSheet()}
 function setVoice(v){S.mute=v==='off';S.less=v==='less';if(S.mute)try{speechSynthesis.cancel()}catch{};hud();save();renderSheet()}

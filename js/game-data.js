@@ -237,6 +237,8 @@ const ACH=[
   {id:'dun',n:'Explorador de Masmorras',d:'Conclua uma masmorra',f:()=>(S.stats.dungeons||0)>=1},
   {id:'reg',n:'Andarilho de Fortaleza',d:'Visite 5 tipos de terreno',f:()=>(S.regions||[]).length>=5},
   {id:'pergaminho',n:'Invocador',d:'Derrote um chefe de pergaminho',f:()=>(S.stats.scrollWins||0)>=1},
+  {id:'compa',n:'Companheiro de Estrada',d:'Faça um amigo no Ranvus',f:()=>Object.values(SOC?.friends||{}).includes('ok')},
+  {id:'guilda',n:'Irmandade',d:'Entre ou crie uma guilda',f:()=>!!SOC?.gid},
   {id:'best25',n:'Caçador de Lendas',d:'Registre 25 monstros no bestiário',f:()=>Object.keys(S.best||{}).length>=25},
   {id:'bestlend',n:'Mito Vivo',d:'Derrote um monstro lendário',f:()=>MONS.some(m=>m.rar===5&&S.best?.[m.n])},
   {id:'set',n:'Conjunto Completo',d:'Equipe as 3 peças de um conjunto',f:()=>!!activeSet()},

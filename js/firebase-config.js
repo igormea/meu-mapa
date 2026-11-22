@@ -7,5 +7,6 @@ const FB_CONFIG={
   storageBucket:"ranvus-maps.firebasestorage.app",
   messagingSenderId:"1062176984300",
   appId:"1:1062176984300:web:191dfe1112ee9b524a29c9",
-  databaseURL:"https://ranvus-maps-default-rtdb.firebaseio.com"
+  databaseURL:"https://ranvus-maps-default-rtdb.firebaseio.com",
+  webClientId:"1062176984300-cr304buj98p4cjn9vmif1ea4mb4gtvu3.apps.googleusercontent.com"
 };
