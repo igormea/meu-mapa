@@ -883,3 +883,64 @@ def t63_portais(c):
     # voltar do celular fecha os portais
     c.page.go_back(); c.page.wait_for_timeout(250)
     assert not c.js("()=>$('searchPanel').classList.contains('portals')")
+
+def _fb_mock(c, store):
+    import json as _j
+    def h(route):
+        u = route.request.url; m = route.request.method
+        if "identitytoolkit" in u:
+            return route.fulfill(status=200, content_type="application/json", body=_j.dumps({"idToken": "tok", "refreshToken": "ref", "localId": "u1", "expiresIn": "3600"}))
+        if "firebaseio.com" in u:
+            path = u.split("firebaseio.com/")[1].split(".json")[0]
+            body = _j.loads(route.request.post_data or "null")
+            if m == "PUT": store[path] = body
+            elif m == "PATCH": store.setdefault(path, {}).update(body)
+            store.setdefault("_calls", []).append(m)
+            return route.fulfill(status=200, content_type="application/json", body=_j.dumps(body))
+        return route.continue_()
+    c.page.route("**/*identitytoolkit*/**", h); c.page.route("**/*.firebaseio.com/**", h)
+
+@test
+def t64_compartilhar_rota_ao_vivo(c):
+    store = {}
+    c.open(); _fb_mock(c, store); c.hero(); c.route_to()
+    c.js("()=>{startNav(true);sim.mult=3;window.open=u=>{window.__opened=u}}")
+    c.wait("isNav && R.prog>50", 15000)
+    c.page.click("#liveBtn"); c.wait("LIVE && window.__opened", 5000)
+    sid = c.js("()=>LIVE.id"); key = "shares/" + sid
+    assert len(sid) >= 20 and "acompanhar.html%23" + sid in c.js("()=>window.__opened")
+    d = store[key]
+    assert d["uid"] == "u1" and d["st"] == "nav" and len(d["route"]) > 10 and d["dest"]["n"] and d["exp"] > d["t"], d
+    assert c.js("()=>$('liveBtn').classList.contains('on')")
+    c.page.wait_for_timeout(6500)                        # posições continuam indo
+    assert store["_calls"].count("PATCH") >= 1 and store[key]["pos"]["lat"]
+    # chegar encerra sozinho
+    c.js("()=>{sim.prog=R.total-15}"); c.wait("!isNav", 10000); c.page.wait_for_timeout(500)
+    assert store[key]["st"] == "done" and store[key]["rem"] == 0 and c.js("()=>LIVE") is None
+
+@test
+def t65_pagina_acompanhar(c):
+    import json as _j
+    sid = "abcdefghijkmnpqrstuvwx"
+    data = {"uid": "u1", "t": 1, "exp": 9e15, "st": "nav", "mode": "foot", "name": "Igor", "dest": {"n": "Praia do Futuro", "lat": -3.75, "lon": -38.45},
+            "route": [[-3.73, -38.52], [-3.74, -38.50], [-3.75, -38.45]], "rem": 3200, "eta": 4102444800000, "pos": {"lat": -3.735, "lon": -38.51, "h": 90, "s": 5, "t": 0}}
+    c.open()
+    data["pos"]["t"] = c.js("()=>Date.now()")
+    c.page.route("**/*.firebaseio.com/**", lambda r: r.fulfill(status=200, headers={"Content-Type": "text/event-stream"}, body="event: put\ndata: " + _j.dumps({"path": "/", "data": data}) + "\n\n"))
+    c.page.goto(e2e.APP_ORIGIN + "/acompanhar.html#" + sid)
+    c.wait("document.getElementById('who').textContent.includes('Igor')", 8000)
+    t = c.js("()=>document.getElementById('card').textContent")
+    assert "🚶 Igor está a caminho" in t and "Praia do Futuro" in t and "3,2 km" in t and "Atualizado agora" in t, t
+    if os.environ.get("SHOT"): c.page.wait_for_timeout(1500); c.page.screenshot(path="/tmp/acompanhar.png")
+    data["st"] = "done"; data["end"] = data["pos"]["t"]
+    c.page.unroute("**/*.firebaseio.com/**")
+    c.page.route("**/*.firebaseio.com/**", lambda r: r.fulfill(status=200, headers={"Content-Type": "text/event-stream"}, body="event: put\ndata: " + _j.dumps({"path": "/", "data": data}) + "\n\n"))
+    c.page.reload(); c.wait("document.getElementById('state').textContent.includes('chegou')", 8000)
+
+@test
+def t66_modo_a_pe(c):
+    c.open(); c.hero()
+    c.page.click("#modeRow span[data-m=foot]"); assert c.js("()=>S.mode") == "foot"
+    e2e_reqs = c.js("()=>0")
+    c.route_to()
+    assert c.js("()=>document.body.classList.contains('mode-foot')")

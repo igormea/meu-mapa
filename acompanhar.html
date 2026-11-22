@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Acompanhar viagem · Ranvus Maps</title>
+<meta name="theme-color" content="#0e0b22"><link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="vendor/maplibre-gl.css">
+<style>
+  :root{--gold:#c9a24a;--gold2:#f3d38a;--ink:#0e0b22;--parch:#efe6ff;--muted:#a49cc8}
+  html,body{margin:0;height:100%;background:var(--ink);color:var(--parch);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  #map{position:fixed;inset:0}
+  #card{position:fixed;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top));z-index:5;background:linear-gradient(180deg,#1b1f4a,#0a0b1e);
+    border:2px solid var(--gold);border-radius:16px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+  #who{font-weight:700;font-size:16px;color:var(--gold2)}
+  #where{font-size:14px;margin-top:2px}
+  #nums{display:flex;gap:14px;margin-top:8px;font-size:13px;color:var(--muted)}
+  #nums b{display:block;font-size:19px;color:var(--parch);font-variant-numeric:tabular-nums}
+  #upd{font-size:11.5px;color:var(--muted);margin-top:6px}
+  #upd.old{color:#f3a3a3}
+  .live{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7fe08a;margin-right:6px;animation:p 1.4s infinite}
+  @keyframes p{50%{opacity:.25}}
+  #state{position:fixed;left:10px;right:10px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:5;display:none;text-align:center;
+    background:#141134;border:2px solid var(--edge,#3a3270);border-radius:14px;padding:12px;font-size:14.5px}
+  #state.ok{display:block;border-color:#7fe08a;color:#bff5c6}#state.end{display:block}
+  #btns{position:fixed;right:12px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:5;display:flex;flex-direction:column;gap:10px}
+  #btns a,#btns button{width:50px;height:50px;border-radius:50%;border:2px solid var(--gold);background:#141134;color:var(--gold2);font-size:20px;
+    display:flex;align-items:center;justify-content:center;text-decoration:none}
+  #foot{position:fixed;left:0;right:0;bottom:calc(2px + env(safe-area-inset-bottom));z-index:4;text-align:center;font-size:11px;color:#8a83b0}
+  #foot a{color:var(--gold2)}
+  .me{width:22px;height:22px;border-radius:50%;background:#3b82f6;border:3px solid #fff;box-shadow:0 0 0 6px rgba(59,130,246,.25);position:relative}
+  .me i{position:absolute;left:50%;top:-12px;margin-left:-5px;border:5px solid transparent;border-bottom:9px solid #fff}
+  .dst{font-size:30px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+</style></head><body>
+<div id="map"></div>
+<div id="card"><div id="who">Carregando viagem…</div><div id="where"></div>
+  <div id="nums"><div>Chegada<b id="eta">–</b></div><div>Faltam<b id="rem">–</b></div><div>Velocidade<b id="spd">–</b></div></div>
+  <div id="upd"></div></div>
+<div id="btns"><button id="ctr" title="Centralizar">◎</button><a id="gmaps" title="Destino no Google Maps" target="_blank" rel="noopener">🏁</a></div>
+<div id="state"></div>
+<div id="foot">Acompanhamento ao vivo pelo <a href="https://igormea.github.io/meu-mapa/">Ranvus Maps</a></div>
+<script src="vendor/maplibre-gl.js"></script>
+<script src="js/firebase-config.js"></script>
+<script>
+'use strict';
+const id=(location.hash||'').slice(1).replace(/[^a-z0-9]/g,'');
+const $=i=>document.getElementById(i);
+const hm=t=>new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+const km=m=>m>=1000?(m/1000).toFixed(1).replace('.',',')+' km':Math.round(m)+' m';
+const MODE={car:'🚗',foot:'🚶',bike:'🚲'};
+let D=null,follow=true,me=null,dst=null,lastT=0;
+const map=new maplibregl.Map({container:'map',attributionControl:{compact:true},center:[-38.52,-3.73],zoom:12,
+  style:{version:8,sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:19,attribution:'© OpenStreetMap'}},
+    layers:[{id:'osm',type:'raster',source:'osm',paint:{'raster-brightness-max':.85,'raster-saturation':-.2}}]}});
+map.on('dragstart',()=>follow=false);
+$('ctr').onclick=()=>{follow=true;fit()};
+function setState(cls,txt){const s=$('state');s.className=cls;s.innerHTML=txt}
+function routeGeo(){return{type:'Feature',geometry:{type:'LineString',coordinates:(D.route||[]).map(p=>[p[1],p[0]])}}}
+function draw(){
+  if(!D)return;
+  $('who').innerHTML=(D.st==='nav'?'<span class="live"></span>':'')+`${MODE[D.mode]||'🚗'} ${esc(D.name)} ${D.st==='nav'?'está a caminho':D.st==='done'?'chegou':'encerrou o compartilhamento'}`;
+  $('where').textContent='🏁 '+(D.dest?.n||'');
+  $('eta').textContent=D.st==='done'?hm(D.end||Date.now()):D.eta?hm(D.eta):'–';
+  $('rem').textContent=D.st==='done'?'0 m':D.rem!=null?km(D.rem):'–';
+  $('spd').textContent=D.pos&&D.st==='nav'?D.pos.s+' km/h':'–';
+  if(D.dest)$('gmaps').href=`https://www.google.com/maps/search/?api=1&query=${D.dest.lat},${D.dest.lon}`;
+  if(map.isStyleLoaded()){
+    const src=map.getSource('rt');if(src)src.setData(routeGeo());
+    else{map.addSource('rt',{type:'geojson',data:routeGeo()});
+      map.addLayer({id:'rt-c',type:'line',source:'rt',paint:{'line-color':'#2a0a12','line-width':9},layout:{'line-cap':'round','line-join':'round'}});
+      map.addLayer({id:'rt',type:'line',source:'rt',paint:{'line-color':'#e5534b','line-width':5},layout:{'line-cap':'round','line-join':'round'}})}
+  }
+  if(D.dest){if(!dst){const e=document.createElement('div');e.className='dst';e.textContent='🏰';dst=new maplibregl.Marker({element:e,anchor:'bottom'})}dst.setLngLat([D.dest.lon,D.dest.lat]).addTo(map)}
+  if(D.pos){if(!me){const e=document.createElement('div');e.className='me';e.innerHTML='<i></i>';me=new maplibregl.Marker({element:e,rotationAlignment:'map'})}
+    me.setLngLat([D.pos.lon,D.pos.lat]).setRotation(D.pos.h||0).addTo(map);lastT=D.pos.t||lastT}
+  if(D.st==='done')setState('ok',`✅ ${esc(D.name)} chegou a ${esc(D.dest?.n||'destino')} às ${hm(D.end||Date.now())}.`);
+  else if(D.st==='stop')setState('end','O compartilhamento desta viagem foi encerrado.');
+  else setState('','');
+  if(follow)fit();ago();
+}
+function fit(){
+  if(!D)return;
+  if(D.pos&&D.st==='nav')map.easeTo({center:[D.pos.lon,D.pos.lat],zoom:Math.max(map.getZoom(),14.5),duration:800});
+  else if(D.route?.length){const b=new maplibregl.LngLatBounds();D.route.forEach(p=>b.extend([p[1],p[0]]));map.fitBounds(b,{padding:{top:170,bottom:80,left:40,right:70},duration:800})}
+}
+function ago(){
+  if(!lastT||!D||D.st!=='nav'){$('upd').textContent='';return}
+  const s=Math.round((Date.now()-lastT)/1000);
+  $('upd').textContent=s<10?'Atualizado agora':s<60?`Atualizado há ${s} s`:`Sem sinal há ${Math.round(s/60)} min (pode estar sem internet)`;
+  $('upd').className=s>=60?'old':'';
+}
+setInterval(ago,5000);
+function esc(t){return String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+// atualizações em tempo real (Server-Sent Events do Realtime Database, sem login)
+function setPath(obj,path,val){const k=path.split('/').filter(Boolean);if(!k.length)return val;let o=obj||{};const root=o;
+  for(let i=0;i<k.length-1;i++){o[k[i]]=o[k[i]]&&typeof o[k[i]]==='object'?o[k[i]]:{};o=o[k[i]]}
+  if(val===null)delete o[k[k.length-1]];else o[k[k.length-1]]=val;return root}
+function start(){
+  if(id.length<20){setState('end','Link inválido.');$('who').textContent='Viagem não encontrada';return}
+  const es=new EventSource(`${FB_CONFIG.databaseURL}/shares/${id}.json`);
+  const on=(ev,patch)=>{const m=JSON.parse(ev.data);
+    if(patch){for(const [k,v] of Object.entries(m.data||{}))D=setPath(D,(m.path+'/'+k),v)}else D=setPath(D,m.path,m.data);
+    if(!D){$('who').textContent='Viagem não encontrada';setState('end','Este link expirou ou a viagem não existe mais.');return}
+    if(D.exp&&D.exp<Date.now()&&D.st==='nav'){D.st='stop'}
+    draw()};
+  es.addEventListener('put',e=>on(e,false));es.addEventListener('patch',e=>on(e,true));
+  es.addEventListener('cancel',()=>setState('end','Sem permissão para ver esta viagem.'));
+  es.onerror=()=>{if(!lastT||Date.now()-lastT>15000)$('upd').textContent='Reconectando…'};
+}
+map.on('load',()=>{start()});
+</script>
+</body></html>

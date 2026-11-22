@@ -33,7 +33,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="vendor/maplibre-gl.css">
-<link rel="stylesheet" href="css/app.css?v=1.17.0">
+<link rel="stylesheet" href="css/app.css?v=1.18.0">
 </head>
 <body class="day">
 <div id="map"></div>
@@ -96,6 +96,7 @@
     <div id="portalList"></div>
     <div class="pt-btns"><button onclick="portalNewSearch()">➕ Novo portal</button><button onclick="portalHere()">📍 Salvar onde estou</button></div>
   </div>
+  <div id="modeRow"><span data-m="car">🚗 Carro</span><span data-m="foot">🚶 A pé</span><span data-m="bike">🚲 Bike</span></div>
   <div id="originRow">📍 Partida: <b id="originLbl">sua localização</b> · <a onclick="showOriginInput()">alterar</a></div>
   <div id="originBox" class="acw">
     <input type="text" id="inpO" placeholder="Endereço de partida…" autocomplete="off">
@@ -135,10 +136,11 @@
   <div class="nb-row">
     <div id="navSt"><div id="navRem">–</div><div id="navETA">–</div><div id="navMount">–</div></div>
     <button class="rbtn" onclick="openStops()" title="Adicionar parada">➕</button>
-    <button class="rbtn" onclick="shareTrip()" title="Compartilhar viagem">📤</button>
+    <button class="rbtn" id="liveBtn" onclick="liveBtnTap()" title="Compartilhar rota ao vivo">📡</button>
     <button class="rbtn" onclick="openSheet()">🎒</button>
     <button class="rbtn stop" onclick="stopTap()">✕</button>
   </div>
+  <div id="liveMenu"><span>📡 Compartilhando ao vivo</span><button onclick="liveSend();$('liveMenu').classList.remove('on')">Enviar link</button><button class="stop" onclick="liveStop();$('liveMenu').classList.remove('on')">Parar</button></div>
   <div id="nbXp"><span id="nbLv">Nv 1</span><div class="bar xp"><i id="nbXpBar"></i></div><div class="bar hp" style="max-width:70px"><i id="nbHpBar"></i></div><span id="nbKills">⚔️ 0</span></div>
 </div>
 
@@ -178,32 +180,34 @@
 </div>
 
 <script src="vendor/maplibre-gl.js"></script>
-<script src="js/util.js?v=1.17.0"></script>
-<script src="js/native.js?v=1.17.0"></script>
-<script src="js/game-data.js?v=1.17.0"></script>
-<script src="js/state.js?v=1.17.0"></script>
-<script src="js/map.js?v=1.17.0"></script>
-<script src="js/game.js?v=1.17.0"></script>
-<script src="js/hero.js?v=1.17.0"></script>
-<script src="js/gps.js?v=1.17.0"></script>
-<script src="js/camera.js?v=1.17.0"></script>
-<script src="js/layers.js?v=1.17.0"></script>
-<script src="js/places.js?v=1.17.0"></script>
-<script src="js/search.js?v=1.17.0"></script>
-<script src="js/portals.js?v=1.17.0"></script>
-<script src="js/route.js?v=1.17.0"></script>
-<script src="js/nav.js?v=1.17.0"></script>
-<script src="js/osm.js?v=1.17.0"></script>
-<script src="js/world.js?v=1.17.0"></script>
-<script src="js/terrain.js?v=1.17.0"></script>
-<script src="js/rpg.js?v=1.17.0"></script>
-<script src="js/extras.js?v=1.17.0"></script>
-<script src="js/sheet.js?v=1.17.0"></script>
-<script src="js/stats.js?v=1.17.0"></script>
-<script src="js/scrolls.js?v=1.17.0"></script>
-<script src="js/journey.js?v=1.17.0"></script>
-<script src="js/main.js?v=1.17.0"></script>
+<script src="js/util.js?v=1.18.0"></script>
+<script src="js/native.js?v=1.18.0"></script>
+<script src="js/game-data.js?v=1.18.0"></script>
+<script src="js/state.js?v=1.18.0"></script>
+<script src="js/map.js?v=1.18.0"></script>
+<script src="js/game.js?v=1.18.0"></script>
+<script src="js/hero.js?v=1.18.0"></script>
+<script src="js/gps.js?v=1.18.0"></script>
+<script src="js/camera.js?v=1.18.0"></script>
+<script src="js/layers.js?v=1.18.0"></script>
+<script src="js/places.js?v=1.18.0"></script>
+<script src="js/search.js?v=1.18.0"></script>
+<script src="js/portals.js?v=1.18.0"></script>
+<script src="js/firebase-config.js?v=1.18.0"></script>
+<script src="js/liveshare.js?v=1.18.0"></script>
+<script src="js/route.js?v=1.18.0"></script>
+<script src="js/nav.js?v=1.18.0"></script>
+<script src="js/osm.js?v=1.18.0"></script>
+<script src="js/world.js?v=1.18.0"></script>
+<script src="js/terrain.js?v=1.18.0"></script>
+<script src="js/rpg.js?v=1.18.0"></script>
+<script src="js/extras.js?v=1.18.0"></script>
+<script src="js/sheet.js?v=1.18.0"></script>
+<script src="js/stats.js?v=1.18.0"></script>
+<script src="js/scrolls.js?v=1.18.0"></script>
+<script src="js/journey.js?v=1.18.0"></script>
+<script src="js/main.js?v=1.18.0"></script>
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.min.js"}}</script>
-<script type="module" src="js/hero3d.js?v=1.17.0"></script>
+<script type="module" src="js/hero3d.js?v=1.18.0"></script>
 </body>
 </html>

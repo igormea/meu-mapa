@@ -45,7 +45,7 @@ def router(route):
         if "tiles.openfreemap.org/planet" in url and url.rstrip('/').endswith('planet'):
             return j({"tilejson": "2.2.0", "tiles": ["https://tiles.openfreemap.org/t/{z}/{x}/{y}.pbf"], "minzoom": 0, "maxzoom": 14})
         if "tiles.openfreemap.org" in url: return route.fulfill(status=204, body=b"", headers={"Access-Control-Allow-Origin": "*"})
-        if "router.project-osrm.org" in url: REQS.append(url); return j(mocks.osrm(url))
+        if "router.project-osrm.org" in url or "routing.openstreetmap.de" in url: REQS.append(url); return j(mocks.osrm(url))
         if "valhalla" in url: return j(mocks.valhalla(route.request.post_data))
         if "photon.komoot.io" in url: return j(mocks.photon(url))
         if "nominatim" in url: return j([])

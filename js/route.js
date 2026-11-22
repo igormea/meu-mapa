@@ -12,14 +12,17 @@ async function osrm(o,d,alt,via=[]){
   const coords=pts.map(p=>`${(+p.lon).toFixed(6)},${(+p.lat).toFixed(6)}`).join(';');
   const rad=Math.round(Math.min(60,Math.max(25,o.acc||25)));
   const tries=[];
-  for(const useX of S.avoidToll?[true,false]:[false])for(const useB of o.hdg!=null?[true,false]:[false])tries.push({useB,useX});
+  const mode=S.mode||'car';
+  for(const useX of S.avoidToll&&mode==='car'?[true,false]:[false])for(const useB of o.hdg!=null?[true,false]:[false])tries.push({useB,useX});
   let lastErr;
   for(const t of tries){
     let q=`?overview=full&geometries=geojson&steps=true&alternatives=${alt&&n===2}`;
     if(t.useB)q+=`&bearings=${Math.round(o.hdg)%360},60${';'.repeat(n-1)}&radiuses=${rad}${';unlimited'.repeat(n-1)}`;
     if(t.useX)q+='&exclude=toll';
     try{
-      const j=await(await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}${q}`)).json();
+      // carro: OSRM oficial · a pé e bicicleta: servidores do OpenStreetMap Alemanha (FOSSGIS)
+      const base=mode==='foot'?'https://routing.openstreetmap.de/routed-foot':mode==='bike'?'https://routing.openstreetmap.de/routed-bike':'https://router.project-osrm.org';
+      const j=await(await fetch(`${base}/route/v1/driving/${coords}${q}`)).json();
       if(j.code==='Ok'&&j.routes?.length){tollAvoidOk=!S.avoidToll||t.useX;return j.routes}
       lastErr=j.message||j.code;
     }catch(e){lastErr=e.message}

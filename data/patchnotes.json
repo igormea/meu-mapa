@@ -1,5 +1,17 @@
 [
  {
+  "v": "1.18.0",
+  "d": "21/11/2026",
+  "t": "Compartilhar rota ao vivo",
+  "i": [
+   "📡 Compartilhar rota ao vivo, estilo Uber: durante a jornada, toque no 📡. O app gera um link e abre o WhatsApp pra você mandar pra quem quiser.",
+   "Quem recebe NÃO precisa ter o app: abre o link no navegador e vê o trajeto, o destino, onde você está agora, a hora de chegada e quanto falta, tudo atualizando sozinho.",
+   "Quando você chega, a pessoa vê 'chegou às HH:MM'. Também dá pra parar de compartilhar quando quiser (toque no 📡 de novo) e o link expira em 12 horas.",
+   "Privacidade: cada link é secreto e aleatório; ninguém consegue listar ou ver as viagens dos outros.",
+   "🚶 Modo a pé e 🚲 bicicleta: escolha na janela de busca. As rotas passam a ser de pedestre ou ciclista."
+  ]
+ },
+ {
   "v": "1.17.0",
   "d": "21/11/2026",
   "t": "Portais",
