@@ -1224,3 +1224,12 @@ def t76_seta_tamanho_e_guilda_ao_vivo(c):
     assert c.js("()=>Hero3D.friends.length") == 0 and not c.js("()=>!!document.querySelector('.fr-mk')")
     # desliga sozinho depois de 12 h
     c.js("()=>{S.gloc=Date.now()-1;glocTick({lat:-3.7,lon:-38.6})}"); assert c.js("()=>S.gloc") == 0
+
+@test
+def t77_novidades_desde_a_ultima_vista(c):
+    c.open(); c.hero()
+    c.js("async()=>{await loadNotes();S.seenV='1.22.0';closeNews&&closeNews();await showNews(false)}")
+    t = c.js("()=>$('newsBody').textContent")
+    assert "1.23.2" in t and "1.23.1" in t and "1.23.0" in t and "1.22.0" not in t.replace("1.22.0 ", "x"), t[:300]
+    assert "Localização pra guilda" in t and "histórico completo" in t
+    assert c.js("()=>S.seenV") == c.js("()=>NOTES[0].v")

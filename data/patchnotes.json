@@ -1,5 +1,13 @@
 [
  {
+  "v": "1.23.2",
+  "d": "22/11/2026",
+  "t": "Novidades completas",
+  "i": [
+   "📜 A janela de Novidades agora mostra tudo o que saiu desde a última vez que você abriu o app, e não só a última versão. Tem também um link pro histórico completo."
+  ]
+ },
+ {
   "v": "1.23.1",
   "d": "22/11/2026",
   "t": "Busca: nome exato da rua primeiro",
