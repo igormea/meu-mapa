@@ -1,5 +1,14 @@
 [
  {
+  "v": "1.23.1",
+  "d": "22/11/2026",
+  "t": "Busca: nome exato da rua primeiro",
+  "i": [
+   "🔎 Na busca, a rua com o nome exatamente igual ao digitado vem primeiro ('Rua Um' antes de 'Rua Um-I').",
+   "🔎 'Rua 321, 35' não confunde mais com casas de número 321 em outras ruas."
+  ]
+ },
+ {
   "v": "1.23.0",
   "d": "22/11/2026",
   "t": "Localização pra guilda, amigos em 3D e seta de direção",

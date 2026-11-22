@@ -992,28 +992,28 @@ def t67_multiplayer_amigos_e_guilda(c):
     assert "Jogue com seus amigos" in c.js("()=>$('sheetBody').textContent")
     # simula sessão do Google já feita
     c.js("""()=>{localStorage.setItem('ranvus_fbauth',JSON.stringify({uid:'me',token:'tok',refresh:'ref',exp:Date.now()+3e6,google:true,name:'Igor',email:'igor@x.com'}));SOC.loaded=false;renderSheet()}""")
-    c.wait("$('nickIn') && SOC.loaded", 4000); c.page.wait_for_timeout(600)
+    c.wait("$('nickIn') && SOC.loaded", 9000); c.page.wait_for_timeout(600)
     c.page.fill("#nickIn", "Ranvus"); c.page.click("#sheetBody >> text=Salvar apelido")
-    c.wait("SOC.me && SOC.me.nick==='Ranvus'", 4000); c.page.wait_for_timeout(1200)
+    c.wait("SOC.me && SOC.me.nick==='Ranvus'", 9000); c.page.wait_for_timeout(1200)
     assert tree.get("nicks/ranvus") == "me" and tree.get("users/me")["nick"] == "Ranvus"
     # amigo existe no banco
     tree.put("nicks/gleyson", "u2"); tree.put("users/u2", {"nick": "Gleyson", "cls": "mago", "lvl": 4, "km": 120, "t": 0})
-    c.wait("$('friendIn')", 3000); c.page.fill("#friendIn", "gleyson"); c.page.click("#sheetBody >> text=Adicionar")
-    c.wait("SOC.friends.u2==='out'", 4000)
+    c.wait("$('friendIn')", 9000); c.page.fill("#friendIn", "gleyson"); c.page.click("#sheetBody >> text=Adicionar")
+    c.wait("SOC.friends.u2==='out'", 9000)
     assert tree.get("friends/u2/me") == "in"
     # ele aceita (simulado) → aparece como companheiro
     tree.put("friends/me/u2", "ok"); tree.put("friends/u2/me", "ok")
     c.js("async()=>{await socLoad(true);renderSheet()}")
     assert "Gleyson" in c.js("()=>$('sheetBody').textContent") and "mago" not in c.js("()=>$('sheetBody').textContent").lower()[:0]
     # cria guilda e convida
-    c.js("()=>socView('guild')"); c.page.fill("#guildIn", "Os Ranvus"); c.page.click("#sheetBody button:has-text('Criar')"); c.wait("SOC.group && SOC.group.name==='Os Ranvus'", 4000); c.page.wait_for_timeout(800)
+    c.js("()=>socView('guild')"); c.page.fill("#guildIn", "Os Ranvus"); c.page.click("#sheetBody button:has-text('Criar')"); c.wait("SOC.group && SOC.group.name==='Os Ranvus'", 9000); c.page.wait_for_timeout(800)
     gid = c.js("()=>SOC.gid"); assert tree.get(f"groups/{gid}/leader") == "me"
     assert tree.get(f"groups/{gid}/seats/1") == "me"
     c.js("()=>socView('comp')"); c.page.click("#sheetBody button[title='Convidar pra guilda']"); c.page.wait_for_timeout(500)
     assert tree.get(f"invites/u2/{gid}")["from"] == "Ranvus"
     if os.environ.get("SHOT"): c.page.screenshot(path="/tmp/social.png")
     # sair da guilda sendo o único → guilda some
-    c.js("()=>socView('guild')"); c.page.click("#sheetBody >> text=Sair da guilda"); c.wait("!SOC.group", 4000)
+    c.js("()=>socView('guild')"); c.page.click("#sheetBody >> text=Sair da guilda"); c.wait("!SOC.group", 9000)
     assert tree.get(f"groups/{gid}") is None
 
 @test

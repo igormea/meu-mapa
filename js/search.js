@@ -56,8 +56,9 @@ async function searchPlaces(q,typing=false){
       let name=p.name||st||p.city;if(!name)continue;
       let sub=[p.name&&st&&p.name!==p.street?st:'',p.district||p.locality,p.city||p.county,p.state].filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).join(', ');
       // rua sem o número no mapa: leva até a rua e mostra o número que você pediu
+      const base=p.name||p.street||'';   // nome sem o número da casa (pra comparar com o que foi digitado)
       if(A.num&&p.type==='street'&&!p.housenumber){name=`${name}, ${A.num}`;sub='rua encontrada · confira o número no local'+(sub?' · '+sub:'')}
-      res.push({name,sub,lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],v})}
+      res.push({name,sub,base,lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],v})}
   }).catch(()=>{});
   const ph=Promise.all(vs.map(photon));
   let nm=Promise.resolve();
@@ -70,7 +71,12 @@ async function searchPlaces(q,typing=false){
   await Promise.all([ph,nm]);
   const all=[...loc,...res];
   const tv=vs.map(v=>v.split(' '));
-  all.forEach(r=>{r.dist=hav(c.lat,c.lon,r.lat,r.lon);r.ts=Math.max(...tv.map(t=>textScore(t,r)))});
+  const streetVs=new Set([A.street.join(' '),wordsToNum(A.street).join(' '),numToWords(A.street).join(' ')]);
+  all.forEach(r=>{r.dist=hav(c.lat,c.lon,r.lat,r.lon);
+    const rb=r.base!=null?{name:r.base,sub:r.sub}:r;
+    r.ts=Math.max(...tv.map(t=>textScore(t,rb)));
+    if(r.base!=null&&streetVs.has(expandQ(r.base).join(' ')))r.ts+=.5;   // nome da rua exatamente igual ao digitado vem primeiro
+  });
   // primeiro o que bate com o texto, depois o mais perto
   all.sort((a,b)=>(Math.round(b.ts*4)-Math.round(a.ts*4))||(a.dist-b.dist));
   const out=[];for(const r of all)if(!out.some(o=>hav(o.lat,o.lon,r.lat,r.lon)<60&&short(o.name)===short(r.name)))out.push(r);
