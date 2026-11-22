@@ -41,6 +41,8 @@ def router(route):
             if "/data/places.json" in url: return j(PLACES_FIXTURE)
             if "/data/terrain.json" in url: return j(TERRAIN_FIXTURE)
             return route.continue_()
+        if "accounts.google.com/gsi" in url:
+            return route.fulfill(status=200, content_type="text/javascript", body="window.google={accounts:{id:{initialize(){},disableAutoSelect(){},renderButton(b){b.innerHTML='<button>Fazer login com o Google</button>'}}}}")
         if "tile.openstreetmap.org" in url: return route.fulfill(status=200, content_type="image/png", body=TILE, headers={"Access-Control-Allow-Origin": "*"})
         if "tiles.openfreemap.org/planet" in url and url.rstrip('/').endswith('planet'):
             return j({"tilejson": "2.2.0", "tiles": ["https://tiles.openfreemap.org/t/{z}/{x}/{y}.pbf"], "minzoom": 0, "maxzoom": 14})
@@ -64,7 +66,7 @@ def test(fn):
 class Ctx:
     def __init__(self, browser):
         self.browser = browser; self.ctx = None; self.page = None; self.errors = []
-    def open(self, keep_storage=None, geo=None, init_script=None, block_sw=False, block=None):
+    def open(self, keep_storage=None, geo=None, init_script=None, block_sw=False, block=None, gate=False):
         opts = dict(viewport={"width": 412, "height": 860}, device_scale_factor=1, has_touch=True, locale="pt-BR",
                     permissions=["geolocation"], geolocation=geo or {"latitude": ORIGIN["lat"], "longitude": ORIGIN["lon"], "accuracy": 8})
         if keep_storage: opts["storage_state"] = keep_storage
@@ -72,6 +74,7 @@ class Ctx:
         self.ctx = self.browser.new_context(**opts)
         self.ctx.route("**/*", router)
         if block: self.ctx.route(block, lambda r: r.abort())   # registrado por último = roda primeiro
+        if not gate: self.ctx.add_init_script('window.__noGate=1')
         if init_script: self.ctx.add_init_script(init_script)
         self.page = self.ctx.new_page()
         self.page.on("pageerror", lambda e: self.errors.append(f"pageerror: {e}"))

@@ -496,3 +496,14 @@ body.mode-foot #limitSign,body.mode-bike #limitSign{display:none!important}
 button.mini2{padding:6px 9px;border-radius:9px;border:1.5px solid var(--edge);background:#141134;color:var(--parch);font:600 12px var(--px)}
 button.mini2.del{color:#f3a3a3}
 .soc-act{display:flex;gap:8px;margin-top:6px}
+/* tela de entrada (login) */
+#loginGate{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:radial-gradient(ellipse at 50% 30%,#1d3b5c 0%,#0e1a34 70%)}
+.gate-box{width:100%;max-width:360px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
+.gate-logo{width:96px;height:96px;border-radius:22px;box-shadow:0 8px 30px #0008}
+.gate-t{font-family:Cinzel,serif;font-size:26px;color:#f1d38a;letter-spacing:1px}
+.gate-s{color:#c7d0e4;font-size:15px;line-height:1.4;margin-bottom:8px}
+.gate-btn{width:100%;font-size:17px;padding:14px}
+.gate-gis{min-height:44px;display:flex;justify-content:center}
+.gate-err{color:#f3a3a3;font-size:13px;word-break:break-word}
+.gate-skip{color:#8ea0c4;font-size:14px;margin-top:14px;text-decoration:underline;cursor:pointer}

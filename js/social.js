@@ -17,24 +17,27 @@ function gisLoad(){
   if(window.google?.accounts?.id)return Promise.resolve();
   return new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.onload=res;s.onerror=rej;document.head.appendChild(s)});
 }
-function socGisButton(){
-  const box=$('gisBtn');if(!box||box.dataset.on)return;box.dataset.on=1;
+function socGisButton(id='gisBtn'){
+  const box=$(id);if(!box||box.dataset.on)return;box.dataset.on=1;
   gisLoad().then(()=>{
     google.accounts.id.initialize({client_id:FB_CONFIG.webClientId,callback:r=>r.credential&&socFinish(r.credential)});
     google.accounts.id.renderButton(box,{theme:'filled_black',size:'large',shape:'pill',text:'signin_with',locale:'pt-BR'});
   }).catch(()=>{box.textContent='Não consegui carregar o botão do Google (sem internet?)'});
 }
 // APK: tela nativa do Google
+// (no Android o plugin recusa a opção "scopes": e-mail e perfil já vêm por padrão)
+let socInit=false;
 async function socLogin(){
   if(!NATIVE||!NAT.social)return;
-  SOC.err='';SOC.busy=true;renderSheet();
+  SOC.err='';SOC.busy=true;socRender();
   try{
-    await NAT.social.initialize({google:{webClientId:FB_CONFIG.webClientId}});
-    const r=await NAT.social.login({provider:'google',options:{scopes:['email','profile']}});
+    if(!socInit){await NAT.social.initialize({google:{webClientId:FB_CONFIG.webClientId,mode:'online'}});socInit=true}
+    const r=await NAT.social.login({provider:'google',options:{}});
     const t=r?.result?.idToken;if(!t)throw new Error('sem token');
     await socFinish(t);
-  }catch(e){SOC.err=/cancel/i.test(e.message||'')?'':'Não deu pra entrar agora. Tente de novo.';console.warn('login',e);SOC.busy=false;renderSheet()}
+  }catch(e){const m=String(e?.message||e||'');SOC.err=/cancel/i.test(m)?'':'Não deu pra entrar ('+m.slice(0,90)+')';console.warn('login',e);SOC.busy=false;socRender()}
 }
+function socRender(){renderSheet();gateRender()}
 // token do Google → sessão do Firebase
 async function socFinish(idt){
   SOC.busy=true;
@@ -44,11 +47,30 @@ async function socFinish(idt){
     if(!j.idToken)throw new Error(j.error?.message||'login');
     localStorage.setItem('ranvus_fbauth',JSON.stringify({uid:j.localId,token:j.idToken,refresh:j.refreshToken,exp:Date.now()+(+j.expiresIn)*1000,
       google:true,name:j.displayName||j.fullName||'',photo:j.photoUrl||'',email:j.email||''}));
-    toast('Conectado com Google');SOC.loaded=true;await socLoad(true);
-  }catch(e){SOC.err='Não deu pra entrar agora. Tente de novo.';console.warn('login',e)}
-  SOC.busy=false;renderSheet();
+    toast('Conectado com Google');SOC.loaded=true;gateClose();await socLoad(true);
+  }catch(e){SOC.err='Não deu pra entrar ('+String(e?.message||'erro').slice(0,90)+')';console.warn('login',e)}
+  SOC.busy=false;socRender();
 }
-function socLogout(){localStorage.removeItem('ranvus_fbauth');Object.assign(SOC,{me:null,friends:{},profiles:{},group:null,gid:null,invites:{}});
+
+/* ═════ TELA DE ENTRADA (primeira coisa ao abrir, até entrar ou escolher "agora não") ═════ */
+function gateNeeded(){return!window.__noGate&&!isLogged()&&!localStorage.getItem('ranvus_skiplogin')}
+function gateOpen(){
+  if(!gateNeeded()||$('loginGate'))return;
+  const d=document.createElement('div');d.id='loginGate';document.body.appendChild(d);gateRender();
+}
+function gateRender(){
+  const d=$('loginGate');if(!d)return;
+  d.innerHTML=`<div class="gate-box"><img src="icon-192.png" alt="" class="gate-logo" onerror="this.remove()">
+    <div class="gate-t">Ranvus Maps</div><div class="gate-s">Entre pra jogar com seus amigos, ter um apelido e formar uma guilda.</div>
+    ${NATIVE?`<button class="btn prim gate-btn" onclick="socLogin()" ${SOC.busy?'disabled':''}>${SOC.busy?'Entrando…':'<b>G</b>&nbsp; Entrar com Google'}</button>`
+      :SOC.busy?'<div class="gate-s">Entrando…</div>':'<div id="gisGate" class="gate-gis"></div>'}
+    ${SOC.err?`<div class="gate-err">${esc(SOC.err)}</div>`:''}
+    <a class="gate-skip" onclick="gateSkip()">Agora não, só navegar</a></div>`;
+  if(!NATIVE&&!SOC.busy)socGisButton('gisGate');
+}
+function gateSkip(){localStorage.setItem('ranvus_skiplogin','1');gateClose()}
+function gateClose(){$('loginGate')?.remove()}
+function socLogout(){localStorage.removeItem('ranvus_fbauth');localStorage.setItem('ranvus_skiplogin','1');Object.assign(SOC,{me:null,friends:{},profiles:{},group:null,gid:null,invites:{}});
   try{google?.accounts?.id?.disableAutoSelect()}catch{};try{NAT.social?.logout({provider:'google'})}catch{};renderSheet()}
 
 /* ═════ REST ═════ */
@@ -184,3 +206,4 @@ function socOnTab(){                                   // chamado sempre que a a
 }
 // presença: atualiza o perfil público ao abrir e ao chegar de viagem
 setTimeout(()=>socLoad(false),6000);
+gateOpen();

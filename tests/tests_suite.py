@@ -1016,3 +1016,20 @@ def t67_multiplayer_amigos_e_guilda(c):
     # sair da guilda sendo o único → guilda some
     c.page.click("#sheetBody >> text=Sair da guilda"); c.wait("!SOC.group", 4000)
     assert tree.get(f"groups/{gid}") is None
+
+@test
+def t68_tela_de_login_ao_abrir(c):
+    tree = _Tree()
+    c.open(gate=True); _fb_tree(c, tree)
+    c.wait("$('loginGate')", 4000)
+    assert "Entrar" in c.js("()=>$('loginGate').textContent") or c.js("()=>!!$('gisGate')")
+    if os.environ.get("SHOT"): c.page.wait_for_timeout(800); c.page.screenshot(path="/tmp/gate.png")
+    c.page.click("text=Agora não, só navegar"); c.wait("!$('loginGate')", 2000)
+    assert c.js("()=>localStorage.getItem('ranvus_skiplogin')") == "1"
+    # reabrindo: não pergunta de novo
+    c.page.reload(); c.page.wait_for_timeout(1500)
+    assert not c.js("()=>!!$('loginGate')")
+    # login concluído fecha a tela
+    c.js("()=>{localStorage.removeItem('ranvus_skiplogin');gateOpen()}"); c.wait("$('loginGate')", 2000)
+    c.js("()=>socFinish('idt-falso')"); c.wait("!$('loginGate')", 4000)
+    assert c.js("()=>isLogged()")
