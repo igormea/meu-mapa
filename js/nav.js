@@ -159,7 +159,7 @@ function arrive(){
 }
 function endNav(arrived){
   if(LIVE)liveEnd(arrived?'done':'stop');
-  isNav=false;stopSim();releaseWake();stopBgGPS();drProg=null;$('drBadge').style.display='none';try{speechSynthesis.cancel()}catch{}
+  isNav=false;stopSim();releaseWake();stopBgGPS();drProg=null;$('drBadge').style.display='none';stopVoice()
   renderAlert(null);$('laneBar').classList.remove('on');closeStops();stops=[];complexNear=false;
   if(arrived)setTimeout(()=>speak('Você chegou! Missão concluída.','nav'),50);
   document.body.classList.remove('nav');$('navTop').classList.remove('on');$('navBottom').classList.remove('on');

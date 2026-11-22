@@ -1,5 +1,19 @@
 [
  {
+  "v": "1.23.0",
+  "d": "22/11/2026",
+  "t": "Localização pra guilda, amigos em 3D e seta de direção",
+  "i": [
+   "📍 Localização pra guilda: agora é separada do link. Na aba Social → Guilda, cada membro liga a SUA localização (por 12 h, depois desliga sozinha). Quem está na guilda vê, ao vivo, quem ligou.",
+   "📡 O link de compartilhar a rota voltou a ser só do link: só quem recebe o link vê. Seus companheiros não veem mais automaticamente.",
+   "🧙 Companheiros aparecem no mapa como personagens 3D da classe deles, andando ou correndo e deslizando suavemente entre as atualizações, com o nome em cima.",
+   "➤ Seta de direção: uma seta dourada no chão, à frente do herói, mostra pra onde ele vai. Dá pra esconder em Ajustes.",
+   "🧍 Personagens menores, pra parecer que andam na rua. Em Ajustes dá pra escolher Pequeno, Médio ou Grande (o tamanho antigo).",
+   "🔎 Busca de endereço com número: 'Rua Um, 171' agora acha a rua (antes o número da casa estragava a busca). A rua também é procurada por extenso e com algarismos ('Rua Trezentos e Vinte e Um' ⇄ 'Rua 321').",
+   "🔇 Silenciar a voz agora cala na hora também no celular (a voz do Android continuava falando)."
+  ]
+ },
+ {
   "v": "1.22.0",
   "d": "22/11/2026",
   "t": "Chefes de guilda, trocas, ranking e lojas",

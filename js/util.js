@@ -1,6 +1,6 @@
 'use strict';
 /* versão: MAIOR.MENOR.CORREÇÃO — correção 1.18.0→1.18.1 · novidade →1.19.0 · incompatível com a anterior →2.0.0 */
-const APPV='1.22.0';
+const APPV='1.23.0';
 /* ═══════════════════════════════════════════════════════
    MEU MAPA RPG — v4
    Tiles OSM (estilizados) · Nominatim · OSRM · GPS
@@ -26,6 +26,8 @@ function card(e,t,s='',k=''){
   setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),400)},3600);
 }
 // kind: 'nav' (instruções), 'alert' (segurança), 'fun' (jogo). "Menos falante" corta só o 'fun'.
+// cala na hora (voz nativa do Android e do navegador)
+function stopVoice(){try{if(NATIVE&&NAT?.tts)NAT.tts.stop().catch(()=>{})}catch{};try{speechSynthesis.cancel()}catch{}}
 function speak(t,kind='fun'){
   if(S.mute)return;if(S.less&&kind==='fun')return;
   if(NATIVE){NAT.tts.speak({text:t,lang:'pt-BR',rate:1.0,volume:1.0,category:'playback'}).catch(()=>{});return}

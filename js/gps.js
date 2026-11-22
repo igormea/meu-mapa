@@ -89,7 +89,7 @@ function onFix(f){
   const first=!lastFix;
   // celular parado de verdade (acelerômetro) + GPS dizendo que andou pouco = oscilação → trava
   if(!f.dr&&lastFix&&isStill()&&(f.spd==null||f.spd<1)&&hav(lastFix.lat,lastFix.lon,f.lat,f.lon)<40){f={...f,lat:lastFix.lat,lon:lastFix.lon,spd:0}}
-  if(!sim&&!f.dr)lastFix=f;
+  if(!sim&&!f.dr){lastFix=f;if(typeof glocTick==='function')glocTick(f)}
   if(f.hdg!=null&&!isNaN(f.hdg)&&f.spd>4){lastCourse=f.hdg;lastFastT=Date.now()}
   regen();
   let moved=false;

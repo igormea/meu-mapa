@@ -175,6 +175,7 @@ async function guildLead(m){
 async function guildLeave(){
   const u=uidMe(),g=SOC.group;if(!g)return;
   const others=Object.keys(g.members||{}).filter(x=>x!==u);
+  if(S.gloc){fbDel(`gloc/${SOC.gid}/${u}`).catch(()=>{});S.gloc=0}
   try{
     if(g.leader===u){if(others.length)await fbWrite('groups/'+SOC.gid,{leader:others[0]});else{await fbDel('groups/'+SOC.gid);}}
     if(others.length||g.leader!==u)await fbWrite('groups/'+SOC.gid,seatOut(g,u));
@@ -202,7 +203,7 @@ function socialHTML(){
   const tab=(id,t,n)=>`<button class="soc-tab${SOC.view===id?' on':''}" onclick="socView('${id}')">${t}${n?`<i>${n}</i>`:''}</button>`;
   h+=`<div class="soc-tabs">${tab('comp','🤝 Amigos',inn.length+offers)}${tab('guild','🏰 Guilda',invs)}${tab('rank','🏆 Ranking')}</div>`;
   if(SOC.view==='guild'){
-    if(g){h+=`<div class="row"><div class="r1"><span><b>${esc(g.name)}</b></span><b>${mem.length}/${G_MAX}</b></div>${raidHTML(g,lead)}</div>
+    if(g){h+=`<div class="row"><div class="r1"><span><b>${esc(g.name)}</b></span><b>${mem.length}/${G_MAX}</b></div>${raidHTML(g,lead)}</div>${glocHTML()}
       <div class="sect">Membros</div>${mem.map(m=>`<div class="sp">${pLine(m,P[m]||g.members[m])}${m===g.leader?'<span class="crown">👑</span>':''}
         ${lead&&m!==u?`<button class="mini2" onclick="guildLead('${m}')" title="Passar liderança">👑</button><button class="mini2 del" onclick="guildKick('${m}')" title="Expulsar">✕</button>`:''}</div>`).join('')}
       ${lead&&ok.some(f=>!mem.includes(f))?`<div class="r2" style="margin-top:6px">Convide companheiros na aba 🤝 Amigos (botão 🏰+).</div>`:''}
@@ -218,10 +219,9 @@ function socialHTML(){
     h+=tradeHTML();
     h+=`<div class="sect">🤝 Companheiros</div><div class="soc-row"><input id="friendIn" class="soc-in" maxlength="16" placeholder="Apelido do amigo"><button class="mini" onclick="socAddFriend()">Adicionar</button></div>`;
     if(inn.length)h+=inn.map(f=>`<div class="sp">${pLine(f,P[f])}<button class="mini" onclick="socAccept('${f}')">Aceitar</button><button class="mini2 del" onclick="socRemove('${f}')">✕</button></div>`).join('');
-    h+=ok.length?ok.map(f=>`<div class="sp">${pLine(f,P[f])}${FLIVE[f]?'<span title="compartilhando a rota">📡</span>':''}<button class="mini2" onclick="tradePick('${f}')" title="Oferecer item">🎁</button>${lead&&!mem.includes(f)?`<button class="mini2" onclick="guildInvite('${f}')" title="Convidar pra guilda">🏰+</button>`:''}<button class="mini2 del" onclick="socRemove('${f}')" title="Remover">✕</button></div>`).join('')
+    h+=ok.length?ok.map(f=>`<div class="sp">${pLine(f,P[f])}${GL.data[f]&&glocFresh(GL.data[f])?'<span title="localização ligada pra guilda">📍</span>':''}<button class="mini2" onclick="tradePick('${f}')" title="Oferecer item">🎁</button>${lead&&!mem.includes(f)?`<button class="mini2" onclick="guildInvite('${f}')" title="Convidar pra guilda">🏰+</button>`:''}<button class="mini2 del" onclick="socRemove('${f}')" title="Remover">✕</button></div>`).join('')
       :'<div class="r2" style="margin:6px 2px">Nenhum companheiro ainda. Peça o apelido dos seus amigos e adicione aqui.</div>';
     if(out.length)h+=`<div class="r2" style="margin-top:8px">Pedidos enviados: ${out.map(f=>`${esc(P[f]?.nick||'?')} <a onclick="socRemove('${f}')">cancelar</a>`).join(' · ')}</div>`;
-    h+=`<label class="soc-chk"><input type="checkbox" ${S.shareFriends!==false?'checked':''} onchange="S.shareFriends=this.checked;save()"> Ao compartilhar a rota (📡), mostrar também pros companheiros no mapa deles</label>`;
   }
   h+=`<div class="r2" style="margin-top:14px"><a onclick="socLogout()">sair da conta</a></div>`;
   return h;
@@ -265,54 +265,11 @@ async function socPoll(){
       const r=SOC.group?.raid;if(r&&r.id!==sn.raid&&SOC.group.leader!==u&&!raidDone(r)&&!raidOver(r))notifyUser('⚔️','Chefe da guilda invocado',`${RAIDS[r.tier].n}: dirija pra ajudar a guilda`,'epic');
     }
     localStorage.setItem('ranvus_seen',JSON.stringify({init:1,fr,inv,tr,raid:SOC.group?.raid?.id||sn.raid}));
-    await feedsPoll(!first);
+    glocWatch();
     if($('sheet')?.classList.contains('on')&&sheetTab==='soc')renderSheet();
   }catch(e){console.warn('poll',e)}
   finally{socPolling=false}
 }
 setTimeout(socPoll,6000);setInterval(socPoll,150000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)socPoll()});
-
-/* ═════ AMIGOS NO MAPA: quem compartilha a rota (📡) aparece pros companheiros ═════
-   feeds/{amigo}/{eu} = {sid, nick, cls, t} — o mapa do amigo segue shares/{sid} ao vivo. */
-const FLIVE={};
-async function feedsPublish(sid){
-  if(!isLogged()||S.shareFriends===false||!SOC.me?.nick)return;
-  const F=SOC.friends,u=uidMe();
-  await Promise.all(Object.keys(F).filter(k=>F[k]==='ok').map(f=>fbSet(`feeds/${f}/${u}`,{sid,nick:SOC.me.nick,cls:S.cls,t:Date.now()}).catch(()=>{})));
-}
-async function feedsClear(){
-  if(!isLogged())return;const F=SOC.friends,u=uidMe();
-  await Promise.all(Object.keys(F).filter(k=>F[k]==='ok').map(f=>fbDel(`feeds/${f}/${u}`).catch(()=>{})));
-}
-async function feedsPoll(notify){
-  const all=await fbGet('feeds/'+uidMe()).catch(()=>null)||{};
-  for(const [f,v] of Object.entries(all)){
-    if(!v?.sid||Date.now()-v.t>12*3600e3||SOC.friends[f]!=='ok'){fbDel(`feeds/${uidMe()}/${f}`).catch(()=>{});continue}
-    if(!FLIVE[f]){FLIVE[f]=flFollow(f,v);if(notify)notifyUser('📡',`${v.nick} está na estrada`,'Compartilhou a rota com você. Ele aparece no seu mapa.')}
-  }
-  for(const f of Object.keys(FLIVE))if(!all[f])flDrop(f);
-}
-function flFollow(f,v){
-  const o={v,st:{},mk:null,es:null};
-  try{
-    o.es=new EventSource(`${FB_CONFIG.databaseURL}/shares/${v.sid}.json`);
-    const up=e=>{try{const m=JSON.parse(e.data);if(!m)return;
-      if(m.path==='/')o.st=m.data||{};else{const k=m.path.replace(/^\//,'').split('/')[0];if(e.type==='patch')Object.assign(o.st,m.data);else o.st[k]=m.data}
-      flDraw(f)}catch{}};
-    o.es.addEventListener('put',up);o.es.addEventListener('patch',up);
-  }catch{}
-  return o;
-}
-function flDraw(f){
-  const o=FLIVE[f];if(!o)return;const st=o.st;
-  if(!st||st.st==='done'||st.st==='stop'||(st.exp&&Date.now()>st.exp)){flDrop(f);return}
-  const p=st.pos;if(!p||typeof maplibregl==='undefined'||!window.__map)return;
-  if(!o.mk){const el=document.createElement('div');el.className='fr-mk';
-    el.innerHTML=`<span class="fr-ic">${typeof heroPic==='function'&&o.v.cls?heroPic(o.v.cls):'🧙'}</span><span class="fr-nm">${esc(o.v.nick)}</span>`;
-    el.onclick=()=>toast(`${o.v.nick} → ${st.dest?.n||'?'} · ${st.rem!=null?(st.rem/1000).toFixed(1)+' km':''}`);
-    o.mk=new maplibregl.Marker({element:el,anchor:'bottom'}).setLngLat([p.lon,p.lat]).addTo(window.__map)}
-  else o.mk.setLngLat([p.lon,p.lat]);
-}
-function flDrop(f){const o=FLIVE[f];if(!o)return;try{o.es?.close()}catch{};try{o.mk?.remove()}catch{};delete FLIVE[f]}
 gateOpen();

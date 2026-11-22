@@ -38,4 +38,4 @@ function locateMe(){
   startGPS();toast('📍 Procurando você…');
 }
 // botão de voz alterna: completa → menos falante → desligada
-function toggleMute(){const v=S.mute?'full':S.less?'off':'less';S.mute=v==='off';S.less=v==='less';if(S.mute)try{speechSynthesis.cancel()}catch{};hud();save();toast(S.mute?'🔇 Voz desligada':S.less?'🔉 Menos falante: só curvas e alertas':'🔊 Voz completa')}
+function toggleMute(){const v=S.mute?'full':S.less?'off':'less';S.mute=v==='off';S.less=v==='less';if(S.mute)stopVoice();hud();save();toast(S.mute?'🔇 Voz desligada':S.less?'🔉 Menos falante: só curvas e alertas':'🔊 Voz completa')}

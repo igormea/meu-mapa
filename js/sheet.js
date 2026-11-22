@@ -90,6 +90,12 @@ function renderSheet(){
       <div class="row"><div class="r1"><span>🔊 Voz</span></div><div class="opt">
         <button class="${!S.mute&&!S.less?'on':''}" onclick="setVoice('full')">Completa</button><button class="${!S.mute&&S.less?'on':''}" onclick="setVoice('less')">Menos falante</button><button class="${S.mute?'on':''}" onclick="setVoice('off')">Desligada</button></div>
         <div class="r2">"Menos falante": só as curvas na hora e os alertas de segurança.</div></div>
+      <div class="row"><div class="r1"><span>🧍 Tamanho dos personagens</span></div><div class="opt">
+        ${[['p','Pequeno'],['m','Médio'],['g','Grande']].map(([k,n])=>`<button class="${(S.charSize||'m')===k?'on':''}" onclick="S.charSize='${k}';save();renderSheet();window.__map?.triggerRepaint()">${n}</button>`).join('')}</div>
+        <div class="r2">Menor parece andar na rua; maior é mais fácil de enxergar.</div></div>
+      <div class="row"><div class="r1"><span>➤ Seta de direção</span></div><div class="opt">
+        <button class="${S.arrow!==false?'on':''}" onclick="S.arrow=true;save();renderSheet();window.__map?.triggerRepaint()">Mostrar</button><button class="${S.arrow===false?'on':''}" onclick="S.arrow=false;save();renderSheet();window.__map?.triggerRepaint()">Esconder</button></div>
+        <div class="r2">Seta dourada no chão, à frente do herói, mostrando pra onde ele vai.</div></div>
       <div class="row"><div class="r1"><span>🚗 Veículo</span></div><div class="opt">
         <button class="${S.vehicle!=='moto'?'on':''}" onclick="S.vehicle='car';save();renderSheet()">Carro</button><button class="${S.vehicle==='moto'?'on':''}" onclick="S.vehicle='moto';save();renderSheet()">Moto</button></div>
         <div class="r2">Moto: tempo estimado menor e aviso de lombada em qualquer velocidade.</div></div>
@@ -120,7 +126,7 @@ function renderSheet(){
   if(sheetTab==='soc')socOnTab();
 }
 function setTheme(t){S.theme=t;applyTheme();save();renderSheet()}
-function setVoice(v){S.mute=v==='off';S.less=v==='less';if(S.mute)try{speechSynthesis.cancel()}catch{};hud();save();renderSheet()}
+function setVoice(v){S.mute=v==='off';S.less=v==='less';if(S.mute)stopVoice();hud();save();renderSheet()}
 function resetTap(){
   if(Date.now()-resetArm<4000){try{localStorage.removeItem(SAVE_KEY)}catch{}location.reload();return}
   resetArm=Date.now();$('resetBtn').textContent='Toque de novo para apagar TUDO';

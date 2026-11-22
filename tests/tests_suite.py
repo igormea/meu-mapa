@@ -973,7 +973,7 @@ def _fb_tree(c, tree):
         if "identitytoolkit" in u or "securetoken" in u:
             return route.fulfill(status=200, content_type="application/json", body=_j.dumps({"idToken": "tok", "refreshToken": "ref", "localId": "me", "expiresIn": "3600", "id_token": "tok", "refresh_token": "ref", "user_id": "me", "expires_in": "3600"}))
         path = u.split("firebaseio.com/")[1].split(".json")[0]
-        if path.startswith("shares/") and m == "GET" and "auth=" not in u:
+        if m == "GET" and ((path.startswith("shares/") and "auth=" not in u) or path.startswith("gloc/")):
             return route.fulfill(status=200, content_type="text/event-stream", body="event: put\ndata: " + _j.dumps({"path": "/", "data": tree.get(path)}) + "\n\n")
         body = _j.loads(route.request.post_data or "null")
         if m == "PUT": tree.put(path, body)
@@ -1163,13 +1163,64 @@ def t73_ranking_avisos_e_amigo_no_mapa(c):
     tree.put("nicks/ju", "u3"); tree.put("users/u3", {"nick": "Jaqueline", "lvl": 2}); tree.put("friends/me/u3", "in")
     c.js("async()=>{await socPoll()}")
     assert "Jaqueline quer ser seu companheiro" in c.js("()=>$('feed').textContent")
-    # amigo compartilhando a rota aparece no mapa
-    tree.put("feeds/me/u2", {"sid": "s" * 24, "nick": "Gleyson", "cls": "mago", "t": int(__import__('time').time() * 1000)})
-    c.js("async()=>{await socPoll()}")
-    assert c.js("()=>!!FLIVE.u2") and "Gleyson está na estrada" in c.js("()=>$('feed').textContent")
-    c.js("()=>{FLIVE.u2.st={st:'nav',pos:{lat:-3.73,lon:-38.52},dest:{n:'Praia'},rem:5000};flDraw('u2')}")
-    assert c.js("()=>!!document.querySelector('.fr-mk')")
-    # ao compartilhar minha rota, aviso meus companheiros; ao parar, removo
-    c.js("async()=>{await feedsPublish('x'.repeat(24))}"); assert tree.get("feeds/u2/me")["nick"] == "Ranvus"
-    c.js("async()=>{await feedsClear()}"); assert tree.get("feeds/u2/me") is None
-    tree.put("feeds/me/u2", None); c.js("async()=>{await socPoll()}"); assert not c.js("()=>!!document.querySelector('.fr-mk')")
+    # avisos sem amigos-no-mapa pelo link (agora é só pela guilda)
+    assert "feedsPublish" not in c.js("()=>Object.keys(window).join()")
+
+@test
+def t74_silenciar_cala_na_hora(c):
+    c.open(); c.hero()
+    c.js("()=>{window.__stops=0;NATIVE=true;NAT={tts:{speak:()=>Promise.resolve(),stop:()=>{window.__stops++;return Promise.resolve()}}};S.mute=false;S.less=false}")
+    c.js("()=>setVoice('off')")
+    assert c.js("()=>window.__stops") == 1           # voz nativa do Android para na hora
+    c.js("()=>{S.mute=false;S.less=true;toggleMute()}"); assert c.js("()=>window.__stops") == 2
+    c.js("()=>{NATIVE=false;NAT=null}")
+
+@test
+def t75_busca_endereco_com_numero(c):
+    seen = []
+    def ph(route):
+        q = __import__('urllib.parse', fromlist=['x']).parse_qs(route.request.url.split('?', 1)[1]).get('q', [''])[0]; seen.append(q)
+        feats = []
+        if q in ("rua um", "rua 1"):
+            feats.append({"type": "Feature", "geometry": {"type": "Point", "coordinates": [-38.6106, -3.7380]}, "properties": {"name": "Rua Um", "type": "street", "locality": "Tabapuá", "city": "Caucaia", "countrycode": "BR"}})
+        if q in ("rua 321 jurema", "rua trezentos e vinte e um jurema"):
+            feats.append({"type": "Feature", "geometry": {"type": "Point", "coordinates": [-38.62, -3.73]}, "properties": {"name": "Rua 321", "type": "street", "district": "Nova Metrópole", "locality": "Jurema", "city": "Caucaia", "countrycode": "BR"}})
+        route.fulfill(status=200, content_type="application/json", body=__import__('json').dumps({"type": "FeatureCollection", "features": feats}))
+    c.open(); c.page.route("**/photon.komoot.io/api/**", ph); c.hero()
+    r = c.js("async()=>{lastFix={lat:-3.7376,lon:-38.6106};return await searchPlaces('rua um, 171',true)}")
+    assert "rua um" in seen and "rua 1" in seen and not any("171" in q for q in seen), seen
+    assert r and r[0]["name"] == "Rua Um, 171" and "confira o número" in r[0]["sub"], r
+    seen.clear()
+    r = c.js("async()=>await searchPlaces('Rua trezentos e vinte e um, 35, Jurema',true)")
+    assert r and r[0]["name"] == "Rua 321, 35" and "rua 321 jurema" in seen, (r, seen)
+    # sem número continua igual
+    r = c.js("async()=>await searchPlaces('rua 321 jurema',true)"); assert r and r[0]["name"] == "Rua 321"
+
+@test
+def t76_seta_tamanho_e_guilda_ao_vivo(c):
+    import time as _t
+    tree = _Tree()
+    c.open(); _fb_tree(c, tree); c.hero()
+    c.wait("Hero3D.state.ready", 30000)
+    c.page.wait_for_timeout(600)
+    assert c.js("()=>Hero3D.arrow.visible")
+    c.js("()=>{S.arrow=false;window.__map.triggerRepaint()}"); c.page.wait_for_timeout(400); assert not c.js("()=>Hero3D.arrow.visible")
+    c.js("()=>{S.arrow=true;S.charSize='p';window.__map.triggerRepaint()}")
+    if os.environ.get("SHOT"): c.page.wait_for_timeout(600); c.page.screenshot(path="/tmp/arrow.png")
+    # guilda: ligar minha localização publica; companheiro com localização ligada aparece em 3D com nome
+    _social_setup(c, tree)
+    c.js("()=>{lastFix={lat:-3.7376,lon:-38.6106,spd:0};glocSet(true)}"); c.page.wait_for_timeout(500)
+    me = tree.get("gloc/gx/me"); assert me and me["nick"] == "Ranvus" and me["cls"] == "cavaleiro", me
+    now = int(_t.time() * 1000)
+    c.js("(t)=>{GL.data={u2:{lat:-3.7372,lon:-38.6100,h:90,v:8,t:t,cls:'mago',nick:'Gleyson'}};glocDraw()}", now)
+    c.wait("Hero3D.friends.some(f=>f.id==='u2'&&f.ready)", 30000)
+    assert c.js("()=>Hero3D.friends[0].anim") == "run" and "Gleyson" in c.js("()=>document.querySelector('.fr-mk').textContent")
+    if os.environ.get("SHOT"): c.js("()=>map.jumpTo({center:[-38.6103,-3.7374],zoom:18})"); c.page.wait_for_timeout(1200); c.page.screenshot(path="/tmp/friend3d.png")
+    c.js("()=>{openSheet();setTab('soc');socView('guild')}")
+    assert "ligada" in c.js("()=>$('sheetBody').textContent") and "No mapa agora" in c.js("()=>$('sheetBody').textContent")
+    # desligar apaga minha posição; quem some do servidor some do mapa
+    c.js("()=>glocSet(false)"); c.page.wait_for_timeout(400); assert tree.get("gloc/gx/me") is None
+    c.js("()=>{GL.data={};glocDraw()}"); c.page.wait_for_timeout(300)
+    assert c.js("()=>Hero3D.friends.length") == 0 and not c.js("()=>!!document.querySelector('.fr-mk')")
+    # desliga sozinho depois de 12 h
+    c.js("()=>{S.gloc=Date.now()-1;glocTick({lat:-3.7,lon:-38.6})}"); assert c.js("()=>S.gloc") == 0

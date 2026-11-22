@@ -9,6 +9,35 @@ const ABBR={av:'avenida',avn:'avenida',r:'rua',al:'alameda',tv:'travessa',trav:'
   sta:'santa',sto:'santo',pres:'presidente',eng:'engenheiro',gal:'general',gen:'general',cel:'coronel',prof:'professor',cap:'capitao',
   sen:'senador',dep:'deputado',ten:'tenente',maj:'major',pe:'padre',n:'nossa',sra:'senhora',jd:'jardim',vl:'vila',res:'residencial',cj:'conjunto',cond:'condominio'};
 function expandQ(q){return norm(q).replace(/[.,]/g,' ').split(/\s+/).filter(Boolean).map(w=>ABBR[w]||w)}
+/* números por extenso ⇄ algarismos ("rua trezentos e vinte e um" ⇄ "rua 321"): o mapa tem as duas formas */
+const NW={um:1,uma:1,dois:2,duas:2,tres:3,quatro:4,cinco:5,seis:6,sete:7,oito:8,nove:9,dez:10,onze:11,doze:12,treze:13,quatorze:14,catorze:14,quinze:15,
+  dezesseis:16,dezessete:17,dezoito:18,dezenove:19,vinte:20,trinta:30,quarenta:40,cinquenta:50,sessenta:60,setenta:70,oitenta:80,noventa:90,
+  cem:100,cento:100,duzentos:200,trezentos:300,quatrocentos:400,quinhentos:500,seiscentos:600,setecentos:700,oitocentos:800,novecentos:900};
+const NU=['','um','dois','tres','quatro','cinco','seis','sete','oito','nove','dez','onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'],
+  ND=['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'],
+  NC=['','cento','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
+function numWords(n){if(n===100)return'cem';const c=Math.floor(n/100),r=n%100,p=[];if(c)p.push(NC[c]);
+  if(r<20){if(r)p.push(NU[r])}else{p.push(ND[Math.floor(r/10)]);if(r%10)p.push(NU[r%10])}return p.join(' e ')}
+function wordsToNum(toks){   // junta sequências "trezentos e vinte e um" → "321"
+  const o=[];for(let i=0;i<toks.length;i++){
+    if(NW[toks[i]]==null){o.push(toks[i]);continue}
+    let v=0,j=i;while(j<toks.length&&(NW[toks[j]]!=null||(toks[j]==='e'&&NW[toks[j+1]]!=null&&j>i))){if(toks[j]!=='e')v+=NW[toks[j]];j++}
+    o.push(String(v));i=j-1}
+  return o}
+const numToWords=toks=>toks.map(t=>/^\d{1,3}$/.test(t)&&+t>0?numWords(+t):t);
+const STREET=/^(rua|avenida|travessa|alameda|rodovia|estrada|praca|vila|beco|via)$/;
+/* separa o número da casa: "rua um, 171" / "rua um 171" / "rua 321, 35, jurema" → rua + nº + resto */
+function parseAddr(q){
+  const parts=norm(q).split(',').map(x=>x.trim()).filter(Boolean);
+  let num=null,rest=[];
+  if(parts.length>1){const i=parts.findIndex((x,k)=>k>0&&/^(n|no|nº|n°)?\s*\d{1,5}[a-z]?$/.test(x));
+    if(i>0){num=parts[i].match(/\d{1,5}[a-z]?/)[0];rest=parts.filter((x,k)=>k!==i&&k>0);return{street:expandQ(parts[0]),num,rest:rest.flatMap(expandQ)}}}
+  const t=expandQ(q);
+  // sem vírgula: último número é a casa se depois do tipo da rua já houver um nome ("rua um 171", "rua 321 35")
+  const L=t.length-1,ti=t.findIndex(w=>STREET.test(w));
+  if(ti>=0&&L>=ti+2&&/^\d{1,5}[a-z]?$/.test(t[L]))return{street:t.slice(0,L),num:t[L],rest:[]};
+  return{street:t,num:null,rest:[]};
+}
 // quanto o resultado "bate" com o que foi digitado (0..1): palavra começando igual vale 1, contida vale .5
 function textScore(toks,r){
   const words=norm(r.name+' '+r.sub).split(/[^a-z0-9]+/).filter(Boolean);let s=0;
@@ -18,14 +47,19 @@ function textScore(toks,r){
 let nomLast=0;
 // typing=true → sugestão enquanto digita: só Photon (o Nominatim proíbe autocompletar). Enter/voz → os dois.
 async function searchPlaces(q,typing=false){
-  const c=searchCenter(),res=[],toks=expandQ(q),qx=toks.join(' ');
-  const ph=fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(qx)}&lat=${c.lat}&lon=${c.lon}&limit=12&lang=default`).then(r=>r.json()).then(j=>{
+  const c=searchCenter(),res=[],A=parseAddr(q),toks=[...A.street,...A.rest],qx=toks.join(' ');
+  // variantes: como foi escrito, com algarismos e por extenso (sem repetir)
+  const vs=[...new Set([qx,wordsToNum(toks).join(' '),numToWords(toks).join(' ')])];
+  const photon=v=>fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(v)}&lat=${c.lat}&lon=${c.lon}&limit=12&lang=default`).then(r=>r.json()).then(j=>{
     for(const f of j.features||[]){const p=f.properties;if(p.countrycode&&p.countrycode!=='BR')continue;
       const st=[p.street,p.housenumber].filter(Boolean).join(', ');
-      const name=p.name||st||p.city;if(!name)continue;
-      const sub=[p.name&&st&&p.name!==p.street?st:'',p.district||p.locality,p.city||p.county,p.state].filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).join(', ');
-      res.push({name,sub,lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0]})}
+      let name=p.name||st||p.city;if(!name)continue;
+      let sub=[p.name&&st&&p.name!==p.street?st:'',p.district||p.locality,p.city||p.county,p.state].filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).join(', ');
+      // rua sem o número no mapa: leva até a rua e mostra o número que você pediu
+      if(A.num&&p.type==='street'&&!p.housenumber){name=`${name}, ${A.num}`;sub='rua encontrada · confira o número no local'+(sub?' · '+sub:'')}
+      res.push({name,sub,lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],v})}
   }).catch(()=>{});
+  const ph=Promise.all(vs.map(photon));
   let nm=Promise.resolve();
   if(!typing&&Date.now()-nomLast>1100){nomLast=Date.now();   // política do Nominatim: no máx. 1 pedido/s, nunca a cada tecla
     nm=fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(q)}&limit=6&accept-language=pt-BR&countrycodes=br`+
@@ -35,7 +69,8 @@ async function searchPlaces(q,typing=false){
   const loc=window.localSearch?localSearch(toks,c):[];   // índice próprio de Fortaleza (se carregado)
   await Promise.all([ph,nm]);
   const all=[...loc,...res];
-  all.forEach(r=>{r.dist=hav(c.lat,c.lon,r.lat,r.lon);r.ts=textScore(toks,r)});
+  const tv=vs.map(v=>v.split(' '));
+  all.forEach(r=>{r.dist=hav(c.lat,c.lon,r.lat,r.lon);r.ts=Math.max(...tv.map(t=>textScore(t,r)))});
   // primeiro o que bate com o texto, depois o mais perto
   all.sort((a,b)=>(Math.round(b.ts*4)-Math.round(a.ts*4))||(a.dist-b.dist));
   const out=[];for(const r of all)if(!out.some(o=>hav(o.lat,o.lon,r.lat,r.lon)<60&&short(o.name)===short(r.name)))out.push(r);

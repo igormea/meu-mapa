@@ -11,6 +11,8 @@ function ensurePlayer(lat,lon){
 // ganchos do herói 3D (js/hero3d.js)
 window.__heroPos=()=>player?player.getLngLat():null;
 window.__heroCls=()=>S.cls;
+window.__charSize=()=>S.charSize||'m';
+window.__heroArrow=()=>S.arrow!==false;
 window.__heroBusy=()=>isNav;
 const hero3d=(fn,...a)=>{try{window.Hero3D?.[fn](...a)}catch{}};
 function movePlayer(lat,lon,dur){
