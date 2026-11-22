@@ -37,6 +37,7 @@ jobs:
             npx @capacitor/assets generate --android --iconBackgroundColor '#1d3b5c' --splashBackgroundColor '#0e1a34' || echo "icones: usando padrao"
             npx cap sync android
             python3 patch_manifest.py
+            VCODE=$((100 + ${{ github.run_number }})) python3 patch_gradle.py
             # a chave fixa do projeto (o Gradle novo procura em ~/.config/.android; sem ela, gera uma chave nova a cada build)
             mkdir -p ~/.android ~/.config/.android
             cp meumapa.keystore ~/.android/debug.keystore
@@ -45,6 +46,9 @@ jobs:
             chmod +x gradlew
             ./gradlew assembleDebug --no-daemon
             cp app/build/outputs/apk/debug/app-debug.apk ../../ranvus-maps.apk && cp ../../ranvus-maps.apk ../../meu-mapa-rpg.apk
+            # pacote da Play Store (AAB), assinado com a mesma chave
+            ./gradlew bundleRelease --no-daemon
+            cp app/build/outputs/bundle/release/app-release.aab ../../ranvus-maps.aab
           ) 2>&1 | tee -a build.log
 
       - name: Conferir chave de assinatura
@@ -55,6 +59,8 @@ jobs:
           keytool -list -v -keystore ~/.android/debug.keystore -storepass android 2>/dev/null | grep -E "SHA1|Alias" || true
           BT=$(ls -d $ANDROID_HOME/build-tools/* | tail -1); $BT/apksigner verify --print-certs ranvus-maps.apk | grep -i sha-1 || true
           $BT/apksigner verify --print-certs ranvus-maps.apk | grep -qi "33ad99e32c1f4f4241101e6f2c618b1f1c71db0f" || { echo "::error::APK assinado com a chave errada"; exit 1; }
+          keytool -printcert -jarfile ranvus-maps.aab | grep -i "SHA1" || true
+          keytool -printcert -jarfile ranvus-maps.aab | grep -qi "33:AD:99:E3:2C:1F:4F:42:41:10:1E:6F:2C:61:8B:1F:1C:71:DB:0F" || { echo "::error::AAB assinado com a chave errada"; exit 1; }
           (cd app/android && ./gradlew signingReport --no-daemon -q 2>/dev/null | grep -E "Variant|SHA1|Store" | head -12) || true
 
       - name: Mostrar erro
@@ -77,4 +83,5 @@ jobs:
           files: |
             ranvus-maps.apk
             meu-mapa-rpg.apk
+            ranvus-maps.aab
           make_latest: true
