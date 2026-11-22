@@ -45,6 +45,15 @@ jobs:
             cp app/build/outputs/apk/debug/app-debug.apk ../../ranvus-maps.apk && cp ../../ranvus-maps.apk ../../meu-mapa-rpg.apk
           ) 2>&1 | tee -a build.log
 
+      - name: Conferir chave de assinatura
+        shell: bash
+        run: |
+          echo "HOME=$HOME ANDROID_USER_HOME=${ANDROID_USER_HOME:-} ANDROID_SDK_HOME=${ANDROID_SDK_HOME:-}"
+          ls -la ~/.android/ || true
+          keytool -list -v -keystore ~/.android/debug.keystore -storepass android 2>/dev/null | grep -E "SHA1|Alias" || true
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | tail -1); $BT/apksigner verify --print-certs ranvus-maps.apk | grep -i sha-1 || true
+          (cd app/android && ./gradlew signingReport --no-daemon -q 2>/dev/null | grep -E "Variant|SHA1|Store" | head -12) || true
+
       - name: Mostrar erro
         if: failure()
         shell: bash
