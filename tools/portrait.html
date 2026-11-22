@@ -1,7 +1,7 @@
 <!DOCTYPE html><html><head><meta charset="utf-8">
 <script type="importmap">{"imports":{"three":"../vendor/three/three.module.min.js"}}</script></head>
 <body style="margin:0;background:transparent">
-<canvas id="c" width="512" height="512"></canvas>
+<canvas id="c" width="1024" height="1024"></canvas>
 <script type="module">
 // Fotografa um modelo 3D (pose parada, 3/4) com fundo transparente → retrato PNG
 import * as THREE from 'three';
@@ -9,7 +9,9 @@ import { GLTFLoader } from '../vendor/three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from '../vendor/three/addons/libs/meshopt_decoder.module.js';
 import { clone as cloneSkinned } from '../vendor/three/addons/utils/SkeletonUtils.js';
 window.shoot = async (url, opt = {}) => {
-  const r = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), alpha: true, antialias: true, preserveDrawingBuffer: true });
+  const cv = document.getElementById('c'); if (opt.px) { cv.width = cv.height = opt.px; }
+  const r = window.__R || (window.__R = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), alpha: true, antialias: true, preserveDrawingBuffer: true }));
+  r.setSize(cv.width, cv.height, false);
   r.setClearColor(0x000000, 0); r.outputColorSpace = THREE.SRGBColorSpace;
   const scene = new THREE.Scene();
   scene.add(new THREE.HemisphereLight(0xdfe6ff, 0x2a1f4a, 2.2));
@@ -19,7 +21,7 @@ window.shoot = async (url, opt = {}) => {
   const g = await l.loadAsync(url); const m = opt.clone ? cloneSkinned(g.scene) : g.scene; scene.add(m);
   if (opt.tint) m.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); o.material.color.set(opt.tint); o.material.emissive?.set(opt.tint).multiplyScalar(.28); } });
   const mixer = new THREE.AnimationMixer(m); const clip = g.animations.find(a => a.name === (opt.anim || 'idle'));
-  if (clip) { mixer.clipAction(clip).play(); mixer.update(opt.t || 0.6); }
+  if (clip) { mixer.clipAction(clip).play(); mixer.update(opt.frac != null ? clip.duration * opt.frac : (opt.t || 0.6)); }
   m.rotation.y = opt.rot ?? 0.55;
   m.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(m), size = box.getSize(new THREE.Vector3()), ctr = box.getCenter(new THREE.Vector3());

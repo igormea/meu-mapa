@@ -1233,3 +1233,18 @@ def t77_novidades_desde_a_ultima_vista(c):
     assert "1.23.2" in t and "1.23.1" in t and "1.23.0" in t and "1.22.0" not in t.replace("1.22.0 ", "x"), t[:300]
     assert "Localização pra guilda" in t and "histórico completo" in t
     assert c.js("()=>S.seenV") == c.js("()=>NOTES[0].v")
+
+@test
+def t78_abertura_com_as_classes(c):
+    c.open(intro=True)
+    # as 5 classes correm até o meio, o pino cai e a abertura some sozinha (~2,6 s desde o início)
+    assert c.js("()=>!!$('intro') && document.querySelectorAll('#intro .in-hero').length===5 || !$('intro')")
+    c.wait("!$('intro') || $('intro').classList.contains('pin')", 4000)
+    if os.environ.get("SHOT") and c.js("()=>!!$('intro')"): c.page.screenshot(path="/tmp/intro2.png")
+    c.wait("!$('intro')", 4000)
+    assert c.js("()=>sessionStorage.getItem('ranvus_intro')") == "1"
+    # reabrir na mesma sessão não repete; tocar pula
+    c.page.reload(); c.page.wait_for_timeout(500); assert not c.js("()=>!!$('intro')")
+    c.js("()=>sessionStorage.removeItem('ranvus_intro')"); c.page.reload(); c.page.wait_for_timeout(300)
+    if c.js("()=>!!$('intro')"):
+        c.page.mouse.click(200, 300); c.page.wait_for_timeout(600); assert not c.js("()=>!!$('intro')")

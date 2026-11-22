@@ -68,8 +68,8 @@ def test(fn):
 class Ctx:
     def __init__(self, browser):
         self.browser = browser; self.ctx = None; self.page = None; self.errors = []
-    def open(self, keep_storage=None, geo=None, init_script=None, block_sw=False, block=None, gate=False):
-        opts = dict(viewport={"width": 412, "height": 860}, device_scale_factor=1, has_touch=True, locale="pt-BR",
+    def open(self, keep_storage=None, geo=None, init_script=None, block_sw=False, block=None, gate=False, intro=False):
+        opts = dict(viewport={"width": 412, "height": 860}, device_scale_factor=1, has_touch=True, locale="pt-BR", reduced_motion="no-preference",
                     permissions=["geolocation"], geolocation=geo or {"latitude": ORIGIN["lat"], "longitude": ORIGIN["lon"], "accuracy": 8})
         if keep_storage: opts["storage_state"] = keep_storage
         if block_sw: opts["service_workers"] = "block"
@@ -77,6 +77,7 @@ class Ctx:
         self.ctx.route("**/*", router)
         if block: self.ctx.route(block, lambda r: r.abort())   # registrado por último = roda primeiro
         if not gate: self.ctx.add_init_script('window.__noGate=1')
+        if not intro: self.ctx.add_init_script('window.__noIntro=1')
         if init_script: self.ctx.add_init_script(init_script)
         self.page = self.ctx.new_page()
         self.page.on("pageerror", lambda e: self.errors.append(f"pageerror: {e}"))

@@ -1,5 +1,15 @@
 [
  {
+  "v": "1.24.0",
+  "d": "22/11/2026",
+  "t": "Ícone novo e abertura animada",
+  "i": [
+   "🛡️ Ícone novo do Ranvus Maps: o cavaleiro do jogo comemorando na frente do pino de GPS, numa noite estrelada sobre o mapa.",
+   "🎬 Abertura: ao abrir o app, as 5 classes saem dos cantos correndo por trilhas douradas de mapa, se encontram no meio e o pino cai com o nome Ranvus Maps. Leva uns 2 segundos; um toque pula.",
+   "Também mudaram a tela de abertura do app e o ícone do site (com versão adaptável pro Android)."
+  ]
+ },
+ {
   "v": "1.23.2",
   "d": "22/11/2026",
   "t": "Novidades completas",
