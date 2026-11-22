@@ -1265,3 +1265,30 @@ def t79_excluir_conta(c):
     assert tree.get("groups/gx/leader") == "u2" and tree.get("groups/gx/members/me") is None and tree.get("groups/gx/members/u2")
     assert calls, "conta de login não foi apagada"
     assert c.js("()=>S.cls")                                     # herói local continua
+
+@test
+def t80_registro_automatico_de_erros(c):
+    import json as _j
+    posts = []
+    def h(route):
+        u = route.request.url
+        if "identitytoolkit" in u or "securetoken" in u:
+            return route.fulfill(status=200, content_type="application/json", body=_j.dumps({"idToken": "tok", "refreshToken": "ref", "localId": "anon", "expiresIn": "3600"}))
+        if "/errors/" in u and route.request.method == "POST":
+            posts.append(_j.loads(route.request.post_data)); return route.fulfill(status=200, content_type="application/json", body='{"name":"x"}')
+        route.fulfill(status=200, content_type="application/json", body="null")
+    c.open(init_script="window.__errlogTest=1")
+    c.page.route("**/*identitytoolkit*/**", h); c.page.route("**/*securetoken*/**", h); c.page.route("**/*.firebaseio.com/**", h)
+    c.hero()
+    c.js("()=>{setTimeout(()=>{throw new Error('erro de teste em -3.7319123,-38.5267456 de fulano@gmail.com')},0)}")
+    c.js("()=>{setTimeout(()=>{throw new Error('erro de teste em -3.7319123,-38.5267456 de fulano@gmail.com')},0)}")   # repetido: não manda de novo
+    c.js("()=>console.warn('nuvem',new Error('save erro de teste'))")
+    c.js("()=>{Promise.reject(new Error('erro de teste promessa'))}")
+    c.page.wait_for_timeout(3500)
+    msgs = [p["msg"] for p in posts]
+    assert len([m for m in msgs if "erro de teste em" in m]) == 1, msgs
+    e = [p for p in posts if "erro de teste em" in p["msg"]][0]
+    assert "-3.73" not in e["msg"] and "fulano" not in e["msg"], e["msg"]           # sem localização nem e-mail
+    assert e["v"] == c.js("()=>APPV") and e["dev"] and e["where"] == "mapa" and e["app"] == "web"
+    assert any(p["k"] == "aviso:nuvem" and "save erro de teste" in p["msg"] for p in posts)
+    assert any(p["k"] == "promessa" for p in posts)

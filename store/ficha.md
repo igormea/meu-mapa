@@ -58,6 +58,7 @@ Feito para o motorista: nada exige toque enquanto você dirige. Respeite sempre 
 | ID do usuário | Sim | Opcional (login) | Gerenciamento de conta, funcionalidade |
 | Atividade no app (progresso do jogo, km, conquistas) | Sim | Opcional (save na nuvem) | Funcionalidade do app |
 | Fotos (foto do perfil Google) | Sim | Opcional | Gerenciamento de conta |
+| Diagnóstico: registros de falhas | Sim | Automático (sem dados pessoais) | Análise / correção de erros |
 | Áudio (busca por voz) | Não (processado pelo Android, o app recebe só texto) | — | — |
 
 ## Serviço em primeiro plano de localização (declaração FOREGROUND_SERVICE_LOCATION)

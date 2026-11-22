@@ -115,7 +115,7 @@ async function goTo(d,noRecent){
     clearRouteLayers();
     PR=rs.slice(0,3).map(buildRoute);selIdx=0;genSpawns(PR[0]);PR.forEach(fetchLimits);
     setStatus('');showPreview();
-  }catch(e){setStatus('❌ '+e.message,'err')}
+  }catch(e){setStatus('❌ '+e.message,'err');window.logErr?.('rota',e)}
 }
 function getOrigin(){
   if(originOverride)return Promise.resolve(originOverride);

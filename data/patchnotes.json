@@ -1,5 +1,15 @@
 [
  {
+  "v": "1.26.0",
+  "d": "22/11/2026",
+  "t": "Registro automático de erros",
+  "i": [
+   "🛠️ Quando algo dá errado no app, ele avisa o desenvolvedor sozinho (você não precisa reportar), pra correção ser mais rápida.",
+   "Sem dados pessoais: vai só a mensagem do erro, a versão, a tela e o tipo de aparelho. Localização e e-mails são apagados da mensagem antes do envio.",
+   "A política de privacidade foi atualizada com essa informação."
+  ]
+ },
+ {
   "v": "1.25.0",
   "d": "22/11/2026",
   "t": "Preparação pra Play Store",
