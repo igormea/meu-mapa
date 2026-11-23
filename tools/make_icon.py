@@ -100,17 +100,21 @@ def background():
     glow(b,1024,900,620,(120,80,200),120);return b
 def foreground(base):
     glossy_pin(base,1024,820,430);put(base,hero('hero_cheer',1080),1024,1640,330);return base
+def fg_layer(fill):
+    """pino + herói recortados e ampliados pra ocupar 'fill' da altura do ícone (bem maiores que antes)"""
+    L=foreground(Image.new('RGBA',(S,S),(0,0,0,0)));L=L.crop(L.getbbox())
+    k=fill*S/L.height;L=L.resize((int(L.width*k),int(L.height*k)),Image.LANCZOS)
+    o=Image.new('RGBA',(S,S),(0,0,0,0));o.paste(L,((S-L.width)//2,(S-L.height)//2),L);return o
 def out(img,path,size):img.resize((size,size),Image.LANCZOS).save(path,optimize=True)
-full=foreground(background())                       # quadrado cheio (Play Store e ícone recortável)
+full=background();full.paste(fg_layer(.95),(0,0),fg_layer(.95))       # quadrado cheio (Play Store e ícone recortável)
 framed=frame(full.copy())                           # com moldura e cantos arredondados (site)
 out(framed,'icon-192.png',192);out(framed,'icon-512.png',512)
 out(full.convert('RGB'),'store/icon-play-512.png',512)
 # maskable (o Android/Chrome recorta em círculo): conteúdo encolhido pra zona segura
-mk=background();fg=foreground(Image.new('RGBA',(S,S),(0,0,0,0)))
-fgs=fg.resize((int(S*.78),int(S*.78)),Image.LANCZOS);mk.paste(fgs,((S-fgs.width)//2,(S-fgs.height)//2+40),fgs)
+mk=background();m2=fg_layer(.80);mk.paste(m2,(0,0),m2)
 out(mk,'icon-maskable-512.png',512)
 # ícone adaptável do Android: frente (pino+herói) dentro da zona segura de 66% e fundo separado
-fga=fg.resize((int(S*.62),int(S*.62)),Image.LANCZOS);F=Image.new('RGBA',(S,S),(0,0,0,0));F.paste(fga,((S-fga.width)//2,(S-fga.height)//2+30),fga)
+F=fg_layer(.70)
 out(F,'app/assets/icon-foreground.png',1024);out(background(),'app/assets/icon-background.png',1024);out(full,'app/assets/icon-only.png',1024)
 # abertura (splash): fundo noturno + ícone no centro
 sp=Image.new('RGB',(2732,2732),(14,26,52));ic=framed.resize((900,900),Image.LANCZOS);sp.paste(ic,(916,840),ic)

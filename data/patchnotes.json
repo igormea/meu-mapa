@@ -1,5 +1,14 @@
 [
  {
+  "v": "1.27.1",
+  "d": "23/11/2026",
+  "t": "Ícone maior e abertura mais fluida",
+  "i": [
+   "🛡️ Ícone: o cavaleiro e o pino de GPS ficaram bem maiores, fáceis de reconhecer na tela do celular.",
+   "🎬 Abertura mais lisa: as animações agora rodam na placa de vídeo do celular e não engasgam enquanto o app carrega o mapa e o 3D."
+  ]
+ },
+ {
   "v": "1.27.0",
   "d": "23/11/2026",
   "t": "Android Auto (teste)",
