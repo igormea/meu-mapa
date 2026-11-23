@@ -123,7 +123,7 @@ $('inpD').addEventListener('keydown',async e=>{
 let originOverride=null;
 function showOriginInput(){$('originBox').style.display='block';$('inpO').focus()}
 function setStatus(m,k=''){const s=$('searchStatus');s.textContent=m;s.className=k}
-function addRecent(d){S.recents=[d,...S.recents.filter(x=>x.name!==d.name)].slice(0,6);save();renderRecents()}
+function addRecent(d){S.recents=[d,...S.recents.filter(x=>x.name!==d.name)].slice(0,6);save();renderRecents();if(typeof carSyncPlaces==='function')carSyncPlaces()}
 function renderRecents(){
   const r=$('recents');r.innerHTML=S.recents.map((x,i)=>`<div class="chip" data-i="${i}">🕘 ${esc(short(x.name))}</div>`).join('');
   r.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{const d=S.recents[+c.dataset.i];$('inpD').value=d.name;goTo(d)});

@@ -1,5 +1,16 @@
 [
  {
+  "v": "1.27.0",
+  "d": "23/11/2026",
+  "t": "Android Auto (teste)",
+  "i": [
+   "🚗 Ranvus Maps no Android Auto: a tela do carro mostra o mapa girando na direção em que você anda, a rota dourada, a próxima manobra com seta, a distância, o horário de chegada, a velocidade e a placa de limite.",
+   "No carro, o botão 'Destinos' lista seus Portais e destinos recentes: um toque e a rota começa sozinha. 'Encerrar' para a navegação.",
+   "Recados curtos do jogo (lutas, itens) aparecem por alguns segundos no topo do mapa do carro. Personagens e monstros ficam só no celular, pelas regras de segurança do Android Auto.",
+   "Precisa do APK novo e do modo desenvolvedor do Android Auto ligado (fontes desconhecidas)."
+  ]
+ },
+ {
   "v": "1.26.0",
   "d": "22/11/2026",
   "t": "Registro automático de erros",

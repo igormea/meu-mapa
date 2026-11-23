@@ -1,6 +1,6 @@
 'use strict';
 /* versão: MAIOR.MENOR.CORREÇÃO — correção 1.18.0→1.18.1 · novidade →1.19.0 · incompatível com a anterior →2.0.0 */
-const APPV='1.26.0';
+const APPV='1.27.0';
 /* ═══════════════════════════════════════════════════════
    MEU MAPA RPG — v4
    Tiles OSM (estilizados) · Nominatim · OSRM · GPS
@@ -20,6 +20,7 @@ let _tt;function toast(msg,ms=2600){const el=$('toast');el.textContent=msg;el.cl
 function heroPic(cls,cl='ptr'){return `<img class="${cl}" src="models/portraits/${cls||'cavaleiro'}.png" alt="" onerror="this.remove()"><span class="ptr-fb">${spriteSVG(cls)}</span>`}
 const monPic=k=>`<img class="ci" src="models/portraits/${k}.png" alt="">`;
 function card(e,t,s='',k=''){
+  if(typeof carMsg==='function')carMsg(t);
   const f=$('feed');const el=document.createElement('div');el.className='card '+k;
   el.innerHTML=`<div class="ce">${e}</div><div><div class="ct">${t}</div>${s?`<div class="cs">${s}</div>`:''}</div>`;
   f.appendChild(el);while(f.children.length>3)f.firstChild.remove();

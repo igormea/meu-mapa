@@ -1,0 +1,9 @@
+{
+  "name": "ranvus-car",
+  "version": "1.0.0",
+  "description": "Ranvus Maps no Android Auto: mapa, rota, instruções e limite na tela do carro",
+  "private": true,
+  "main": "index.js",
+  "files": ["android/src/main/", "android/build.gradle", "index.js"],
+  "capacitor": { "android": { "src": "android" } }
+}

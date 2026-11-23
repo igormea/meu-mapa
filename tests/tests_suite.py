@@ -1292,3 +1292,34 @@ def t80_registro_automatico_de_erros(c):
     assert e["v"] == c.js("()=>APPV") and e["dev"] and e["where"] == "mapa" and e["app"] == "web"
     assert any(p["k"] == "aviso:nuvem" and "save erro de teste" in p["msg"] for p in posts)
     assert any(p["k"] == "promessa" for p in posts)
+
+@test
+def t81_android_auto_ponte(c):
+    c.open(); c.hero()
+    # simula o plugin nativo do carro
+    c.js("""()=>{window.__car={upd:[],places:null,ls:{}};NAT={car:{
+      update:o=>{__car.upd.push(JSON.parse(JSON.stringify(o)));return Promise.resolve()},
+      setPlaces:o=>{__car.places=o.places;return Promise.resolve()},
+      status:()=>Promise.resolve({connected:false}),
+      addListener:(ev,fn)=>{__car.ls[ev]=fn}}};carInit();
+      portals().push({name:'Casa',icon:'🏠',lat:-3.7376,lon:-38.6106,addr:'Rua Um, 171'});}""")
+    c.page.wait_for_timeout(200)
+    c.js("()=>__car.ls.carConnected()")
+    assert c.js("()=>__car.places[0].name") == "🏠 Casa" and c.js("()=>__car.places[0].sub") == "Rua Um, 171"
+    # parado: manda só a posição
+    c.js("()=>{CAR.lastPos=0;carUpdate({lat:-3.73,lon:-38.52,spd:0,hdg:90},null)}")
+    u = c.js("()=>__car.upd.at(-1)"); assert u["pos"]["lat"] == -3.73 and u["nav"]["active"] is False and u["hero"]["cls"] == "cavaleiro"
+    # escolher destino no carro traça a rota e a navegação manda a manobra + rota
+    c.js("()=>__car.ls.carDestination({name:'🏠 Casa',lat:-3.7434,lon:-38.4614})")
+    c.wait("PR.length>0", 20000)
+    assert c.js("()=>dest.name") == "Casa"
+    c.js("()=>{stopCountdown();startNav(true);startSim()}"); c.page.wait_for_timeout(3500)
+    navs = c.js("()=>__car.upd.filter(x=>x.nav&&x.nav.active)")
+    assert navs and navs[-1]["nav"]["cue"] and navs[-1]["nav"]["rem"] > 0 and navs[-1]["nav"]["dist"] >= 0, navs[-1:]
+    assert any("route" in x and len(x["route"]) > 5 for x in navs)
+    # "Encerrar" no carro para a navegação e avisa o carro
+    c.js("()=>{stopSim();__car.ls.carStop()}"); c.page.wait_for_timeout(300)
+    assert not c.js("()=>isNav") and c.js("()=>__car.upd.at(-1).nav.active") is False
+    # recado do jogo vai pro carro
+    c.js("()=>card('⚔️','Venceu o <b>Slime</b>','+40 XP')"); assert c.js("()=>__car.upd.at(-1).msg") == "Venceu o Slime"
+    c.js("()=>{NAT=null}")

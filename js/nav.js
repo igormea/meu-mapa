@@ -40,7 +40,7 @@ function navUpdate(sn,f){
   const kmh=f.spd>0?Math.round(f.spd*3.6):0,lim=limitAt(R,sn.prog);
   updSpeedo(kmh,lim);
   journeyTick(f,sn,kmh,lim);
-  liveFix=f;liveTick();shopTick(f);
+  liveFix=f;liveTick();shopTick(f);carNav(f,st,dn,inst,rem,remT,lim,sn.prog);
   $('navMount').textContent=kmh<3?'🧍 Parado':kmh<12?'🚶 A pé':S.vehicle==='moto'?(kmh<60?'🏍️ Na moto':'🏍️ Acelerando'):kmh<40?'🐴 Trotando':kmh<80?'🐎 A galope':'🦅 Voando de grifo';
   announce(k,st,dn,inst,f.spd||0);
   alertTick(sn.prog,f.spd||0);
@@ -158,6 +158,7 @@ function arrive(){
   save();endNav(true);panel('arrive');if(pk?.length)setTimeout(drawParking,50);
 }
 function endNav(arrived){
+  carEnd();
   if(LIVE)liveEnd(arrived?'done':'stop');
   isNav=false;stopSim();releaseWake();stopBgGPS();drProg=null;$('drBadge').style.display='none';stopVoice()
   renderAlert(null);$('laneBar').classList.remove('on');closeStops();stops=[];complexNear=false;

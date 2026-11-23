@@ -70,6 +70,7 @@ function portalSave(){
   if(portalDraft.idx>=0)portals()[portalDraft.idx]=p;else portals().push(p);
   save();portalDlgClose();renderPortals();card(p.ic,`Portal ${portalDraft.idx>=0?'atualizado':'criado'}: ${esc(n)}`,esc(short(p.addr)),'gold');
   if(portalDraft.idx<0)S.stats.portals=(S.stats.portals||0)+1;
+  if(typeof carSyncPlaces==='function')carSyncPlaces();
 }
 function portalEdit(i){const p=portals()[i];portalDialog(p,i)}
 /* busca: portal com o nome digitado aparece primeiro */
