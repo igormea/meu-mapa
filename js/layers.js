@@ -48,16 +48,19 @@ try{if(NATIVE&&NAT?.app?.addListener)NAT.app.addListener('backButton',()=>{if(hi
 
 /* arrastar pra baixo pela barrinha (ou pelo topo da janela) para fechar */
 function dragToClose(box,close,zone=46){
-  let y0=null,dy=0,t0=0;
+  let y0=null,dy=0,samp=[];
   box.addEventListener('pointerdown',e=>{
     const r=box.getBoundingClientRect();if(e.clientY-r.top>zone&&!e.target.closest('.handle'))return;
     if(e.target.closest('input,textarea,button:not(.handle)'))return;
-    y0=e.clientY;dy=0;t0=Date.now();box.style.transition='none';try{box.setPointerCapture(e.pointerId)}catch{}
+    y0=e.clientY;dy=0;samp=[[e.timeStamp,e.clientY]];box.style.transition='none';try{box.setPointerCapture(e.pointerId)}catch{}
   });
-  box.addEventListener('pointermove',e=>{if(y0==null)return;dy=Math.max(0,e.clientY-y0);box.style.transform=`translateY(${dy}px)`});
-  const end=()=>{if(y0==null)return;y0=null;const v=dy/Math.max(1,Date.now()-t0);
-    box.style.transition='transform .18s ease-out';
-    if(dy>90||(dy>30&&v>.6)){box.style.transform='translateY(110%)';setTimeout(()=>{box.style.transform='';box.style.transition='';close()},170)}
-    else{box.style.transform='';setTimeout(()=>box.style.transition='',200)}};
+  box.addEventListener('pointermove',e=>{if(y0==null)return;dy=e.clientY-y0;samp.push([e.timeStamp,e.clientY]);if(samp.length>5)samp.shift();
+    const d=dy<0?dy*.2:dy;   // pra cima só "resiste" um pouquinho
+    box.style.transform=`translateY(${d}px)`});
+  const end=()=>{if(y0==null)return;y0=null;const a=samp[0],b=samp[samp.length-1],v=(b[1]-a[1])/Math.max(1,b[0]-a[0]);
+    const ease='transform .3s cubic-bezier(.22,1,.36,1)';
+    if(dy>110||(dy>24&&v>.45)){box.style.transition='transform .22s cubic-bezier(.4,0,1,1)';box.style.transform='translateY(110%)';
+      setTimeout(()=>{box.style.transition='none';box.style.transform='';close();requestAnimationFrame(()=>box.style.transition='')},220)}
+    else{box.style.transition=ease;box.style.transform='';setTimeout(()=>box.style.transition='',320)}};
   box.addEventListener('pointerup',end);box.addEventListener('pointercancel',end);
 }

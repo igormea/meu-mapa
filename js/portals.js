@@ -8,11 +8,7 @@ let portalPick=false,portalDraft=null;
 function portals(){return S.portals=S.portals||[]}
 
 /* painel expandido */
-function portalsOpen(on,fromBack){
-  const p=$('searchPanel');if(p.classList.contains('portals')===on)return;
-  p.classList.toggle('portals',on);
-  if(on){renderPortals();layerPush('portals',()=>portalsOpen(false,true))}else if(!fromBack)layerPop('portals');
-}
+function portalsOpen(on){sheetSnap(on?'p':'n')}
 function renderPortals(){
   const L=portals(),c=searchCenter();
   $('portalList').innerHTML=L.length?L.map((p,i)=>`<div class="ptl" data-i="${i}">
@@ -80,12 +76,75 @@ function portalSearch(toks){
     .map(p=>({name:p.n,sub:'🌀 Portal · '+short(p.addr||''),lat:p.lat,lon:p.lon,ic:p.ic||'🌀',portal:1}));
 }
 
-/* barrinha: puxar pra cima abre os portais, pra baixo fecha; tocar alterna */
+/* Painel "Para onde, aventureiro?" como gaveta: acompanha o dedo e encaixa em
+   3 alturas — escondido (só a barrinha), normal e aberto (com os Portais).
+   Solta com embalo: a velocidade do gesto decide pra onde vai. */
+const SHEET={st:'n',PEEK:34};
+function sheetSnap(st,anim=true){
+  const P=$('searchPanel');if(!P)return;
+  const wasP=P.classList.contains('portals');
+  if(st==='p'&&!wasP){renderPortals();P.classList.add('portals');layerPush('portals',()=>sheetSnap('n'))}
+  if(st!=='p'&&wasP){P.classList.remove('portals');layerPop('portals')}
+  const y=st==='h'?Math.max(0,P.offsetHeight-SHEET.PEEK):0;
+  P.style.transition=anim?'transform .34s cubic-bezier(.22,1,.36,1)':'none';
+  P.style.transform=y?`translateY(${y}px)`:'';
+  P.classList.toggle('hid',st==='h');SHEET.st=st;
+}
+addEventListener('click',ev=>{if(Date.now()<(SHEET.noClickUntil||0)){ev.stopPropagation();ev.preventDefault()}},true);
 (function(){
-  const h=$('searchPanel').querySelector('.handle');let y0=null,moved=0;
-  h.addEventListener('pointerdown',e=>{y0=e.clientY;moved=0;try{h.setPointerCapture(e.pointerId)}catch{}});
-  h.addEventListener('pointermove',e=>{if(y0!=null)moved=e.clientY-y0});
-  const end=()=>{if(y0==null)return;y0=null;const open=$('searchPanel').classList.contains('portals');
-    if(moved<-30)portalsOpen(true);else if(moved>30)portalsOpen(false);else if(Math.abs(moved)<8)portalsOpen(!open)};
-  h.addEventListener('pointerup',end);h.addEventListener('pointercancel',end);
+  const P=$('searchPanel');
+  let y0=null,dy=0,vis0=0,hN=0,hP=0,samp=[],moved=false,tapH=false;
+  const yOf=v=>hP-v;
+  P.addEventListener('pointerdown',e=>{
+    if(P.classList.contains('full')||e.button>0)return;
+    const r=P.getBoundingClientRect(),onHandle=!!e.target.closest('.handle');
+    if(!onHandle&&(e.clientY-r.top>52||e.target.closest('input,textarea,button,a')))return;
+    y0=e.clientY;dy=0;moved=false;tapH=onHandle;samp=[[e.timeStamp,e.clientY]];e.preventDefault();
+    try{P.setPointerCapture(e.pointerId)}catch{}
+  });
+  P.addEventListener('pointermove',e=>{
+    if(y0==null)return;dy=e.clientY-y0;
+    if(!moved){if(Math.abs(dy)<6)return;moved=true;
+      // mede as duas alturas e passa a desenhar sempre a gaveta "alta", só deslocada
+      const wasP=P.classList.contains('portals');
+      P.style.transition='none';P.style.transform='';P.classList.remove('portals');hN=P.offsetHeight;
+      renderPortals();P.classList.add('portals');hP=P.offsetHeight;
+      vis0=SHEET.st==='h'?SHEET.PEEK:SHEET.st==='p'?hP:hN;
+      if(!wasP)SHEET.addedP=true;
+    }
+    samp.push([e.timeStamp,e.clientY]);if(samp.length>5)samp.shift();
+    let v=vis0-dy;
+    if(v>hP)v=hP+(v-hP)*.25;            // passou do topo: resiste
+    if(v<SHEET.PEEK)v=SHEET.PEEK-(SHEET.PEEK-v)*.25;
+    P.style.transform=`translateY(${yOf(v)}px)`;
+  });
+  const end=e=>{
+    if(y0==null)return;y0=null;
+    if(!moved){   // toque na barrinha: escondido→normal, normal→portais, portais→normal
+      if(e&&e.type==='pointerup'&&tapH)sheetSnap(SHEET.st==='h'?'n':SHEET.st==='n'?'p':'n');
+      return;
+    }
+    // o "clique" que o navegador solta no fim do arrasto não pode abrir a busca nem tocar em nada
+    SHEET.noClickUntil=Date.now()+350;
+    const a=samp[0],b=samp[samp.length-1],vel=(b[1]-a[1])/Math.max(1,b[0]-a[0]);   // px/ms, + = pra baixo
+    const vis=vis0-dy,proj=vis-vel*220;
+    const opts=[['h',SHEET.PEEK],['n',hN],['p',hP]];
+    let tgt=opts.reduce((m,o)=>Math.abs(o[1]-proj)<Math.abs(m[1]-proj)?o:m);
+    // um gesto não pula duas paradas de uma vez
+    const cur=SHEET.st,order='hnp';
+    if(Math.abs(order.indexOf(tgt[0])-order.indexOf(cur))>1)tgt=opts[1];
+    P.style.transition='transform .34s cubic-bezier(.22,1,.36,1)';
+    P.style.transform=`translateY(${yOf(tgt[1])}px)`;
+    const fin=()=>{P.removeEventListener('transitionend',fin);clearTimeout(t);
+      P.style.transition='none';
+      if(tgt[0]==='p'){P.style.transform='';if(cur!=='p')layerPush('portals',()=>sheetSnap('n'))}
+      else{P.classList.remove('portals');if(cur==='p')layerPop('portals');
+        P.style.transform=tgt[0]==='h'?`translateY(${Math.max(0,P.offsetHeight-SHEET.PEEK)}px)`:''}
+      P.classList.toggle('hid',tgt[0]==='h');SHEET.st=tgt[0];
+    };
+    const t=setTimeout(fin,400);P.addEventListener('transitionend',fin);
+  };
+  P.addEventListener('pointerup',end);P.addEventListener('pointercancel',end);
+  // escondida: se o conteúdo mudar de altura, continua mostrando só a barrinha
+  try{new ResizeObserver(()=>{if(SHEET.st==='h'&&y0==null)sheetSnap('h',false)}).observe(P)}catch{}
 })();

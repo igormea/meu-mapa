@@ -1,5 +1,17 @@
 [
  {
+  "v": "1.29.0",
+  "d": "24/11/2026",
+  "t": "Gaveta e toques mais fluidos",
+  "i": [
+   "🗺️ A gaveta \"Para onde, aventureiro?\" agora acompanha o dedo: puxe pra cima para ver seus Portais, pra baixo para esconder (fica só a barrinha). Toque na barrinha para trazer de volta.",
+   "🫳 Soltou com embalo, ela vai sozinha pra posição certa, com movimento suave. As outras janelas que fecham arrastando também ficaram mais lisas.",
+   "👆 Botões e itens agora afundam de leve quando você toca, pra você saber que pegou.",
+   "⏳ Ações que esperam a internet (pedido de amizade, guilda, trocas, chefes) piscam enquanto enviam e dão um brilho verde quando dão certo.",
+   "🛣️ Corrigido: avenidas como a Mister Hull apareciam com uma faixa amarela \"borrada\", cheia de bolinhas. Agora a avenida tem uma cor só, contínua."
+  ]
+ },
+ {
   "v": "1.28.0",
   "d": "24/11/2026",
   "t": "Mapa limpo, estilo Waze",

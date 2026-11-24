@@ -687,12 +687,12 @@ def t51_raridade_pela_distancia(c):
 
 @test
 def t52_botoes_acima_do_painel_e_abas(c):
-    c.open(); c.hero(); c.page.wait_for_timeout(400)
+    c.open(); c.hero(); c.page.wait_for_timeout(600)
     def gap():
         return c.js("""()=>{const f=document.getElementById('fabs').getBoundingClientRect();
           const p=[...['searchPanel','routePanel'].map(i=>document.getElementById(i))].find(e=>getComputedStyle(e).display!=='none').getBoundingClientRect();return p.top-f.bottom}""")
     g = gap(); assert 6 <= g <= 30, g                      # busca: logo acima, sem encostar
-    c.route_to(); c.page.wait_for_timeout(300)
+    c.route_to(); c.page.wait_for_timeout(600)
     g = gap(); assert 6 <= g <= 30, g                      # prévia da rota (painel mais alto)
     # abas da ficha: todas visíveis, sem corte
     c.js("()=>{cancelRoute();openSheet();setTab('ach')}")
@@ -1238,7 +1238,7 @@ def t77_novidades_desde_a_ultima_vista(c):
     c.open(); c.hero()
     c.js("async()=>{await loadNotes();S.seenV='1.26.0';closeNews&&closeNews();await showNews(false)}")
     t = c.js("()=>$('newsBody').textContent")
-    assert "1.28.0" in t and "1.27.1" in t and "1.27.0" in t and "Versão 1.26.0" not in t, t[:300]
+    assert "1.29.0" in t and "1.28.0" in t and "1.27.0" in t and "Versão 1.26.0" not in t, t[:300]
     assert "Mapa limpo" in t and "histórico completo" in t
     assert c.js("()=>S.seenV") == c.js("()=>NOTES[0].v")
 

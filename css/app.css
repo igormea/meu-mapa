@@ -560,3 +560,19 @@ button.mini2.del{color:#f3a3a3}
 #intro .in-title{position:absolute;left:50%;transform:translate(-50%,10px);opacity:0;font-family:Cinzel,serif;font-size:30px;letter-spacing:1.5px;color:#f1d38a;text-shadow:0 3px 10px #000c;white-space:nowrap;will-change:transform,opacity}
 #intro.out{pointer-events:none}
 #intro .in-skip{position:absolute;bottom:22px;width:100%;text-align:center;color:#8ea0c4;font-size:12px;opacity:.7}
+
+/* ── fluidez e toque (1.29) ── */
+.prs{scale:.95;filter:brightness(1.18);transition:scale .08s ease-out,filter .08s}
+.rel{animation:relB .22s cubic-bezier(.3,1.6,.5,1)}
+@keyframes relB{from{scale:.95}to{scale:1}}
+.busy{pointer-events:none;animation:busyP 1s ease-in-out infinite}
+@keyframes busyP{0%,100%{opacity:1}50%{opacity:.55}}
+.okf{animation:okF .7s ease-out}
+@keyframes okF{0%{box-shadow:0 0 0 0 rgba(80,220,120,.75)}100%{box-shadow:0 0 0 10px rgba(80,220,120,0)}}
+.bpanel{animation:sheetIn .32s cubic-bezier(.22,1,.36,1)}
+@keyframes sheetIn{from{translate:0 48px;opacity:.4}to{translate:0 0;opacity:1}}
+#searchPanel .ttl{touch-action:none}
+#searchPanel.hid .handle{opacity:1;width:64px}
+#searchPanel.hid{box-shadow:0 -4px 16px rgba(0,0,0,.5)!important}
+#portalBox{margin-top:12px}
+@media (prefers-reduced-motion:reduce){.rel,.okf,.bpanel{animation:none}.prs{transition:none}}

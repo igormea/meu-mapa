@@ -4,7 +4,7 @@
 // dos dados vetoriais do OpenStreetMap (OpenFreeMap). Quarteirões lisos, ruas com
 // contraste forte, só nome de rua e de bairro. O RPG fica na mecânica, não no chão.
 // "Detalhado" (opção) = o mapa-imagem antigo do OpenStreetMap.
-const RD={minor:['minor','service'],maj:['primary','secondary','tertiary'],hwy:['motorway','trunk']};
+const RD={minor:['minor','service'],maj:['trunk','primary','secondary','tertiary'],hwy:['motorway']};   // trunk junto das avenidas: no OSM a mesma avenida alterna trunk/primary e virava retalho
 const rf=(cls,extra)=>['all',['in',['get','class'],['literal',cls]],['!=',['get','brunnel'],'tunnel'],...(extra?[extra]:[])];
 const zw=(a,b,c,d)=>['interpolate',['exponential',1.5],['zoom'],10,a,14,b,17,c,20,d];
 const NM=['coalesce',['get','name:pt'],['get','name']];
