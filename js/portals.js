@@ -12,7 +12,7 @@ function portalsOpen(on){sheetSnap(on?'p':'n')}
 function renderPortals(){
   const L=portals(),c=searchCenter();
   $('portalList').innerHTML=L.length?L.map((p,i)=>`<div class="ptl" data-i="${i}">
-      <span class="pt-ic">${p.ic||'🌀'}</span><span class="pt-tx"><b>${esc(p.n)}</b><small>${esc(short(p.addr||''))} · ${fmtD(hav(c.lat,c.lon,p.lat,p.lon))}</small></span>
+      <span class="pt-ic">${!p.ic||p.ic==='🌀'?ic('portal'):p.ic}</span><span class="pt-tx"><b>${esc(p.n)}</b><small>${esc(short(p.addr||''))} · ${fmtD(hav(c.lat,c.lon,p.lat,p.lon))}</small></span>
       <button class="pt-ed" data-i="${i}" aria-label="Editar">✎</button></div>`).join('')
     :'<div class="pt-empty">Nenhum portal ainda. Salve os lugares que você mais visita: casa da família, academia, o bar dos amigos…</div>';
   $('portalList').querySelectorAll('.ptl').forEach(el=>el.onclick=e=>{

@@ -1,12 +1,12 @@
 'use strict';
 /* ── FICHA DO HERÓI ──────────────────────────────────── */
 let sheetTab='heroi',resetArm=0;
-const TABS=[['heroi','🧙','Herói'],['tal','✨','Talentos'],['equip','🎒','Equipar'],['quests','📜','Missões'],['ach','🏅','Troféus'],['best','📖','Bestiário'],['soc','👥','Social'],['stats','📊','Números'],['cfg','⚙️','Ajustes']];
+const TABS=[['heroi','elmo','Herói'],['tal','talentos','Talentos'],['equip','bau','Equipar'],['quests','pergaminho','Missões'],['ach','trofeu','Troféus'],['best','grimorio','Bestiário'],['soc','social','Social'],['stats','numeros','Números'],['cfg','ajustes','Ajustes']];
 function openSheet(){regen();renderSheet();$('sheet').classList.add('on');layerPush('sheet',()=>closeSheet(true))}
 function closeSheet(fromBack){$('sheet').classList.remove('on');if(!fromBack)layerPop('sheet')}
 function setTab(t){sheetTab=t;renderSheet()}
 function renderSheet(){
-  $('tabs').innerHTML=TABS.map(([k,ic,n])=>`<div class="tab ${k===sheetTab?'on':''}" onclick="setTab('${k}')"><i>${ic}</i><span>${n}</span></div>`).join('');
+  $('tabs').innerHTML=TABS.map(([k,icn,n])=>`<div class="tab ${k===sheetTab?'on':''}" onclick="setTab('${k}')"><i>${ic(icn)}</i><span>${n}</span></div>`).join('');
   const c=cls(),mx=maxHP();let h='';
   if(sheetTab==='heroi'){
     h=`<div class="hero"><div class="big">${heroPic(S.cls)}</div><div>

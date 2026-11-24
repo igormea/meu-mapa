@@ -1,5 +1,15 @@
 [
  {
+  "v": "1.30.0",
+  "d": "24/11/2026",
+  "t": "Ícones com cara de RPG",
+  "i": [
+   "🎨 Os ícones do app ganharam estilo de item de jogo: mapa do tesouro na busca, casinha com chaminé, maleta de couro, bota de aventureiro, estandarte na partida, ampulheta nos recentes e rosa dos ventos pra achar sua posição.",
+   "📖 As abas da ficha também mudaram: elmo, cristal de talento, baú, pergaminho, troféu, grimório, escudos, quadro de números e engrenagem.",
+   "🗼 O radar no mapa virou uma torre do vigia, e os Portais têm um arco mágico."
+  ]
+ },
+ {
   "v": "1.29.0",
   "d": "24/11/2026",
   "t": "Gaveta e toques mais fluidos",

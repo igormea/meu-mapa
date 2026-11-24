@@ -576,3 +576,12 @@ button.mini2.del{color:#f3a3a3}
 #searchPanel.hid{box-shadow:0 -4px 16px rgba(0,0,0,.5)!important}
 #portalBox{margin-top:12px}
 @media (prefers-reduced-motion:reduce){.rel,.okf,.bpanel{animation:none}.prs{transition:none}}
+
+/* ícones RPG (1.30) */
+.ic{width:1.3em;height:1.3em;vertical-align:-.3em;flex-shrink:0;overflow:visible}
+.ic-dim{opacity:.7}
+.fab .ic{width:28px;height:28px}
+#micBtn .ic{width:24px;height:24px}
+.tab i .ic{width:24px;height:24px;vertical-align:middle}
+.tw-ic .ic{width:24px;height:24px;vertical-align:middle}
+#recenterBtn .ic{width:20px;height:20px}

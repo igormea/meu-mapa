@@ -86,7 +86,7 @@ function clearFeats(Rt){Rt?.feats?.forEach(f=>{if(f.mk){f.mk.remove();f.mk=null}
    Sem rota  → só o radar à frente na rua em que você está (freeCamTick).
    Nada de radar de rua paralela ou que já ficou para trás. */
 const towerMks=new Map();let towerT=0,towerNear=null,freeCams=[];
-function towerHtml(lim){return `<div class="tower"><div class="tw-ic">🗼</div>${lim?`<div class="tw-lim">${lim}</div>`:''}</div>`}
+function towerHtml(lim){return `<div class="tower"><div class="tw-ic">${ic('torre')}</div>${lim?`<div class="tw-lim">${lim}</div>`:''}</div>`}
 function towerList(){
   const Rt=isNav?R:PR[selIdx];   // navegando: a rota; na prévia: a rota escolhida
   if(Rt?.feats)return Rt.feats.filter(f=>f.t==='cam'&&!f.passed).slice(0,40).map(f=>[f.lat,f.lon,f.lim]);

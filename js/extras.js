@@ -1,10 +1,10 @@
 'use strict';
 /* ── CASA / TRABALHO ─────────────────────────────────────── */
 let favPick=null;
-const FAV={home:{ic:'🏠',n:'Casa'},work:{ic:'💼',n:'Trabalho'}};
+const FAV={home:{ic:'🏠',sv:'casa',n:'Casa'},work:{ic:'💼',sv:'trabalho',n:'Trabalho'}};
 function renderFav(){
   S.fav=S.fav||{};
-  $('favRow').innerHTML=Object.entries(FAV).map(([k,f])=>`<div class="chip fav ${S.fav[k]?'':'unset'}" data-k="${k}">${f.ic} ${S.fav[k]?f.n:'Definir '+f.n.toLowerCase()}</div>`).join('');
+  $('favRow').innerHTML=Object.entries(FAV).map(([k,f])=>`<div class="chip fav ${S.fav[k]?'':'unset'}" data-k="${k}">${ic(f.sv)} ${S.fav[k]?f.n:'Definir '+f.n.toLowerCase()}</div>`).join('');
   $('favRow').querySelectorAll('.chip').forEach(c=>c.onclick=()=>favTap(c.dataset.k));
 }
 function favTap(k){

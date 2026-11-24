@@ -33,7 +33,7 @@ function hud(){
   $('nbXpBar').style.width=xpP;$('nbHpBar').style.width=hpP;$('nbLv').textContent='Nv '+S.lvl;
   $('nbKills').textContent='⚔️ '+(T?T.kills:0);
   const lv=$('plLv');if(lv)lv.textContent='Nv '+S.lvl;
-  $('muteBtn').textContent=S.mute?'🔇':S.less?'🔉':'🔊';
+  $('muteBtn').innerHTML=ic(S.mute?'trompaOff':'trompa',S.less&&!S.mute?'ic-dim':'');
   const tp=talentPoints(),hp=$('hudPts');if(hp){hp.textContent=tp;hp.style.display=tp?'flex':'none'}
 }
 function heroGear(){hero3d('gear',{w:S.equip.weapon?S.equip.weapon.r:null,a:S.equip.armor?S.equip.armor.r:null})}

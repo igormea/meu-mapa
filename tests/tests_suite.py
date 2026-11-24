@@ -191,7 +191,7 @@ def t15_casa_e_trabalho(c):
     assert c.js("()=>favPick") == "home"
     c.js("()=>favConsume({name:'Minha Casa, Fortaleza',lat:-3.75,lon:-38.53})")
     assert c.js("()=>S.fav.home.name") == "Minha Casa, Fortaleza"
-    assert "🏠 Casa" in c.js("()=>document.getElementById('favRow').textContent")
+    assert "Casa" in c.js("()=>document.getElementById('favRow').textContent") and "Definir casa" not in c.js("()=>document.getElementById('favRow').textContent")
     c.page.reload(); c.page.wait_for_function(READY)
     assert c.js("()=>S.fav.home.lat") == -3.75
 
@@ -1238,7 +1238,7 @@ def t77_novidades_desde_a_ultima_vista(c):
     c.open(); c.hero()
     c.js("async()=>{await loadNotes();S.seenV='1.26.0';closeNews&&closeNews();await showNews(false)}")
     t = c.js("()=>$('newsBody').textContent")
-    assert "1.29.0" in t and "1.28.0" in t and "1.27.0" in t and "Versão 1.26.0" not in t, t[:300]
+    assert "1.30.0" in t and "1.28.0" in t and "1.27.0" in t and "Versão 1.26.0" not in t, t[:300]
     assert "Mapa limpo" in t and "histórico completo" in t
     assert c.js("()=>S.seenV") == c.js("()=>NOTES[0].v")
 
