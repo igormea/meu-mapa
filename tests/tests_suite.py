@@ -337,10 +337,18 @@ def t28_gps_oscilando_ao_lado_da_rota_nao_recalcula(c):
 def t29_torres_do_vigia_aparecem_no_mapa(c):
     c.open(); c.hero(); c.wait("OSM && OSM.gen==='teste'")
     c.js("()=>map.jumpTo({center:[-38.5150,-3.7319],zoom:15})"); c.page.wait_for_timeout(1500)
-    assert c.js("()=>document.querySelectorAll('.tower').length") == 1       # duplicado (5 m) aparece uma vez só
+    # sem rota e parado: nenhum radar poluindo a tela
+    assert c.js("()=>document.querySelectorAll('.tower').length") == 0
+    # andando para leste na mesma rua, 300 m antes: aparece só ele (duplicado de 5 m vira um)
+    c.js("()=>{freeT=0;freeCamTick(-3.7319,-38.5177,90,12)}"); c.page.wait_for_timeout(300)
+    assert c.js("()=>document.querySelectorAll('.tower').length") == 1
     assert c.js("()=>document.querySelector('.tower .tw-lim').textContent") == "40"
-    c.js("()=>map.jumpTo({center:[-38.30,-3.60],zoom:15})"); c.page.wait_for_timeout(1500)
-    assert c.js("()=>document.querySelectorAll('.tower').length") == 0      # fora da tela some
+    # andando para o outro lado (radar ficou atrás): some
+    c.js("()=>{freeT=0;freeCamTick(-3.7319,-38.5177,270,12)}"); c.page.wait_for_timeout(300)
+    assert c.js("()=>document.querySelectorAll('.tower').length") == 0
+    # rua paralela a ~200 m: não aparece
+    c.js("()=>{freeT=0;freeCamTick(-3.7337,-38.5177,90,12)}"); c.page.wait_for_timeout(300)
+    assert c.js("()=>document.querySelectorAll('.tower').length") == 0
 
 @test
 def t30_fonte_legivel_nos_numeros(c):
@@ -1228,10 +1236,10 @@ def t76_seta_tamanho_e_guilda_ao_vivo(c):
 @test
 def t77_novidades_desde_a_ultima_vista(c):
     c.open(); c.hero()
-    c.js("async()=>{await loadNotes();S.seenV='1.22.0';closeNews&&closeNews();await showNews(false)}")
+    c.js("async()=>{await loadNotes();S.seenV='1.26.0';closeNews&&closeNews();await showNews(false)}")
     t = c.js("()=>$('newsBody').textContent")
-    assert "1.23.2" in t and "1.23.1" in t and "1.23.0" in t and "1.22.0" not in t.replace("1.22.0 ", "x"), t[:300]
-    assert "Localização pra guilda" in t and "histórico completo" in t
+    assert "1.28.0" in t and "1.27.1" in t and "1.27.0" in t and "Versão 1.26.0" not in t, t[:300]
+    assert "Mapa limpo" in t and "histórico completo" in t
     assert c.js("()=>S.seenV") == c.js("()=>NOTES[0].v")
 
 @test

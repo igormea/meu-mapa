@@ -109,6 +109,7 @@ function onFix(f){
     brg=bestHeading(f);
     if(brg==null&&prevDraw&&hav(prevDraw[0],prevDraw[1],lat,lon)>3)brg=bearing(prevDraw,[lat,lon]);
   }
+  if(!isNav&&typeof freeCamTick==='function')freeCamTick(lat,lon,brg,f.spd||0);
   const dur=first||!player?0:Math.min(1500,Math.max(300,f.t-(lastDrawT||f.t)))||1000;lastDrawT=f.t;
   ensurePlayer(lat,lon);movePlayer(lat,lon,dur);
   const spr=$('plSpr');

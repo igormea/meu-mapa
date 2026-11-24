@@ -77,32 +77,59 @@ function drawFeats(Rt){
     if(f.t==='sig'&&++sig>150)continue;
     f.mk=addMk(`<div class="feat f-${f.t}" title="${FEAT[f.t].nome||''}">${FEAT[f.t].ic}</div>`,f.lat,f.lon,'center');
   }
+  towerTick(true);
 }
 function clearFeats(Rt){Rt?.feats?.forEach(f=>{if(f.mk){f.mk.remove();f.mk=null}})}
 
-/* Torres do Vigia (radares): sempre visíveis no mapa — todos os da área na tela,
-   não só os da rota. Atualiza só o que entrou/saiu da tela. */
-const towerMks=new Map();let towerT=0,towerNear=null;
+/* Torres do Vigia (radares): só os que importam.
+   Navegando → os radares DA ROTA que ainda estão à frente.
+   Sem rota  → só o radar à frente na rua em que você está (freeCamTick).
+   Nada de radar de rua paralela ou que já ficou para trás. */
+const towerMks=new Map();let towerT=0,towerNear=null,freeCams=[];
 function towerHtml(lim){return `<div class="tower"><div class="tw-ic">🗼</div>${lim?`<div class="tw-lim">${lim}</div>`:''}</div>`}
+function towerList(){
+  const Rt=isNav?R:PR[selIdx];   // navegando: a rota; na prévia: a rota escolhida
+  if(Rt?.feats)return Rt.feats.filter(f=>f.t==='cam'&&!f.passed).slice(0,40).map(f=>[f.lat,f.lon,f.lim]);
+  return freeCams;
+}
 function towerTick(force){
   if(!OSM?.cam?.length||!window.__map)return;
   if(!force&&Date.now()-towerT<900)return;towerT=Date.now();
-  const z=map.getZoom(),keep=new Set();
-  if(z>=12.5){
-    const b=map.getBounds(),pad=.01;
-    const s=b.getSouth()-pad,n=b.getNorth()+pad,w=b.getWest()-pad,e=b.getEast()+pad;
-    let cnt=0;const shown=[];
-    for(const p of OSM.cam){
-      if(p[0]<s||p[0]>n||p[1]<w||p[1]>e)continue;
+  const keep=new Set();
+  if(map.getZoom()>=12.5){
+    const shown=[];
+    for(const p of towerList()){
       if(shown.some(q=>Math.abs(q[0]-p[0])<.00027&&Math.abs(q[1]-p[1])<.00027))continue;   // mesmo radar cadastrado 2x (<30 m)
-      shown.push(p);
-      const k=p[0]+','+p[1];keep.add(k);
+      shown.push(p);const k=p[0]+','+p[1];keep.add(k);
       if(!towerMks.has(k))towerMks.set(k,addMk(towerHtml(p[2]),p[0],p[1],'bottom'));
-      if(++cnt>=80)break;
     }
   }
   for(const [k,m] of towerMks)if(!keep.has(k)){m.remove();towerMks.delete(k)}
   for(const [k,m] of towerMks)m.getElement().firstElementChild.classList.toggle('near',k===towerNear);
+}
+/* sem rota: radar à frente na mesma rua (até ~700 m, no máximo 30 m de lado) */
+let freeT=0;const freeSaid=new Set();
+function freeCamTick(lat,lon,brg,spd){
+  if(isNav||!osmIdx||Date.now()-freeT<1000)return;freeT=Date.now();
+  let best=null;
+  if(brg!=null&&spd>3){
+    const c0=Math.floor(lat/OSM_CELL),c1=Math.floor(lon/OSM_CELL);
+    for(let x=c0-1;x<=c0+1;x++)for(let y=c1-1;y<=c1+1;y++)for(const o of osmIdx.get(x+':'+y)||[]){
+      if(o.t!=='cam')continue;
+      const d=hav(lat,lon,o.p[0],o.p[1]);if(d>700||d<8)continue;
+      const off=Math.abs(angDiff(brg,bearing([lat,lon],[o.p[0],o.p[1]])));if(off>35)continue;
+      if(d*Math.sin(off*Math.PI/180)>30)continue;
+      if(!best||d<best.d)best={p:o.p,d};
+    }
+  }
+  const nk=best?best.p[0]+','+best.p[1]:null,ok=freeCams[0]?freeCams[0][0]+','+freeCams[0][1]:null;
+  freeCams=best?[best.p]:[];
+  if(nk!==ok){towerNear=nk;towerTick(true)}
+  if(best&&best.d<Math.max(300,spd*12)&&spd>5&&!freeSaid.has(nk)){
+    freeSaid.add(nk);const lim=best.p[2];speak(`Radar à frente${lim?`, limite ${lim}`:''}`,'alert');
+  }
+  if(best&&spd>5&&best.d<Math.max(300,spd*12))renderAlert({ic:FEAT.cam.ic,nome:FEAT.cam.nome,sub:FEAT.cam.sub({lim:best.p[2]}),d:best.d,kind:'cam'});
+  else if(alertShown==='cam')renderAlert(null);
 }
 map.on('moveend',()=>towerTick());
 

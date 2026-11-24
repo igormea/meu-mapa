@@ -162,7 +162,7 @@ function startCountdown(){
 function stopCountdown(){clearTimeout(cdTimer);cdTimer=null;const b=$('cdBar');b.style.transition='none';b.style.width='0'}
 $('routePanel').addEventListener('pointerdown',e=>{if(!e.target.closest('.btn.go'))stopCountdown()});
 function cancelRoute(){
-  stopCountdown();clearRouteLayers();PR=[];panel('search');followIdle=true;
+  stopCountdown();clearRouteLayers();PR=[];panel('search');followIdle=true;towerTick(true);
   if(lastFix)map.easeTo({center:[lastFix.lon,lastFix.lat],zoom:16,pitch:0,bearing:0,duration:800});
 }
 function panel(w){

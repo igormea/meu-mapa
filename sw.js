@@ -1,7 +1,7 @@
 /* Ranvus Maps — cache offline.
    App: rede primeiro (sempre pega a versão nova), cache se estiver sem internet.
    Mapa (tiles OSM): cache primeiro, até ~3.500 pedaços dos lugares que você já viu. */
-const APP_CACHE='mmrpg-app-1.27.1', TILE_CACHE='mmrpg-tiles', MAX_TILES=3500;
+const APP_CACHE='mmrpg-app-1.28.0', TILE_CACHE='mmrpg-tiles', MAX_TILES=3500;
 const SHELL=['./','index.html','css/app.css','vendor/maplibre-gl.js','vendor/maplibre-gl.css',
   'vendor/fonts/pixelify-sans-latin-400-normal.woff2','vendor/fonts/pixelify-sans-latin-600-normal.woff2','vendor/fonts/pixelify-sans-latin-700-normal.woff2','vendor/fonts/fredoka-latin-400-normal.woff2','vendor/fonts/fredoka-latin-500-normal.woff2','vendor/fonts/fredoka-latin-600-normal.woff2','vendor/fonts/fredoka-latin-700-normal.woff2','vendor/fonts/cinzel-latin-700-normal.woff2','vendor/fonts/alegreya-sans-latin-500-normal.woff2','vendor/fonts/alegreya-sans-latin-700-normal.woff2',
   'icon-192.png','manifest.json'];
@@ -11,6 +11,8 @@ self.addEventListener('fetch',e=>{
   const req=e.request;if(req.method!=='GET')return;
   const u=new URL(req.url);
   if(u.hostname==='tile.openstreetmap.org'){e.respondWith(tile(req));return}
+  // mapa limpo: pedaços vetoriais (endereço já tem a versão) e fontes dos nomes
+  if(u.hostname==='tiles.openfreemap.org'&&u.pathname.endsWith('.pbf')){e.respondWith(tile(req));return}
   if(u.origin===self.location.origin)e.respondWith(
     fetch(req).then(r=>{if(r.ok){const cp=r.clone();caches.open(APP_CACHE).then(c=>c.put(req,cp))}return r})
       .catch(()=>caches.match(req).then(h=>h||caches.match(req,{ignoreSearch:true})).then(h=>h||Response.error())));

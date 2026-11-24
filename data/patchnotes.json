@@ -1,5 +1,17 @@
 [
  {
+  "v": "1.28.0",
+  "d": "24/11/2026",
+  "t": "Mapa limpo, estilo Waze",
+  "i": [
+   "🗺️ Mapa novo, desenhado pelo app: quarteirões lisos, ruas com bastante contraste e avenidas com cor própria. Só nome de rua e de bairro, sem loja e sem ícone poluindo.",
+   "🌙 Os três visuais (Castelo, Pergaminho, Masmorra) seguem o mesmo mapa limpo, só muda a paleta.",
+   "🏙️ Prédios agora ficam lisos no chão por padrão (o 3D continua nas configurações).",
+   "🧭 Quem preferir o mapa antigo: Configurações → Estilo do mapa → Detalhado.",
+   "🗼 Radares: agora só aparecem os da sua rota que ainda estão à frente. Sem rota, só o radar à frente na rua em que você está, com aviso por voz."
+  ]
+ },
+ {
   "v": "1.27.1",
   "d": "23/11/2026",
   "t": "Ícone maior e abertura mais fluida",

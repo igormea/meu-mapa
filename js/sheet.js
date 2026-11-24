@@ -87,6 +87,9 @@ function renderSheet(){
     const th=themeKey();
     h=`<div class="row"><div class="r1"><span>🗺️ Visual do mapa</span></div><div class="opt">
         ${[['castelo','Castelo'],['dia','Pergaminho'],['noite','Masmorra']].map(([k,n])=>`<button class="${th===k?'on':''}" onclick="setTheme('${k}')">${n}</button>`).join('')}</div></div>
+      <div class="row"><div class="r1"><span>🧭 Estilo do mapa</span></div><div class="opt">
+        <button class="${S.mapDet!==true?'on':''}" onclick="S.mapDet=false;applyTheme();save();renderSheet()">Limpo</button><button class="${S.mapDet===true?'on':''}" onclick="S.mapDet=true;applyTheme();save();renderSheet()">Detalhado</button></div>
+        <div class="r2">Limpo: só ruas e quarteirões, fácil de ler dirigindo. Detalhado: o mapa antigo, com lojas e ícones.</div></div>
       <div class="row"><div class="r1"><span>🔊 Voz</span></div><div class="opt">
         <button class="${!S.mute&&!S.less?'on':''}" onclick="setVoice('full')">Completa</button><button class="${!S.mute&&S.less?'on':''}" onclick="setVoice('less')">Menos falante</button><button class="${S.mute?'on':''}" onclick="setVoice('off')">Desligada</button></div>
         <div class="r2">"Menos falante": só as curvas na hora e os alertas de segurança.</div></div>
@@ -108,7 +111,7 @@ function renderSheet(){
         <button onclick="favClear('home');renderSheet()">${S.fav?.home?'Apagar casa':'Casa não definida'}</button><button onclick="favClear('work');renderSheet()">${S.fav?.work?'Apagar trabalho':'Trabalho não definido'}</button></div>
         <div class="r2">Para definir, use os botões na tela de busca.</div></div>
       <div class="row"><div class="r1"><span>🏙️ Prédios em 3D</span></div><div class="opt">
-        <button class="${S.b3d!==false?'on':''}" onclick="S.b3d=true;applyTheme();save();renderSheet()">Ligado</button><button class="${S.b3d===false?'on':''}" onclick="S.b3d=false;applyTheme();save();renderSheet()">Desligado</button></div></div>
+        <button class="${S.b3d===true?'on':''}" onclick="S.b3d=true;applyTheme();save();renderSheet()">Ligado</button><button class="${S.b3d!==true?'on':''}" onclick="S.b3d=false;applyTheme();save();renderSheet()">Desligado</button></div></div>
       <button class="btn prim" style="margin-top:6px" onclick="closeSheet();openReport()">🐞 Reportar bug / sugestão</button>
       <button class="btn prim" style="margin-top:8px" onclick="closeSheet();showNews(true)">📜 Novidades (Patch Notes) · v${APPV}</button>
       <div class="r2" style="text-align:center;margin-top:10px"><a href="privacidade.html" target="_blank">Política de privacidade</a> · <a href="privacidade.html#excluir" target="_blank">excluir conta</a></div>

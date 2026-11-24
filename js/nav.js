@@ -12,7 +12,7 @@ function startNav(simulate){
   updSpeedo(0,0);
   PR.forEach((x,i)=>{if(i!==selIdx)clearSpawns(x)});
   R=PR[selIdx];PR=[R];selIdx=0;drawRoutes();drawFeats(R);drawStops();alertShown=null;renderAlert(null);complexNear=false;
-  isNav=true;document.body.classList.add('nav');panel('none');
+  isNav=true;document.body.classList.add('nav');panel('none');freeCams=[];setTimeout(()=>towerTick(true),50);
   $('navTop').classList.add('on');$('navBottom').classList.add('on');$('hud').style.display='none';
   $('navInst').textContent='Aguardando GPS…';$('navRoad').textContent='';
   T={start:Date.now(),m:0,kills:0,xp:0,gold:0,items:[]};journeyStart();
@@ -160,7 +160,7 @@ function arrive(){
 function endNav(arrived){
   carEnd();
   if(LIVE)liveEnd(arrived?'done':'stop');
-  isNav=false;stopSim();releaseWake();stopBgGPS();drProg=null;$('drBadge').style.display='none';stopVoice()
+  isNav=false;stopSim();releaseWake();stopBgGPS();drProg=null;$('drBadge').style.display='none';stopVoice();towerNear=null;setTimeout(()=>towerTick(true),50)
   renderAlert(null);$('laneBar').classList.remove('on');closeStops();stops=[];complexNear=false;
   if(arrived)setTimeout(()=>speak('Você chegou! Missão concluída.','nav'),50);
   document.body.classList.remove('nav');$('navTop').classList.remove('on');$('navBottom').classList.remove('on');
