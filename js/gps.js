@@ -57,24 +57,34 @@ setInterval(()=>{
   onFix({lat:p[0],lon:p[1],acc:15,spd:lastRealSpd,hdg:bearing(p,p2),t:Date.now(),dr:true});
 },1000);
 
-let bgWatch=null;
-async function startBgGPS(){
-  if(!NATIVE||bgWatch)return;
+/* GPS em segundo plano (Android): liga sozinho quando há motivo e desliga quando não há.
+   Motivos: navegando (posição a cada passo) ou localização ligada pra guilda (a cada ~30 m).
+   Enquanto ligado, o Android mostra a notificação fixa dizendo o porquê. */
+let bgWatch=null,bgMode=null,bgBusy=false;
+function bgWant(){return isNav&&!sim?'nav':(typeof glocOn==='function'&&glocOn())?'gloc':null}
+async function bgSync(){
+  if(!NATIVE||bgBusy)return;bgBusy=true;
   try{
-    bgWatch=await NAT.bg.addWatcher({backgroundTitle:'Ranvus Maps — jornada em andamento',backgroundMessage:'Seu herói continua te guiando',
-      requestPermissions:true,stale:false,distanceFilter:0},(loc,err)=>{
-      if(err){if(err.code==='NOT_AUTHORIZED')toast('📍 Permita a localização nas configurações do app',4000);return}
-      if(!loc)return;lastRealT=Date.now();lastRealSpd=loc.speed||0;
-      if(!sim)onFix({lat:loc.latitude,lon:loc.longitude,acc:loc.accuracy,spd:loc.speed,hdg:loc.bearing,t:Date.now()});
-    });
-    if(watchId!=null){navigator.geolocation.clearWatch(watchId);watchId=null}
-  }catch{bgWatch=null}
+    const want=bgWant();
+    if(bgWatch&&want!==bgMode){const id=bgWatch;bgWatch=null;bgMode=null;try{await NAT.bg.removeWatcher({id})}catch{}}
+    if(want&&!bgWatch){
+      const nav=want==='nav';
+      bgWatch=await NAT.bg.addWatcher({
+        backgroundTitle:nav?'Ranvus Maps — jornada em andamento':'Ranvus Maps — guilda vendo onde você está',
+        backgroundMessage:nav?'Seu herói continua te guiando':'Compartilhando sua localização com a guilda. Desligue no app quando quiser.',
+        requestPermissions:true,stale:false,distanceFilter:nav?0:30},(loc,err)=>{
+        if(err){if(err.code==='NOT_AUTHORIZED')toast('📍 Permita a localização nas configurações do app',4000);return}
+        if(!loc)return;lastRealT=Date.now();lastRealSpd=loc.speed||0;
+        if(!sim)onFix({lat:loc.latitude,lon:loc.longitude,acc:loc.accuracy,spd:loc.speed,hdg:loc.bearing,t:Date.now()});
+      });
+      bgMode=want;
+      if(watchId!=null){navigator.geolocation.clearWatch(watchId);watchId=null}
+    }
+    if(!want&&watchId==null)startGPS();
+  }catch{bgWatch=null;bgMode=null}
+  finally{bgBusy=false}
 }
-async function stopBgGPS(){
-  if(!bgWatch)return;const id=bgWatch;bgWatch=null;
-  try{await NAT.bg.removeWatcher({id})}catch{}
-  startGPS();
-}
+const startBgGPS=bgSync,stopBgGPS=bgSync;
 function startGPS(){
   if(watchId!=null||!navigator.geolocation)return;
   watchId=navigator.geolocation.watchPosition(p=>{
@@ -83,7 +93,7 @@ function startGPS(){
     if(!sim)onFix({lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy,spd:p.coords.speed,hdg:p.coords.heading,t:Date.now()});
   },e=>{
     if(e.code===1){gpsDenied=true;toast('📍 Permita a localização para o herói te acompanhar',4000)}
-  },{enableHighAccuracy:true,maximumAge:1000,timeout:15000});
+  },{enableHighAccuracy:!(window.ECO?.on&&!isNav),maximumAge:window.ECO?.on?5000:1000,timeout:15000});
 }
 function onFix(f){
   const first=!lastFix;

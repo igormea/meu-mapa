@@ -8,14 +8,14 @@ const GLOC_HOURS=12,GLOC_EVERY=5000,GLOC_MIN_M=25;
 const GL={last:null,lastT:0,es:null,gid:null,data:{},tags:{},esT:0};
 const glocOn=()=>!!(S.gloc&&S.gloc>Date.now()&&SOC?.gid&&isLogged());
 function glocSet(on){
-  if(on){S.gloc=Date.now()+GLOC_HOURS*3600e3;GL.lastT=0;toast(`📍 Sua localização está visível pra guilda por ${GLOC_HOURS} h`);if(lastFix)glocTick(lastFix,true)}
+  if(on){S.gloc=Date.now()+GLOC_HOURS*3600e3;GL.lastT=0;toast(`📍 Sua localização está visível pra guilda por ${GLOC_HOURS} h, mesmo com o app fechado`);if(lastFix)glocTick(lastFix,true)}
   else{const was=S.gloc;S.gloc=0;if(was&&SOC.gid)fbDel(`gloc/${SOC.gid}/${uidMe()}`).catch(()=>{});toast('📍 Localização pra guilda desligada')}
-  save();renderSheet();
+  save();renderSheet();bgSync();
 }
 // a cada posição do GPS: manda no máx. a cada 5 s, e só se andou 25 m (ou a cada 1 min parado, pra mostrar que está online)
 function glocTick(f,force){
   if(!f||simSnap)return;
-  if(S.gloc&&S.gloc<=Date.now()&&SOC?.gid){S.gloc=0;save();fbDel(`gloc/${SOC.gid}/${uidMe()}`).catch(()=>{});return}
+  if(S.gloc&&S.gloc<=Date.now()&&SOC?.gid){S.gloc=0;save();fbDel(`gloc/${SOC.gid}/${uidMe()}`).catch(()=>{});bgSync();return}
   if(!glocOn())return;
   const now=Date.now(),moved=GL.last?hav(GL.last.lat,GL.last.lon,f.lat,f.lon):1e9;
   if(!force&&(now-GL.lastT<GLOC_EVERY||(moved<GLOC_MIN_M&&now-GL.lastT<60000)))return;

@@ -22,7 +22,7 @@ function startNav(simulate){
   grabWake();
   speak(`Jornada iniciada rumo a ${short(dest.name)}. ${fmtSpeech(R.total)} pela frente.`,'nav');
   if(simulate){simSnap=JSON.stringify(S);startSim()}
-  else{startGPS();startBgGPS();if(lastFix)onFix({...lastFix,t:Date.now()})}
+  else{startGPS();startBgGPS();prefetchRoute(R);if(lastFix)onFix({...lastFix,t:Date.now()})}
   hud();
 }
 function navUpdate(sn,f){
@@ -54,10 +54,19 @@ function announce(k,st,dn,inst,spd){
   const a=R.ann[k]||(R.ann[k]={}),road=st.name?` na ${st.name}`:'';
   if(st.type==='arrive'){if(!a.n&&dn<250){a.n=1;speak(st.last===false?'Sua parada está logo à frente':'Seu destino está logo à frente','nav')}return}
   const fMax=spd>20?800:450,fMin=spd>20?350:180,near=Math.max(60,spd*5);
-  if(!a.f&&dn<=fMax&&dn>=fMin){a.f=1;if(!S.less)speak(`Em ${Math.round(dn/50)*50} metros, ${inst.toLowerCase()}${road}`,'nav')}
+  if(!a.f&&dn<=fMax&&dn>=fMin){a.f=1;const lh=laneHint(st);if(!S.less||lh)speak(`Em ${Math.round(dn/50)*50} metros, ${inst.toLowerCase()}${road}${lh}`,'nav')}
   else if(!a.n&&dn<near){a.n=1;a.f=1;speak(inst+road,'nav')}
 }
-/* faixas: mostra quais faixas servem para a próxima manobra */
+/* faixas: mostra quais faixas servem para a próxima manobra (e fala, quando é um lado só) */
+function laneHint(st){
+  const L=st.lanes;if(!L||L.length<2)return'';
+  const ok=L.map((l,i)=>l.ok?i:-1).filter(i=>i>=0);if(!ok.length||ok.length===L.length)return'';
+  const n=L.length,pl=ok.length>1?'pelas faixas':'pela faixa';
+  const a=ok[0],b=ok[ok.length-1];
+  if(a===0)return`, ${pl} da esquerda`;
+  if(b===n-1)return`, ${pl} da direita`;
+  return`, ${pl} do meio`;
+}
 const COMPLEX=new Set(['roundabout','rotary','fork','off ramp','on ramp','merge','exit roundabout','exit rotary']);
 let complexNear=false;
 const LANE_IC={left:'⬅',right:'➡',straight:'⬆','slight left':'↖','slight right':'↗','sharp left':'↩','sharp right':'↪',uturn:'↶',none:'⬆'};
@@ -107,7 +116,7 @@ async function recalc(f,dist){
 }
 // troca a rota ativa mantendo a jornada (monstros novos à frente, alertas, limites)
 function swapRoute(nr){
-  clearSpawns(R);clearFeats(R);R=nr;PR=[R];selIdx=0;genSpawns(R,200);fetchLimits(R);
+  clearSpawns(R);clearFeats(R);R=nr;PR=[R];selIdx=0;genSpawns(R,200);fetchLimits(R);prefetchRoute(R);
   drawRoutes();drawSpawns(R);drawFeats(R);drawStops();renderAlert(null);
 }
 // recalcula agora (ex.: parada adicionada) a partir da posição atual
@@ -194,7 +203,7 @@ async function fetchLimits(Rt){
     for(let i=1;i<p.length;i++)cum.push(cum[i-1]+hav(p[i-1][0],p[i-1][1],p[i][0],p[i][1]));
     const k=Rt.total/(cum[cum.length-1]||Rt.total);
     Rt.limits=v.edges.map(e=>({a:(cum[e.begin_shape_index]||0)*k,b:(cum[e.end_shape_index]||0)*k,v:typeof e.speed_limit==='number'?e.speed_limit:0}));
-    Rt.limIdx=0;
+    Rt.limIdx=0;Rt.limBase=null;applyLimFix(Rt);
   }catch{}
 }
 function limitAt(Rt,prog){
@@ -259,4 +268,25 @@ function manobra(type,mod,exit,last=true){
   if(mod==='sharp right')return['↪️','Vire bem à direita'];
   if(mod==='uturn')return['🔃','Faça o retorno'];
   return['⬆️','Continue'];
+}
+
+/* Sem sinal no meio do caminho: ao iniciar a jornada, baixa o mapa (pedaços vetoriais, z10–14)
+   de uma faixa em volta da rota. O service worker guarda, e o mapa continua aparecendo offline. */
+function prefetchRoute(Rt){
+  try{
+    const src=map.getSource('omt'),tpl=src?.tiles?.[0];if(!tpl||!Rt?.coords?.length||navigator.connection?.saveData)return;
+    const want=new Set();
+    const t=(lat,lon,z)=>{const n=2**z,x=Math.floor((lon+180)/360*n),r=lat*Math.PI/180,y=Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*n);return[x,y]};
+    for(const z of [10,12,14]){
+      const pad=z===14?1:0;let last=-1e9;
+      for(let i=0;i<Rt.coords.length;i++){
+        if(Rt.cum[i]-last<(z===14?300:1500)&&i<Rt.coords.length-1)continue;last=Rt.cum[i];
+        const [x,y]=t(Rt.coords[i][0],Rt.coords[i][1],z);
+        for(let dx=-pad;dx<=pad;dx++)for(let dy=-pad;dy<=pad;dy++)want.add(`${z}/${x+dx}/${y+dy}`);
+      }
+    }
+    const urls=[...want].slice(0,900).map(k=>{const [z,x,y]=k.split('/');return tpl.replace('{z}',z).replace('{x}',x).replace('{y}',y)});
+    let i=0;const next=()=>{if(i>=urls.length)return;const u=urls[i++];fetch(u).catch(()=>{}).finally(()=>setTimeout(next,40))};
+    for(let k=0;k<4;k++)next();     // 4 de cada vez, sem atrapalhar o resto
+  }catch{}
 }

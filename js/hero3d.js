@@ -75,7 +75,8 @@ const layer = {
     renderer.clearDepth();           // personagens sempre visíveis (por cima de prédios 3D)
     renderer.render(scene, camera);
     // animação a ~30 fps; parado e sem navegar, ~12 fps (economiza bateria)
-    const fps = H.speed > 0.5 || window.__heroBusy?.() || H.oneShot || MON.size || FR.size ? 30 : 12;
+    const busy = H.speed > 0.5 || window.__heroBusy?.() || H.oneShot || MON.size || FR.size;
+    const fps = window.ECO?.on ? (busy ? 20 : 6) : (busy ? 30 : 12);   // economia de bateria do celular: mais leve
     if (now >= nextFrame) { nextFrame = now + 1000 / fps; setTimeout(() => map.triggerRepaint(), 1000 / fps); }
   },
 };

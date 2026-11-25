@@ -12,15 +12,15 @@ function renderSheet(){
     h=`<div class="hero"><div class="big">${heroPic(S.cls)}</div><div>
         <div class="hn">${esc(S.name)}</div><div class="hc">${c.nome} · Nível ${S.lvl}</div>
         ${S.title?`<div class="htitle">« ${esc(S.title)} »</div>`:''}</div></div>
-      <div class="row"><div class="r1"><span>✨ Experiência</span><b>${fmtN(S.xp)} / ${fmtN(needXP(S.lvl))}</b></div><div class="qbar"><i style="width:${S.xp/needXP(S.lvl)*100}%;background:linear-gradient(90deg,#2f4fc9,#8fb0ff)"></i></div></div>
-      <div class="row"><div class="r1"><span>❤️ Vida</span><b>${Math.round(S.hp)} / ${mx}</b></div><div class="qbar"><i style="width:${S.hp/mx*100}%;background:linear-gradient(90deg,#a3221d,#e5534b)"></i></div></div>
+      <div class="row"><div class="r1"><span>${ic('xp')} Experiência</span><b>${fmtN(S.xp)} / ${fmtN(needXP(S.lvl))}</b></div><div class="qbar"><i style="width:${S.xp/needXP(S.lvl)*100}%;background:linear-gradient(90deg,#2f4fc9,#8fb0ff)"></i></div></div>
+      <div class="row"><div class="r1"><span>${ic('vida')} Vida</span><b>${Math.round(S.hp)} / ${mx}</b></div><div class="qbar"><i style="width:${S.hp/mx*100}%;background:linear-gradient(90deg,#a3221d,#e5534b)"></i></div></div>
       <div class="stats">
-        <div class="st"><span>⚔️ Ataque</span><b>${atk()}</b></div><div class="st"><span>🛡️ Defesa</span><b>${def()}</b></div>
-        <div class="st"><span>💥 Crítico</span><b>${Math.round(critChance()*100)}%</b></div><div class="st"><span>🪙 Ouro</span><b>${fmtN(S.gold)}</b></div>
-        <div class="st"><span>✨ Bônus XP</span><b>+${Math.round(((c.xp-1)+amu()/100+bonus('xp'))*100)}%</b></div><div class="st"><span>🏹 Alcance</span><b>${c.reach} m</b></div>
+        <div class="st"><span>${ic('ataque')} Ataque</span><b>${atk()}</b></div><div class="st"><span>${ic('defesa')} Defesa</span><b>${def()}</b></div>
+        <div class="st"><span>${ic('critico')} Crítico</span><b>${Math.round(critChance()*100)}%</b></div><div class="st"><span>${ic('ouro')} Ouro</span><b>${fmtN(S.gold)}</b></div>
+        <div class="st"><span>${ic('talentos')} Bônus XP</span><b>+${Math.round(((c.xp-1)+amu()/100+bonus('xp'))*100)}%</b></div><div class="st"><span>${ic('alcance')} Alcance</span><b>${c.reach} m</b></div>
       </div>
       <div class="stats">
-        <div class="st"><span>⚖️ Honra</span><b>${S.honor||0} · ${honorRank()}</b></div><div class="st"><span>🏰 Reinos</span><b>${(S.realms||[]).length} bairros</b></div>
+        <div class="st"><span>${ic('honra')} Honra</span><b>${S.honor||0} · ${honorRank()}</b></div><div class="st"><span>${ic('reinos')} Reinos</span><b>${(S.realms||[]).length} bairros</b></div>
       </div>
       <div class="r2" style="color:#837aa8;font-size:11.5px;margin:4px 2px 0">Honra: respeite os limites de velocidade (+1% XP e ouro por patente). Reinos: bairros que você já atravessou.</div>
       <div class="sect">Habilidade da classe</div>

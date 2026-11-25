@@ -82,6 +82,20 @@ const ICO={
     <rect x="21" y="18" width="6" height="19" fill="url(#gGold)"/><rect x="30" y="11" width="6" height="26" fill="url(#gGreen)"/></g>`,
   ajustes:`<g ${O}><path d="M24 4l3.2 5.2 6-1.6 1.2 6 5.6 2.8-2.6 5.6 2.6 5.6-5.6 2.8-1.2 6-6-1.6L24 44l-3.2-5.2-6 1.6-1.2-6-5.6-2.8L10.6 26 8 20.4l5.6-2.8 1.2-6 6 1.6z" fill="url(#gSteel)"/>
     <circle cx="24" cy="24" r="6.5" fill="#2a2440"/></g>${HL('M14 14a14 14 0 016-3',2,.7)}`,
+  xp:`<g ${O}><path d="M24 4l5 13 14 1-11 9 4 14-12-8-12 8 4-14-11-9 14-1z" fill="url(#gGold)"/></g>${HL('M20 14l3-6',2,.8)}`,
+  vida:`<g ${O}><path d="M24 41C10 32 5 24 5 17a9.5 9.5 0 0119-3 9.5 9.5 0 0119 3c0 7-5 15-19 24z" fill="url(#gRed)"/></g>${HL('M11 15a5 5 0 015-4',2.4,.75)}`,
+  ataque:`<g ${O}><path d="M37 5l6 0 0 6-20 20-6-6z" fill="url(#gSteel)"/><path d="M12 26l10 10-3 3-10-10z" fill="url(#gGold)"/><path d="M13 35l-6 6" stroke-width="5"/><circle cx="6" cy="42" r="2.6" fill="url(#gGold)"/></g>${HL('M38 9L25 22',1.8,.8)}`,
+  defesa:`<g ${O}><path d="M24 4l17 6v12c0 11-8 18-17 22C15 40 7 33 7 22V10z" fill="url(#gBlue)"/><path d="M24 9v30M12 20h24" fill="none" stroke="#ffd34d" stroke-width="3"/></g>${HL('M11 13l8-3',2,.6)}`,
+  critico:`<g ${O}><path d="M24 3l4 11 11-5-5 11 11 4-11 4 5 11-11-5-4 11-4-11-11 5 5-11-11-4 11-4-5-11 11 5z" fill="url(#gGold)"/><circle cx="24" cy="24" r="6" fill="#ff6b5b"/></g>`,
+  ouro:`<g ${O}><ellipse cx="24" cy="32" rx="16" ry="7" fill="#a86a10"/><path d="M8 26v6c0 4 7 7 16 7s16-3 16-7v-6" fill="url(#gGold)"/><ellipse cx="24" cy="26" rx="16" ry="7" fill="url(#gGold)"/>
+    <ellipse cx="24" cy="16" rx="12" ry="5.5" fill="url(#gGold)"/></g><path d="M20 16h8" stroke="#a86a10" stroke-width="2" stroke-linecap="round"/>`,
+  alcance:`<g ${O}><path d="M12 5c16 3 24 15 26 31" fill="none" stroke="#1a1030" stroke-width="6"/><path d="M12 5L38 36" fill="none" stroke-width="1.6"/></g>
+    <path d="M12 5c16 3 24 15 26 31" fill="none" stroke="#a8703f" stroke-width="3" stroke-linecap="round"/><path d="M6 42L30 18" stroke="#e6e9f2" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M30 18l-2 7 9-9-7 2z" fill="#e6e9f2" stroke="#1a1030" stroke-width="1.6" stroke-linejoin="round"/><path d="M6 42l3-7M6 42l7-3" stroke="#d8433a" stroke-width="2.4" stroke-linecap="round"/>`,
+  honra:`<g ${O}><path d="M24 6v34M14 42h20M8 12h32" fill="none" stroke="#1a1030" stroke-width="5"/></g><path d="M24 6v34M14 42h20M8 12h32" stroke="#f0b429" stroke-width="2.6" stroke-linecap="round"/>
+    <g ${O}><path d="M3 28l5-14 5 14a5 5 0 01-10 0zM35 28l5-14 5 14a5 5 0 01-10 0z" fill="url(#gGold)"/></g><circle cx="24" cy="6" r="2.6" fill="url(#gGold)" stroke="#1a1030" stroke-width="1.6"/>`,
+  reinos:`<g ${O}><path d="M6 42V18h6v5h5v-5h6v5h2v-5h6v5h5v-5h6v24z" fill="url(#gStone)"/><path d="M20 42v-9a4 4 0 018 0v9z" fill="#2a2440"/>
+    <path d="M24 18V5" fill="none"/></g><path d="M24 5h9l-2.5 3 2.5 3h-9z" fill="url(#gRed)" stroke="#1a1030" stroke-width="1.6" stroke-linejoin="round"/>`,
 };
 function ic(n,cls=''){const p=ICO[n];return p?`<svg class="ic ${cls}" viewBox="0 0 48 48" aria-hidden="true">${p}</svg>`:''}
 document.body.insertAdjacentHTML('afterbegin',ICO_DEFS);

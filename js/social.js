@@ -281,7 +281,7 @@ function notifyUser(ic,title,body,k='gold'){
 async function socPoll(){
   if(!isLogged()||socPolling)return;socPolling=true;
   try{
-    await socLoad(false);if(!SOC.me?.nick)return;
+    await socLoad(false);bgSync();if(!SOC.me?.nick)return;
     const sn=seenGet(),first=!sn.init,P=SOC.profiles,F=SOC.friends,u=uidMe();
     const fr=Object.keys(F).filter(k=>F[k]==='in'),inv=Object.keys(SOC.invites),tr=Object.keys(TR.in||{});
     if(!first){

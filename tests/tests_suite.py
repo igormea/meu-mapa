@@ -1238,7 +1238,7 @@ def t77_novidades_desde_a_ultima_vista(c):
     c.open(); c.hero()
     c.js("async()=>{await loadNotes();S.seenV='1.26.0';closeNews&&closeNews();await showNews(false)}")
     t = c.js("()=>$('newsBody').textContent")
-    assert "1.30.0" in t and "1.28.0" in t and "1.27.0" in t and "Versão 1.26.0" not in t, t[:300]
+    assert "1.31.0" in t and "1.28.0" in t and "1.27.0" in t and "Versão 1.26.0" not in t, t[:300]
     assert "Mapa limpo" in t and "histórico completo" in t
     assert c.js("()=>S.seenV") == c.js("()=>NOTES[0].v")
 
@@ -1331,3 +1331,36 @@ def t81_android_auto_ponte(c):
     # recado do jogo vai pro carro
     c.js("()=>card('⚔️','Venceu o <b>Slime</b>','+40 XP')"); assert c.js("()=>__car.upd.at(-1).msg") == "Venceu o Slime"
     c.js("()=>{NAT=null}")
+
+@test
+def t82_limite_errado_corrige_na_hora_e_lembra(c):
+    c.open(); c.hero(); c.route_to()
+    c.js("()=>{window.__noOSM=1;R=PR[selIdx];isNav=true;R.limits=[{a:0,b:R.total,v:80}];R.limBase=null;R.limIdx=0;R.prog=100}")
+    assert c.js("()=>limitAt(R,100)") == 80
+    c.js("()=>limTap()"); assert c.js("()=>$('limDlg').classList.contains('on')")
+    assert "80 km/h" in c.js("()=>$('limDlg').textContent")
+    c.page.click("#limDlg .ld-g button >> text=60"); c.page.wait_for_timeout(200)
+    dbg = c.js("()=>JSON.stringify({L:R.limits,fx:(S.limFix||[]).map(f=>[f.v,f.o,f.p.length]),prog:R.prog,t:document.querySelector('#toast')?.textContent})")
+    assert c.js("()=>limitAt(R,100)") == 60 and len(c.js("()=>S.limFix")) == 1, dbg
+    # rota nova pelo mesmo caminho: já vem corrigida
+    c.js("()=>{R.limits=[{a:0,b:R.total,v:80}];R.limBase=null;applyLimFix(R)}")
+    assert c.js("()=>limitAt(R,100)") == 60
+    # desfazer volta ao do mapa
+    c.js("()=>{limTap();limUndo()}")
+    assert c.js("()=>limitAt(R,100)") == 80 and len(c.js("()=>S.limFix")) == 0
+
+@test
+def t83_faixa_falada_antes_da_manobra(c):
+    c.open(); c.hero()
+    h = lambda lanes: c.js("(l)=>laneHint({lanes:l.map(o=>({ind:[],ok:o}))})", lanes)
+    assert h([True, False, False]) == ", pela faixa da esquerda"
+    assert h([False, True, True]) == ", pelas faixas da direita"
+    assert h([False, True, False]) == ", pela faixa do meio"
+    assert h([True, True, True]) == ""
+
+@test
+def t84_gps_em_segundo_plano_quando_tem_motivo(c):
+    c.open(); c.hero()
+    assert c.js("()=>bgWant()") is None
+    c.js("()=>{isNav=true}"); assert c.js("()=>bgWant()") == "nav"
+    c.js("()=>{isNav=false;isLogged=()=>true;SOC.gid='g1';S.gloc=Date.now()+3600e3}"); assert c.js("()=>bgWant()") == "gloc"

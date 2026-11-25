@@ -1,5 +1,19 @@
 [
  {
+  "v": "1.31.0",
+  "d": "25/11/2026",
+  "t": "Limite errado, guilda em segundo plano e app mais rápido",
+  "i": [
+   "🪧 Limite errado? Toque no velocímetro durante a jornada e escolha o certo. Vale na hora, fica salvo (até na nuvem) e o app avisa o OpenStreetMap pra corrigirem o mapa de todos.",
+   "🏰 Localização pra guilda agora funciona com o app fechado: aparece uma notificação fixa enquanto estiver ligada, e ela some sozinha quando acabam as 12 h ou você desliga.",
+   "⚡ O app abre mais rápido: as partes que não mudam ficam guardadas no celular e não são baixadas de novo a cada abertura.",
+   "📶 Sem sinal no caminho: ao iniciar a jornada, o mapa em volta da rota é baixado antes, então continua aparecendo se o 4G cair.",
+   "🛣️ A voz agora fala a faixa quando importa: \"Em 300 metros, vire à direita, pela faixa da direita\".",
+   "🔋 Se você ligar a economia de bateria do celular, o Ranvus fica mais leve sozinho (precisa do APK novo).",
+   "🎨 Mais ícones de RPG na ficha do herói: estrela de XP, coração, espada, escudo, moedas, arco, balança e castelo."
+  ]
+ },
+ {
   "v": "1.30.0",
   "d": "24/11/2026",
   "t": "Ícones com cara de RPG",

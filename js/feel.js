@@ -33,3 +33,21 @@ function busyWrap(fn){
 ['raidStart','socDeleteAccount','socSetNick','socAddFriend','socAccept','socRemove','guildCreate','guildInvite','guildJoin',
  'guildDecline','guildKick','guildLead','guildLeave','socRefresh','tradeSend','tradeAccept','tradeDecline']
   .forEach(n=>{if(typeof window[n]==='function')window[n]=busyWrap(window[n])});
+
+/* ── ECONOMIA DE BATERIA ───────────────────────────────────
+   Só entra quando VOCÊ liga a economia de bateria do Android (o app pergunta ao sistema).
+   Aí: herói 3D anima com menos quadros, mapa desenha em resolução menor, GPS fora da
+   jornada fica no modo leve e as animações de interface somem. Desligou, volta ao normal. */
+window.ECO={on:false};
+function ecoSet(v){
+  v=!!v;if(ECO.on===v)return;ECO.on=v;document.body.classList.toggle('eco',v);
+  try{map.setPixelRatio(v?Math.min(1.5,devicePixelRatio):devicePixelRatio)}catch{}
+  if(typeof watchId!=='undefined'&&watchId!=null&&!bgWatch){navigator.geolocation.clearWatch(watchId);watchId=null;startGPS()}
+  if(v)toast('🔋 Economia de bateria do celular ligada: o Ranvus ficou mais leve',3500);
+}
+async function ecoInit(){
+  const P=typeof NAT!=='undefined'&&NAT?.car;if(!P?.power)return;
+  try{const r=await P.power();ecoSet(r?.save)}catch{}
+  try{P.addListener('powerSave',d=>ecoSet(d?.save))}catch{}
+}
+setTimeout(ecoInit,1200);

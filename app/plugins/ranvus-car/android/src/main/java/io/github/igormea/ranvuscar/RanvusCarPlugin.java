@@ -8,13 +8,38 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.PowerManager;
 
 /** Ponte app ⇄ Android Auto. O site chama RanvusCar.update(...) a cada posição; o carro avisa o site quando você escolhe um destino ou encerra. */
 @CapacitorPlugin(name = "RanvusCar")
 public class RanvusCarPlugin extends Plugin {
     static RanvusCarPlugin instance;
 
-    @Override public void load() { instance = this; }
+    private BroadcastReceiver powerRx;
+
+    @Override public void load() {
+        instance = this;
+        // economia de bateria do Android ligada/desligada → avisa o site na hora
+        powerRx = new BroadcastReceiver() {
+            @Override public void onReceive(Context ctx, Intent i) {
+                JSObject o = new JSObject(); o.put("save", isPowerSave()); notifyListeners("powerSave", o, true);
+            }
+        };
+        try { getContext().registerReceiver(powerRx, new IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)); } catch (Exception ignored) {}
+    }
+
+    private boolean isPowerSave() {
+        try { PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE); return pm != null && pm.isPowerSaveMode(); }
+        catch (Exception e) { return false; }
+    }
+
+    /** O celular está no modo "economia de bateria"? */
+    @PluginMethod
+    public void power(PluginCall c) { JSObject o = new JSObject(); o.put("save", isPowerSave()); c.resolve(o); }
 
     /** Avisa o site (JS) de algo que aconteceu no carro. */
     static void emit(String ev, JSObject data) { if (instance != null) instance.notifyListeners(ev, data, true); }
